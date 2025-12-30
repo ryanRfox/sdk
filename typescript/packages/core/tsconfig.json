@@ -1,0 +1,14 @@
+{
+  // This tsconfig is used for type checking (not building). It includes all source files including tests.
+  "extends": "./tsconfig.base.json",
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "src/_cjs", "src/_esm", "src/_types"],
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@radiustechsystems/sdk": ["./src/index.ts"],
+      "@radiustechsystems/sdk/*": ["./src/*"]
+    }
+  }
+}
