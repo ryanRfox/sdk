@@ -42,7 +42,7 @@ import { watchContractEvent } from 'viem/actions';
  * - For HTTP transport, consider using getLogs with polling instead
  */
 export function watchLogs(client, params) {
-  return watchContractEvent(client, params);
+    return watchContractEvent(client, params);
 }
 /**
  * Watches for raw logs without ABI decoding.
@@ -88,13 +88,13 @@ export function watchLogs(client, params) {
  * - HTTP transport falls back to polling (less efficient)
  */
 export function watchRawLogs(client, params) {
-  // Use viem's watchEvent action for raw logs
-  // This will use eth_subscribe for WebSocket or polling for HTTP
-  return client.watchEvent({
-    address: params.address,
-    onLogs: params.onLogs,
-    onError: params.onError,
-    pollingInterval: params.pollingInterval,
-  });
+    // Use viem's watchEvent action for raw logs
+    // This will use eth_subscribe for WebSocket or polling for HTTP
+    return client.watchEvent({
+        address: params.address,
+        onLogs: params.onLogs,
+        onError: params.onError,
+        pollingInterval: params.pollingInterval,
+    });
 }
 //# sourceMappingURL=watchLogs.js.map

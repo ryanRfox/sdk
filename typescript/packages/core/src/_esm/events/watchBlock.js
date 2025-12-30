@@ -45,13 +45,13 @@ export const DEFAULT_POLLING_INTERVAL_MS = 1000;
  * - For HTTP clients, consider increasing pollingInterval to reduce load
  */
 export function watchBlockNumber(client, params) {
-  const watchParams = {
-    onBlockNumber: params.onBlockNumber,
-    onError: params.onError,
-    emitOnBegin: params.emitOnBegin,
-    pollingInterval: params.pollingInterval ?? DEFAULT_POLLING_INTERVAL_MS,
-  };
-  return client.watchBlockNumber(watchParams);
+    const watchParams = {
+        onBlockNumber: params.onBlockNumber,
+        onError: params.onError,
+        emitOnBegin: params.emitOnBegin,
+        pollingInterval: params.pollingInterval ?? DEFAULT_POLLING_INTERVAL_MS,
+    };
+    return client.watchBlockNumber(watchParams);
 }
 /**
  * Watches for new blocks with full block data.
@@ -103,18 +103,18 @@ export function watchBlockNumber(client, params) {
  * - Polling with includeTransactions=true can be expensive
  */
 export function watchBlocks(client, params) {
-  // Only pass includeTransactions if explicitly set to true
-  const watchParams = {
-    onBlock: params.onBlock,
-    onError: params.onError,
-    emitOnBegin: params.emitOnBegin,
-    pollingInterval: params.pollingInterval ?? DEFAULT_POLLING_INTERVAL_MS,
-  };
-  // Type assertion needed because viem's type is very strict about false vs undefined
-  if (params.includeTransactions === true) {
-    watchParams.includeTransactions = true;
-  }
-  return client.watchBlocks(watchParams);
+    // Only pass includeTransactions if explicitly set to true
+    const watchParams = {
+        onBlock: params.onBlock,
+        onError: params.onError,
+        emitOnBegin: params.emitOnBegin,
+        pollingInterval: params.pollingInterval ?? DEFAULT_POLLING_INTERVAL_MS,
+    };
+    // Type assertion needed because viem's type is very strict about false vs undefined
+    if (params.includeTransactions === true) {
+        watchParams.includeTransactions = true;
+    }
+    return client.watchBlocks(watchParams);
 }
 /**
  * Watches for pending transactions in the mempool.
@@ -153,10 +153,10 @@ export function watchBlocks(client, params) {
  * - This is provided for API completeness but may have limited functionality
  */
 export function watchPendingTransactions(client, params) {
-  return client.watchPendingTransactions({
-    onTransactions: params.onTransactions,
-    onError: params.onError,
-    pollingInterval: params.pollingInterval,
-  });
+    return client.watchPendingTransactions({
+        onTransactions: params.onTransactions,
+        onError: params.onError,
+        pollingInterval: params.pollingInterval,
+    });
 }
 //# sourceMappingURL=watchBlock.js.map

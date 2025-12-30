@@ -18,12 +18,12 @@ export type Interceptor = (reqBody: string, response: Response) => Promise<Respo
  * Based on the concept of http.RoundTripper from Go's standard library
  */
 export interface RoundTripper {
-  /**
-   * Sends an HTTP request and returns the response
-   * @param request The HTTP request to send
-   * @returns A Promise that resolves to the HTTP response
-   * @throws Error if the request fails
-   */
-  roundTrip(request: Request): Promise<Response>;
+    /**
+     * Sends an HTTP request and returns the response
+     * @param request The HTTP request to send
+     * @returns A Promise that resolves to the HTTP response
+     * @throws Error if the request fails
+     */
+    roundTrip(request: Request): Promise<Response>;
 }
 //# sourceMappingURL=types.d.ts.map

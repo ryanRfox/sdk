@@ -1,6 +1,23 @@
 /**
  * Generic log watching utilities for Radius SDK.
  * Provides real-time event subscription capabilities using WebSocket.
+ *
+ * @remarks Radius-Specific Limitations and Requirements
+ *
+ * **WebSocket Subscriptions (eth_subscribe)**:
+ * - BOTH address AND topics are mandatory when using `eth_subscribe` with "logs" type
+ * - Partial filtering (address-only or topics-only) may not work as expected
+ * - Currently supported only via WebSocket transport (not HTTP)
+ * - WebSocket is NOT currently enabled on Radius testnet
+ *
+ * **Recommended Approach**:
+ * - For now, use HTTP polling with eth_getLogs (see watchLogs and watchRawLogs functions)
+ * - HTTP polling is the most reliable approach until WebSocket is enabled
+ * - When WebSocket becomes available on testnet, these functions can leverage native subscriptions
+ *
+ * **Important Note**:
+ * - The address parameter is mandatory in all log filters on Radius
+ * - Filters without address will fail with error "Filters without addresses are not supported"
  */
 import type { Address, Hash, Log, PublicClient, WatchContractEventReturnType } from 'viem';
 import { watchContractEvent } from 'viem/actions';
@@ -46,26 +63,23 @@ import { watchContractEvent } from 'viem/actions';
  * - Automatically cleaned up on disconnect
  * - For HTTP transport, consider using getLogs with polling instead
  */
-export declare function watchLogs(
-  client: PublicClient,
-  params: Parameters<typeof watchContractEvent>[1]
-): WatchContractEventReturnType;
+export declare function watchLogs(client: PublicClient, params: Parameters<typeof watchContractEvent>[1]): WatchContractEventReturnType;
 /**
  * Parameters for watching raw logs without ABI decoding.
  */
 export interface WatchRawLogsParameters {
-  /** The contract address to watch */
-  address: Address | Address[];
-  /** Optional event signature hashes to filter by */
-  topics?: Hash[][];
-  /** Callback function invoked when logs are received */
-  onLogs: (logs: Log[]) => void;
-  /** Callback function invoked when an error occurs */
-  onError?: (error: Error) => void;
-  /** Whether to emit logs from the latest block on subscription start */
-  sync?: boolean;
-  /** Polling interval in milliseconds (for HTTP transport fallback) */
-  pollingInterval?: number;
+    /** The contract address to watch */
+    address: Address | Address[];
+    /** Optional event signature hashes to filter by */
+    topics?: Hash[][];
+    /** Callback function invoked when logs are received */
+    onLogs: (logs: Log[]) => void;
+    /** Callback function invoked when an error occurs */
+    onError?: (error: Error) => void;
+    /** Whether to emit logs from the latest block on subscription start */
+    sync?: boolean;
+    /** Polling interval in milliseconds (for HTTP transport fallback) */
+    pollingInterval?: number;
 }
 /**
  * Watches for raw logs without ABI decoding.
@@ -110,8 +124,5 @@ export interface WatchRawLogsParameters {
  * - WebSocket transport provides real-time updates
  * - HTTP transport falls back to polling (less efficient)
  */
-export declare function watchRawLogs(
-  client: PublicClient,
-  params: WatchRawLogsParameters
-): WatchContractEventReturnType;
+export declare function watchRawLogs(client: PublicClient, params: WatchRawLogsParameters): WatchContractEventReturnType;
 //# sourceMappingURL=watchLogs.d.ts.map

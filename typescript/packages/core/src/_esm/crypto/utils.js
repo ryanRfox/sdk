@@ -5,14 +5,14 @@ import { Address } from '../common';
  * Convert input to bytes.
  */
 function toBytes(data) {
-  if (data instanceof Uint8Array) {
-    return data;
-  }
-  if (typeof data === 'string') {
-    const hex = data.startsWith('0x') ? data : `0x${data}`;
-    return hexToBytes(hex);
-  }
-  throw new Error('Invalid BytesLike input');
+    if (data instanceof Uint8Array) {
+        return data;
+    }
+    if (typeof data === 'string') {
+        const hex = data.startsWith('0x') ? data : `0x${data}`;
+        return hexToBytes(hex);
+    }
+    throw new Error('Invalid BytesLike input');
 }
 /**
  * Convert a hex string private key to a SigningKey.
@@ -21,14 +21,14 @@ function toBytes(data) {
  * @returns SigningKey containing both public and private keys
  */
 export function hexToSigningKey(key) {
-  const formattedKey = key.startsWith('0x') ? key : `0x${key}`;
-  const account = privateKeyToAccount(formattedKey);
-  // Get the public key from the account (viem accounts expose publicKey)
-  const publicKeyHex = account.publicKey;
-  return {
-    publicKey: hexToBytes(publicKeyHex),
-    privateKey: hexToBytes(formattedKey),
-  };
+    const formattedKey = (key.startsWith('0x') ? key : `0x${key}`);
+    const account = privateKeyToAccount(formattedKey);
+    // Get the public key from the account (viem accounts expose publicKey)
+    const publicKeyHex = account.publicKey;
+    return {
+        publicKey: hexToBytes(publicKeyHex),
+        privateKey: hexToBytes(formattedKey),
+    };
 }
 /**
  * Calculate the Keccak256 hash of the input data.
@@ -37,21 +37,21 @@ export function hexToSigningKey(key) {
  * @returns Keccak256 hash as a Uint8Array
  */
 export function keccak256(data) {
-  if (Array.isArray(data)) {
-    // Concatenate all byte arrays
-    const totalLength = data.reduce((sum, d) => sum + toBytes(d).length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const d of data) {
-      const bytes = toBytes(d);
-      combined.set(bytes, offset);
-      offset += bytes.length;
+    if (Array.isArray(data)) {
+        // Concatenate all byte arrays
+        const totalLength = data.reduce((sum, d) => sum + toBytes(d).length, 0);
+        const combined = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const d of data) {
+            const bytes = toBytes(d);
+            combined.set(bytes, offset);
+            offset += bytes.length;
+        }
+        const hash = viemKeccak256(bytesToHex(combined));
+        return hexToBytes(hash);
     }
-    const hash = viemKeccak256(bytesToHex(combined));
+    const hash = viemKeccak256(bytesToHex(toBytes(data)));
     return hexToBytes(hash);
-  }
-  const hash = viemKeccak256(bytesToHex(toBytes(data)));
-  return hexToBytes(hash);
 }
 /**
  * Convert a public key to an account address.
@@ -61,13 +61,13 @@ export function keccak256(data) {
  * @returns Account address as an Address object
  */
 export function pubkeyToAddress(publicKey) {
-  const bytes = toBytes(publicKey);
-  // Remove the prefix byte (0x04 for uncompressed public keys)
-  const keyWithoutPrefix = bytes.slice(1);
-  const hash = viemKeccak256(bytesToHex(keyWithoutPrefix));
-  // Take the last 20 bytes (40 hex chars)
-  const addressHex = `0x${hash.slice(-40)}`;
-  return new Address(addressHex);
+    const bytes = toBytes(publicKey);
+    // Remove the prefix byte (0x04 for uncompressed public keys)
+    const keyWithoutPrefix = bytes.slice(1);
+    const hash = viemKeccak256(bytesToHex(keyWithoutPrefix));
+    // Take the last 20 bytes (40 hex chars)
+    const addressHex = `0x${hash.slice(-40)}`;
+    return new Address(addressHex);
 }
 /**
  * Sign a digest hash with a signing key.
@@ -77,13 +77,13 @@ export function pubkeyToAddress(publicKey) {
  * @returns The signature as a Uint8Array
  */
 export async function sign(digestHash, key) {
-  const privateKeyHex = bytesToHex(key.privateKey);
-  const account = privateKeyToAccount(privateKeyHex);
-  const hashHex = bytesToHex(toBytes(digestHash));
-  // Sign the raw message hash
-  const signature = await account.signMessage({
-    message: { raw: hashHex },
-  });
-  return hexToBytes(signature);
+    const privateKeyHex = bytesToHex(key.privateKey);
+    const account = privateKeyToAccount(privateKeyHex);
+    const hashHex = bytesToHex(toBytes(digestHash));
+    // Sign the raw message hash
+    const signature = await account.signMessage({
+        message: { raw: hashHex },
+    });
+    return hexToBytes(signature);
 }
 //# sourceMappingURL=utils.js.map

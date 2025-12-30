@@ -60,49 +60,50 @@ import { ERC20_ABI } from '../contracts/erc20';
  * - An approval value of 0 revokes the approval
  */
 export function watchApproval(client, params) {
-  // Build event filter args based on owner/spender parameters
-  const args = {};
-  if (params.owner) args.owner = params.owner;
-  if (params.spender) args.spender = params.spender;
-  return client.watchContractEvent({
-    address: params.address,
-    abi: ERC20_ABI,
-    eventName: 'Approval',
-    args: Object.keys(args).length > 0 ? args : undefined,
-    onLogs: (logs) => {
-      // Decode and transform logs to ApprovalEvent format
-      const events = logs
-        .map((log) => {
-          try {
-            const decoded = decodeEventLog({
-              abi: ERC20_ABI,
-              data: log.data,
-              topics: log.topics,
-            });
-            return {
-              owner: decoded.args.owner,
-              spender: decoded.args.spender,
-              value: decoded.args.value,
-              log: log,
-            };
-          } catch (error) {
-            // Skip logs that can't be decoded
-            if (params.onError) {
-              params.onError(
-                error instanceof Error ? error : new Error('Failed to decode Approval event')
-              );
+    // Build event filter args based on owner/spender parameters
+    const args = {};
+    if (params.owner)
+        args.owner = params.owner;
+    if (params.spender)
+        args.spender = params.spender;
+    return client.watchContractEvent({
+        address: params.address,
+        abi: ERC20_ABI,
+        eventName: 'Approval',
+        args: Object.keys(args).length > 0 ? args : undefined,
+        onLogs: (logs) => {
+            // Decode and transform logs to ApprovalEvent format
+            const events = logs
+                .map((log) => {
+                try {
+                    const decoded = decodeEventLog({
+                        abi: ERC20_ABI,
+                        data: log.data,
+                        topics: log.topics,
+                    });
+                    return {
+                        owner: decoded.args.owner,
+                        spender: decoded.args.spender,
+                        value: decoded.args.value,
+                        log: log,
+                    };
+                }
+                catch (error) {
+                    // Skip logs that can't be decoded
+                    if (params.onError) {
+                        params.onError(error instanceof Error ? error : new Error('Failed to decode Approval event'));
+                    }
+                    return null;
+                }
+            })
+                .filter((event) => event !== null);
+            if (events.length > 0) {
+                params.onApproval(events);
             }
-            return null;
-          }
-        })
-        .filter((event) => event !== null);
-      if (events.length > 0) {
-        params.onApproval(events);
-      }
-    },
-    onError: params.onError,
-    pollingInterval: params.pollingInterval,
-  });
+        },
+        onError: params.onError,
+        pollingInterval: params.pollingInterval,
+    });
 }
 /**
  * Watches for Approval events involving a specific address (as owner or spender).
@@ -169,51 +170,53 @@ export function watchApproval(client, params) {
  * - Server-side filtering reduces network traffic and processing
  */
 export function watchApprovalForAddress(client, params) {
-  // Validate parameters
-  if (params.ownerOnly && params.spenderOnly) {
-    throw new Error('Cannot set both ownerOnly and spenderOnly to true');
-  }
-  // Determine filter parameters
-  let owner;
-  let spender;
-  if (params.ownerOnly) {
-    owner = params.watchAddress;
-  } else if (params.spenderOnly) {
-    spender = params.watchAddress;
-  } else {
-    // Watch both: need to create two separate subscriptions
-    // This is a limitation of eth_subscribe - can't do OR filters
-    // We'll need to watch both and merge results
-    const unwatchOwner = watchApproval(client, {
-      address: params.tokenAddress,
-      owner: params.watchAddress,
-      onApproval: params.onApproval,
-      onError: params.onError,
-      sync: params.sync,
-      pollingInterval: params.pollingInterval,
+    // Validate parameters
+    if (params.ownerOnly && params.spenderOnly) {
+        throw new Error('Cannot set both ownerOnly and spenderOnly to true');
+    }
+    // Determine filter parameters
+    let owner;
+    let spender;
+    if (params.ownerOnly) {
+        owner = params.watchAddress;
+    }
+    else if (params.spenderOnly) {
+        spender = params.watchAddress;
+    }
+    else {
+        // Watch both: need to create two separate subscriptions
+        // This is a limitation of eth_subscribe - can't do OR filters
+        // We'll need to watch both and merge results
+        const unwatchOwner = watchApproval(client, {
+            address: params.tokenAddress,
+            owner: params.watchAddress,
+            onApproval: params.onApproval,
+            onError: params.onError,
+            sync: params.sync,
+            pollingInterval: params.pollingInterval,
+        });
+        const unwatchSpender = watchApproval(client, {
+            address: params.tokenAddress,
+            spender: params.watchAddress,
+            onApproval: params.onApproval,
+            onError: params.onError,
+            sync: params.sync,
+            pollingInterval: params.pollingInterval,
+        });
+        // Return combined unwatch function
+        return () => {
+            unwatchOwner();
+            unwatchSpender();
+        };
+    }
+    return watchApproval(client, {
+        address: params.tokenAddress,
+        owner,
+        spender,
+        onApproval: params.onApproval,
+        onError: params.onError,
+        sync: params.sync,
+        pollingInterval: params.pollingInterval,
     });
-    const unwatchSpender = watchApproval(client, {
-      address: params.tokenAddress,
-      spender: params.watchAddress,
-      onApproval: params.onApproval,
-      onError: params.onError,
-      sync: params.sync,
-      pollingInterval: params.pollingInterval,
-    });
-    // Return combined unwatch function
-    return () => {
-      unwatchOwner();
-      unwatchSpender();
-    };
-  }
-  return watchApproval(client, {
-    address: params.tokenAddress,
-    owner,
-    spender,
-    onApproval: params.onApproval,
-    onError: params.onError,
-    sync: params.sync,
-    pollingInterval: params.pollingInterval,
-  });
 }
 //# sourceMappingURL=watchApproval.js.map

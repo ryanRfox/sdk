@@ -7,14 +7,14 @@ import { type Chain, type Transport } from 'viem';
  * Configuration for creating a WebSocket transport.
  */
 export interface WebSocketTransportConfig {
-  /** The WebSocket URL (defaults to chain's WebSocket RPC URL) */
-  url?: string;
-  /** Maximum number of reconnection attempts (defaults to 3) */
-  reconnectAttempts?: number;
-  /** Reconnection delay in milliseconds (defaults to 1000) */
-  reconnectDelay?: number;
-  /** Keep-alive interval in milliseconds (optional) */
-  keepAlive?: number;
+    /** The WebSocket URL (defaults to chain's WebSocket RPC URL) */
+    url?: string;
+    /** Maximum number of reconnection attempts (defaults to 3) */
+    reconnectAttempts?: number;
+    /** Reconnection delay in milliseconds (defaults to 1000) */
+    reconnectDelay?: number;
+    /** Keep-alive interval in milliseconds (optional) */
+    keepAlive?: number;
 }
 /**
  * Creates a WebSocket transport for use with Radius clients.
@@ -47,8 +47,5 @@ export interface WebSocketTransportConfig {
  * - WebSocket connections are automatically managed by viem
  * - Subscriptions are cleaned up automatically on disconnect
  */
-export declare function createWebSocketTransport(
-  chain: Chain,
-  config?: WebSocketTransportConfig
-): Transport;
+export declare function createWebSocketTransport(chain: Chain, config?: WebSocketTransportConfig): Transport;
 //# sourceMappingURL=websocket.d.ts.map

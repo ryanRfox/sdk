@@ -7,33 +7,33 @@ import type { Address, Log, PublicClient, WatchContractEventReturnType } from 'v
  * Decoded Approval event data.
  */
 export interface ApprovalEvent {
-  /** The address that owns the tokens */
-  owner: Address;
-  /** The address that is approved to spend the tokens */
-  spender: Address;
-  /** The amount of tokens approved (in smallest unit) */
-  value: bigint;
-  /** The raw log data */
-  log: Log;
+    /** The address that owns the tokens */
+    owner: Address;
+    /** The address that is approved to spend the tokens */
+    spender: Address;
+    /** The amount of tokens approved (in smallest unit) */
+    value: bigint;
+    /** The raw log data */
+    log: Log;
 }
 /**
  * Parameters for watching Approval events.
  */
 export interface WatchApprovalParameters {
-  /** The ERC-20 token contract address to watch */
-  address: Address;
-  /** Optional: Filter by owner address */
-  owner?: Address;
-  /** Optional: Filter by spender address */
-  spender?: Address;
-  /** Callback function invoked when Approval events are received */
-  onApproval: (events: ApprovalEvent[]) => void;
-  /** Callback function invoked when an error occurs */
-  onError?: (error: Error) => void;
-  /** Whether to emit logs from the latest block on subscription start */
-  sync?: boolean;
-  /** Polling interval in milliseconds (for HTTP transport fallback) */
-  pollingInterval?: number;
+    /** The ERC-20 token contract address to watch */
+    address: Address;
+    /** Optional: Filter by owner address */
+    owner?: Address;
+    /** Optional: Filter by spender address */
+    spender?: Address;
+    /** Callback function invoked when Approval events are received */
+    onApproval: (events: ApprovalEvent[]) => void;
+    /** Callback function invoked when an error occurs */
+    onError?: (error: Error) => void;
+    /** Whether to emit logs from the latest block on subscription start */
+    sync?: boolean;
+    /** Polling interval in milliseconds (for HTTP transport fallback) */
+    pollingInterval?: number;
 }
 /**
  * Watches for ERC-20 Approval events in real-time.
@@ -94,30 +94,27 @@ export interface WatchApprovalParameters {
  * - Subscriptions consume gas from your RPC key on Radius (10 GAS/sec)
  * - An approval value of 0 revokes the approval
  */
-export declare function watchApproval(
-  client: PublicClient,
-  params: WatchApprovalParameters
-): WatchContractEventReturnType;
+export declare function watchApproval(client: PublicClient, params: WatchApprovalParameters): WatchContractEventReturnType;
 /**
  * Parameters for watching Approval events for a specific address (as owner or spender).
  */
 export interface WatchApprovalForAddressParameters {
-  /** The ERC-20 token contract address to watch */
-  tokenAddress: Address;
-  /** The address to watch (as owner or spender) */
-  watchAddress: Address;
-  /** Whether to watch as owner only (default: false, watches both owner and spender) */
-  ownerOnly?: boolean;
-  /** Whether to watch as spender only (default: false, watches both owner and spender) */
-  spenderOnly?: boolean;
-  /** Callback function invoked when Approval events are received */
-  onApproval: (events: ApprovalEvent[]) => void;
-  /** Callback function invoked when an error occurs */
-  onError?: (error: Error) => void;
-  /** Whether to emit logs from the latest block on subscription start */
-  sync?: boolean;
-  /** Polling interval in milliseconds (for HTTP transport fallback) */
-  pollingInterval?: number;
+    /** The ERC-20 token contract address to watch */
+    tokenAddress: Address;
+    /** The address to watch (as owner or spender) */
+    watchAddress: Address;
+    /** Whether to watch as owner only (default: false, watches both owner and spender) */
+    ownerOnly?: boolean;
+    /** Whether to watch as spender only (default: false, watches both owner and spender) */
+    spenderOnly?: boolean;
+    /** Callback function invoked when Approval events are received */
+    onApproval: (events: ApprovalEvent[]) => void;
+    /** Callback function invoked when an error occurs */
+    onError?: (error: Error) => void;
+    /** Whether to emit logs from the latest block on subscription start */
+    sync?: boolean;
+    /** Polling interval in milliseconds (for HTTP transport fallback) */
+    pollingInterval?: number;
 }
 /**
  * Watches for Approval events involving a specific address (as owner or spender).
@@ -183,8 +180,5 @@ export interface WatchApprovalForAddressParameters {
  * - More efficient than watching all approvals and filtering client-side
  * - Server-side filtering reduces network traffic and processing
  */
-export declare function watchApprovalForAddress(
-  client: PublicClient,
-  params: WatchApprovalForAddressParameters
-): WatchContractEventReturnType;
+export declare function watchApprovalForAddress(client: PublicClient, params: WatchApprovalForAddressParameters): WatchContractEventReturnType;
 //# sourceMappingURL=watchApproval.d.ts.map

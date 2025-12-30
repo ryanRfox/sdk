@@ -7,33 +7,33 @@ import type { Address, Log, PublicClient, WatchContractEventReturnType } from 'v
  * Decoded Transfer event data.
  */
 export interface TransferEvent {
-  /** The address that sent the tokens */
-  from: Address;
-  /** The address that received the tokens */
-  to: Address;
-  /** The amount of tokens transferred (in smallest unit) */
-  value: bigint;
-  /** The raw log data */
-  log: Log;
+    /** The address that sent the tokens */
+    from: Address;
+    /** The address that received the tokens */
+    to: Address;
+    /** The amount of tokens transferred (in smallest unit) */
+    value: bigint;
+    /** The raw log data */
+    log: Log;
 }
 /**
  * Parameters for watching Transfer events.
  */
 export interface WatchTransferParameters {
-  /** The ERC-20 token contract address to watch */
-  address: Address;
-  /** Optional: Filter by sender address */
-  from?: Address;
-  /** Optional: Filter by recipient address */
-  to?: Address;
-  /** Callback function invoked when Transfer events are received */
-  onTransfer: (events: TransferEvent[]) => void;
-  /** Callback function invoked when an error occurs */
-  onError?: (error: Error) => void;
-  /** Whether to emit logs from the latest block on subscription start */
-  sync?: boolean;
-  /** Polling interval in milliseconds (for HTTP transport fallback) */
-  pollingInterval?: number;
+    /** The ERC-20 token contract address to watch */
+    address: Address;
+    /** Optional: Filter by sender address */
+    from?: Address;
+    /** Optional: Filter by recipient address */
+    to?: Address;
+    /** Callback function invoked when Transfer events are received */
+    onTransfer: (events: TransferEvent[]) => void;
+    /** Callback function invoked when an error occurs */
+    onError?: (error: Error) => void;
+    /** Whether to emit logs from the latest block on subscription start */
+    sync?: boolean;
+    /** Polling interval in milliseconds (for HTTP transport fallback) */
+    pollingInterval?: number;
 }
 /**
  * Watches for ERC-20 Transfer events in real-time.
@@ -84,30 +84,27 @@ export interface WatchTransferParameters {
  * - Event signature: Transfer(address indexed from, address indexed to, uint256 value)
  * - Subscriptions consume gas from your RPC key on Radius (10 GAS/sec)
  */
-export declare function watchTransfer(
-  client: PublicClient,
-  params: WatchTransferParameters
-): WatchContractEventReturnType;
+export declare function watchTransfer(client: PublicClient, params: WatchTransferParameters): WatchContractEventReturnType;
 /**
  * Parameters for watching Transfer events for a specific address (as sender or receiver).
  */
 export interface WatchTransferForAddressParameters {
-  /** The ERC-20 token contract address to watch */
-  tokenAddress: Address;
-  /** The address to watch (as sender or receiver) */
-  watchAddress: Address;
-  /** Whether to watch as sender only (default: false, watches both sender and receiver) */
-  senderOnly?: boolean;
-  /** Whether to watch as receiver only (default: false, watches both sender and receiver) */
-  receiverOnly?: boolean;
-  /** Callback function invoked when Transfer events are received */
-  onTransfer: (events: TransferEvent[]) => void;
-  /** Callback function invoked when an error occurs */
-  onError?: (error: Error) => void;
-  /** Whether to emit logs from the latest block on subscription start */
-  sync?: boolean;
-  /** Polling interval in milliseconds (for HTTP transport fallback) */
-  pollingInterval?: number;
+    /** The ERC-20 token contract address to watch */
+    tokenAddress: Address;
+    /** The address to watch (as sender or receiver) */
+    watchAddress: Address;
+    /** Whether to watch as sender only (default: false, watches both sender and receiver) */
+    senderOnly?: boolean;
+    /** Whether to watch as receiver only (default: false, watches both sender and receiver) */
+    receiverOnly?: boolean;
+    /** Callback function invoked when Transfer events are received */
+    onTransfer: (events: TransferEvent[]) => void;
+    /** Callback function invoked when an error occurs */
+    onError?: (error: Error) => void;
+    /** Whether to emit logs from the latest block on subscription start */
+    sync?: boolean;
+    /** Polling interval in milliseconds (for HTTP transport fallback) */
+    pollingInterval?: number;
 }
 /**
  * Watches for Transfer events involving a specific address (as sender or receiver).
@@ -163,8 +160,5 @@ export interface WatchTransferForAddressParameters {
  * - More efficient than watching all transfers and filtering client-side
  * - Server-side filtering reduces network traffic and processing
  */
-export declare function watchTransferForAddress(
-  client: PublicClient,
-  params: WatchTransferForAddressParameters
-): WatchContractEventReturnType;
+export declare function watchTransferForAddress(client: PublicClient, params: WatchTransferForAddressParameters): WatchContractEventReturnType;
 //# sourceMappingURL=watchTransfer.d.ts.map

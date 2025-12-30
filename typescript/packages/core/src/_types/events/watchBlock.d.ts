@@ -1,6 +1,19 @@
 /**
  * Block watching utilities for Radius SDK.
  * Provides wrappers for watching new blocks in real-time.
+ *
+ * @remarks Radius-Specific Limitations
+ *
+ * **HTTP Polling (Current Implementation)**:
+ * - Radius does NOT support `newHeads` WebSocket subscriptions
+ * - `eth_subscribe` only supports "logs" type subscriptions (not newHeads, not newPendingTransactions)
+ * - WebSocket is NOT currently enabled on Radius testnet
+ * - Default polling interval: 1000ms (1 second)
+ * - Uses HTTP-based polling to detect new blocks as a fallback mechanism
+ *
+ * **Future Considerations**:
+ * - When WebSocket is enabled on Radius, this module can be updated to use native subscriptions
+ * - Review implementation in watchLogs.ts as a reference for WebSocket usage patterns
  */
 import type { Block, PublicClient } from 'viem';
 /**
@@ -13,14 +26,14 @@ export declare const DEFAULT_POLLING_INTERVAL_MS = 1000;
  * Parameters for watching new block numbers.
  */
 export interface WatchBlockNumberParams {
-  /** Callback function invoked when a new block number is detected */
-  onBlockNumber: (blockNumber: bigint) => void;
-  /** Callback function invoked when an error occurs */
-  onError?: (error: Error) => void;
-  /** Whether to emit the current block number on subscription start */
-  emitOnBegin?: boolean;
-  /** Polling interval in milliseconds (default: 1000ms for HTTP, real-time for WebSocket) */
-  pollingInterval?: number;
+    /** Callback function invoked when a new block number is detected */
+    onBlockNumber: (blockNumber: bigint) => void;
+    /** Callback function invoked when an error occurs */
+    onError?: (error: Error) => void;
+    /** Whether to emit the current block number on subscription start */
+    emitOnBegin?: boolean;
+    /** Polling interval in milliseconds (default: 1000ms for HTTP, real-time for WebSocket) */
+    pollingInterval?: number;
 }
 /**
  * Watches for new block numbers.
@@ -62,24 +75,21 @@ export interface WatchBlockNumberParams {
  * - WebSocket subscriptions are more efficient than polling
  * - For HTTP clients, consider increasing pollingInterval to reduce load
  */
-export declare function watchBlockNumber(
-  client: PublicClient,
-  params: WatchBlockNumberParams
-): () => void;
+export declare function watchBlockNumber(client: PublicClient, params: WatchBlockNumberParams): () => void;
 /**
  * Parameters for watching new blocks (full block data).
  */
 export interface WatchBlocksParams {
-  /** Callback function invoked when a new block is detected */
-  onBlock: (block: Block) => void;
-  /** Callback function invoked when an error occurs */
-  onError?: (error: Error) => void;
-  /** Whether to emit the current block on subscription start */
-  emitOnBegin?: boolean;
-  /** Whether to include transactions in the block (default: false) */
-  includeTransactions?: boolean;
-  /** Polling interval in milliseconds (default: 1000ms for HTTP, real-time for WebSocket) */
-  pollingInterval?: number;
+    /** Callback function invoked when a new block is detected */
+    onBlock: (block: Block) => void;
+    /** Callback function invoked when an error occurs */
+    onError?: (error: Error) => void;
+    /** Whether to emit the current block on subscription start */
+    emitOnBegin?: boolean;
+    /** Whether to include transactions in the block (default: false) */
+    includeTransactions?: boolean;
+    /** Polling interval in milliseconds (default: 1000ms for HTTP, real-time for WebSocket) */
+    pollingInterval?: number;
 }
 /**
  * Watches for new blocks with full block data.
@@ -135,12 +145,12 @@ export declare function watchBlocks(client: PublicClient, params: WatchBlocksPar
  * Parameters for watching pending transactions.
  */
 export interface WatchPendingTransactionsParams {
-  /** Callback function invoked when new pending transactions are detected */
-  onTransactions: (hashes: `0x${string}`[]) => void;
-  /** Callback function invoked when an error occurs */
-  onError?: (error: Error) => void;
-  /** Polling interval in milliseconds (required for HTTP transport) */
-  pollingInterval?: number;
+    /** Callback function invoked when new pending transactions are detected */
+    onTransactions: (hashes: `0x${string}`[]) => void;
+    /** Callback function invoked when an error occurs */
+    onError?: (error: Error) => void;
+    /** Polling interval in milliseconds (required for HTTP transport) */
+    pollingInterval?: number;
 }
 /**
  * Watches for pending transactions in the mempool.
@@ -178,8 +188,5 @@ export interface WatchPendingTransactionsParams {
  * - Consider using block watching and filtering confirmed transactions instead
  * - This is provided for API completeness but may have limited functionality
  */
-export declare function watchPendingTransactions(
-  client: PublicClient,
-  params: WatchPendingTransactionsParams
-): () => void;
+export declare function watchPendingTransactions(client: PublicClient, params: WatchPendingTransactionsParams): () => void;
 //# sourceMappingURL=watchBlock.d.ts.map

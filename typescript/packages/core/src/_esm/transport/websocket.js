@@ -35,35 +35,36 @@ import { webSocket } from 'viem';
  * - Subscriptions are cleaned up automatically on disconnect
  */
 export function createWebSocketTransport(chain, config) {
-  // Determine WebSocket URL
-  let wsUrl = config?.url;
-  if (!wsUrl) {
-    // Try to get WebSocket URL from chain config
-    const chainWsUrl = chain.rpcUrls.default.webSocket?.[0];
-    if (chainWsUrl) {
-      wsUrl = chainWsUrl;
-    } else {
-      // Fallback: convert HTTP URL to WebSocket URL
-      const httpUrl = chain.rpcUrls.default.http[0];
-      if (!httpUrl) {
-        throw new Error('No RPC URL configured for chain');
-      }
-      // Simple http(s) -> ws(s) conversion
-      wsUrl = httpUrl.replace(/^http/, 'ws');
-    }
-  }
-  // Create viem WebSocket transport with configuration
-  return webSocket(wsUrl, {
-    // Viem's webSocket transport accepts these options
-    reconnect: {
-      attempts: config?.reconnectAttempts ?? 3,
-      delay: config?.reconnectDelay ?? 1000,
-    },
-    keepAlive: config?.keepAlive
-      ? {
-          interval: config.keepAlive,
+    // Determine WebSocket URL
+    let wsUrl = config?.url;
+    if (!wsUrl) {
+        // Try to get WebSocket URL from chain config
+        const chainWsUrl = chain.rpcUrls.default.webSocket?.[0];
+        if (chainWsUrl) {
+            wsUrl = chainWsUrl;
         }
-      : false,
-  });
+        else {
+            // Fallback: convert HTTP URL to WebSocket URL
+            const httpUrl = chain.rpcUrls.default.http[0];
+            if (!httpUrl) {
+                throw new Error('No RPC URL configured for chain');
+            }
+            // Simple http(s) -> ws(s) conversion
+            wsUrl = httpUrl.replace(/^http/, 'ws');
+        }
+    }
+    // Create viem WebSocket transport with configuration
+    return webSocket(wsUrl, {
+        // Viem's webSocket transport accepts these options
+        reconnect: {
+            attempts: config?.reconnectAttempts ?? 3,
+            delay: config?.reconnectDelay ?? 1000,
+        },
+        keepAlive: config?.keepAlive
+            ? {
+                interval: config.keepAlive,
+            }
+            : false,
+    });
 }
 //# sourceMappingURL=websocket.js.map

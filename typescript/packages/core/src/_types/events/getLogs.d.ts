@@ -7,25 +7,25 @@ import type { Address, Log, PublicClient } from 'viem';
  * Parameters for paginated log retrieval.
  */
 export interface GetLogsParams {
-  /** The contract address(es) to query logs from (required on Radius) */
-  address: Address | Address[];
-  /** Starting block number (inclusive) */
-  fromBlock: bigint;
-  /** Ending block number (inclusive) */
-  toBlock: bigint;
-  /** Maximum number of blocks to query per request (default: 1000) */
-  chunkSize?: number;
-  /** Callback invoked after each chunk is fetched (for progress tracking) */
-  onProgress?: (params: {
-    /** Current block being processed */
-    currentBlock: bigint;
-    /** Total blocks to process */
-    totalBlocks: bigint;
-    /** Number of chunks processed so far */
-    chunksProcessed: number;
-    /** Logs fetched so far */
-    logsFetched: number;
-  }) => void;
+    /** The contract address(es) to query logs from (required on Radius) */
+    address: Address | Address[];
+    /** Starting block number (inclusive) */
+    fromBlock: bigint;
+    /** Ending block number (inclusive) */
+    toBlock: bigint;
+    /** Maximum number of blocks to query per request (default: 1000) */
+    chunkSize?: number;
+    /** Callback invoked after each chunk is fetched (for progress tracking) */
+    onProgress?: (params: {
+        /** Current block being processed */
+        currentBlock: bigint;
+        /** Total blocks to process */
+        totalBlocks: bigint;
+        /** Number of chunks processed so far */
+        chunksProcessed: number;
+        /** Logs fetched so far */
+        logsFetched: number;
+    }) => void;
 }
 /**
  * Fetches historical logs from Radius with automatic pagination.
@@ -77,24 +77,24 @@ export declare function getLogs(client: PublicClient, params: GetLogsParams): Pr
  * Parameters for fetching logs with automatic chunk size detection.
  */
 export interface GetLogsAdaptiveParams {
-  /** The contract address(es) to query logs from (required on Radius) */
-  address: Address | Address[];
-  /** Starting block number (inclusive) */
-  fromBlock: bigint;
-  /** Ending block number (inclusive) */
-  toBlock: bigint;
-  /** Initial chunk size to try (default: 1000) */
-  initialChunkSize?: number;
-  /** Minimum chunk size (default: 10) */
-  minChunkSize?: number;
-  /** Callback invoked after each chunk is fetched (for progress tracking) */
-  onProgress?: (params: {
-    currentBlock: bigint;
-    totalBlocks: bigint;
-    chunksProcessed: number;
-    logsFetched: number;
-    currentChunkSize: number;
-  }) => void;
+    /** The contract address(es) to query logs from (required on Radius) */
+    address: Address | Address[];
+    /** Starting block number (inclusive) */
+    fromBlock: bigint;
+    /** Ending block number (inclusive) */
+    toBlock: bigint;
+    /** Initial chunk size to try (default: 1000) */
+    initialChunkSize?: number;
+    /** Minimum chunk size (default: 10) */
+    minChunkSize?: number;
+    /** Callback invoked after each chunk is fetched (for progress tracking) */
+    onProgress?: (params: {
+        currentBlock: bigint;
+        totalBlocks: bigint;
+        chunksProcessed: number;
+        logsFetched: number;
+        currentChunkSize: number;
+    }) => void;
 }
 /**
  * Fetches historical logs with adaptive chunk sizing.
@@ -133,8 +133,5 @@ export interface GetLogsAdaptiveParams {
  * - Slower than getLogs with a known good chunk size
  * - Use getLogs directly if you know a reliable chunk size
  */
-export declare function getLogsAdaptive(
-  client: PublicClient,
-  params: GetLogsAdaptiveParams
-): Promise<Log[]>;
+export declare function getLogsAdaptive(client: PublicClient, params: GetLogsAdaptiveParams): Promise<Log[]>;
 //# sourceMappingURL=getLogs.d.ts.map

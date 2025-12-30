@@ -50,49 +50,50 @@ import { ERC20_ABI } from '../contracts/erc20';
  * - Subscriptions consume gas from your RPC key on Radius (10 GAS/sec)
  */
 export function watchTransfer(client, params) {
-  // Build event filter args based on from/to parameters
-  const args = {};
-  if (params.from) args.from = params.from;
-  if (params.to) args.to = params.to;
-  return client.watchContractEvent({
-    address: params.address,
-    abi: ERC20_ABI,
-    eventName: 'Transfer',
-    args: Object.keys(args).length > 0 ? args : undefined,
-    onLogs: (logs) => {
-      // Decode and transform logs to TransferEvent format
-      const events = logs
-        .map((log) => {
-          try {
-            const decoded = decodeEventLog({
-              abi: ERC20_ABI,
-              data: log.data,
-              topics: log.topics,
-            });
-            return {
-              from: decoded.args.from,
-              to: decoded.args.to,
-              value: decoded.args.value,
-              log: log,
-            };
-          } catch (error) {
-            // Skip logs that can't be decoded
-            if (params.onError) {
-              params.onError(
-                error instanceof Error ? error : new Error('Failed to decode Transfer event')
-              );
+    // Build event filter args based on from/to parameters
+    const args = {};
+    if (params.from)
+        args.from = params.from;
+    if (params.to)
+        args.to = params.to;
+    return client.watchContractEvent({
+        address: params.address,
+        abi: ERC20_ABI,
+        eventName: 'Transfer',
+        args: Object.keys(args).length > 0 ? args : undefined,
+        onLogs: (logs) => {
+            // Decode and transform logs to TransferEvent format
+            const events = logs
+                .map((log) => {
+                try {
+                    const decoded = decodeEventLog({
+                        abi: ERC20_ABI,
+                        data: log.data,
+                        topics: log.topics,
+                    });
+                    return {
+                        from: decoded.args.from,
+                        to: decoded.args.to,
+                        value: decoded.args.value,
+                        log: log,
+                    };
+                }
+                catch (error) {
+                    // Skip logs that can't be decoded
+                    if (params.onError) {
+                        params.onError(error instanceof Error ? error : new Error('Failed to decode Transfer event'));
+                    }
+                    return null;
+                }
+            })
+                .filter((event) => event !== null);
+            if (events.length > 0) {
+                params.onTransfer(events);
             }
-            return null;
-          }
-        })
-        .filter((event) => event !== null);
-      if (events.length > 0) {
-        params.onTransfer(events);
-      }
-    },
-    onError: params.onError,
-    pollingInterval: params.pollingInterval,
-  });
+        },
+        onError: params.onError,
+        pollingInterval: params.pollingInterval,
+    });
 }
 /**
  * Watches for Transfer events involving a specific address (as sender or receiver).
@@ -149,51 +150,53 @@ export function watchTransfer(client, params) {
  * - Server-side filtering reduces network traffic and processing
  */
 export function watchTransferForAddress(client, params) {
-  // Validate parameters
-  if (params.senderOnly && params.receiverOnly) {
-    throw new Error('Cannot set both senderOnly and receiverOnly to true');
-  }
-  // Determine filter parameters
-  let from;
-  let to;
-  if (params.senderOnly) {
-    from = params.watchAddress;
-  } else if (params.receiverOnly) {
-    to = params.watchAddress;
-  } else {
-    // Watch both: need to create two separate subscriptions
-    // This is a limitation of eth_subscribe - can't do OR filters
-    // We'll need to watch both and merge results
-    const unwatchFrom = watchTransfer(client, {
-      address: params.tokenAddress,
-      from: params.watchAddress,
-      onTransfer: params.onTransfer,
-      onError: params.onError,
-      sync: params.sync,
-      pollingInterval: params.pollingInterval,
+    // Validate parameters
+    if (params.senderOnly && params.receiverOnly) {
+        throw new Error('Cannot set both senderOnly and receiverOnly to true');
+    }
+    // Determine filter parameters
+    let from;
+    let to;
+    if (params.senderOnly) {
+        from = params.watchAddress;
+    }
+    else if (params.receiverOnly) {
+        to = params.watchAddress;
+    }
+    else {
+        // Watch both: need to create two separate subscriptions
+        // This is a limitation of eth_subscribe - can't do OR filters
+        // We'll need to watch both and merge results
+        const unwatchFrom = watchTransfer(client, {
+            address: params.tokenAddress,
+            from: params.watchAddress,
+            onTransfer: params.onTransfer,
+            onError: params.onError,
+            sync: params.sync,
+            pollingInterval: params.pollingInterval,
+        });
+        const unwatchTo = watchTransfer(client, {
+            address: params.tokenAddress,
+            to: params.watchAddress,
+            onTransfer: params.onTransfer,
+            onError: params.onError,
+            sync: params.sync,
+            pollingInterval: params.pollingInterval,
+        });
+        // Return combined unwatch function
+        return () => {
+            unwatchFrom();
+            unwatchTo();
+        };
+    }
+    return watchTransfer(client, {
+        address: params.tokenAddress,
+        from,
+        to,
+        onTransfer: params.onTransfer,
+        onError: params.onError,
+        sync: params.sync,
+        pollingInterval: params.pollingInterval,
     });
-    const unwatchTo = watchTransfer(client, {
-      address: params.tokenAddress,
-      to: params.watchAddress,
-      onTransfer: params.onTransfer,
-      onError: params.onError,
-      sync: params.sync,
-      pollingInterval: params.pollingInterval,
-    });
-    // Return combined unwatch function
-    return () => {
-      unwatchFrom();
-      unwatchTo();
-    };
-  }
-  return watchTransfer(client, {
-    address: params.tokenAddress,
-    from,
-    to,
-    onTransfer: params.onTransfer,
-    onError: params.onError,
-    sync: params.sync,
-    pollingInterval: params.pollingInterval,
-  });
 }
 //# sourceMappingURL=watchTransfer.js.map
