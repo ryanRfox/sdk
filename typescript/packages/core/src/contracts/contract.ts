@@ -1,6 +1,6 @@
-import type { RadiusSigner } from '../auth'
-import type { ABI, Address, Receipt } from '../common'
-import type { ContractClient } from './types'
+import type { RadiusSigner } from '../auth';
+import type { ABI, Address, Receipt } from '../common';
+import type { ContractClient } from './types';
 
 /**
  * Contract class for interacting with smart contracts on Radius.
@@ -13,13 +13,13 @@ export class Contract {
    * The contract's ABI (Application Binary Interface)
    * Used for encoding and decoding method calls and return values
    */
-  readonly abi: ABI
+  readonly abi: ABI;
 
   /**
    * The contract's address on Radius
    * @private
    */
-  private readonly _address: Address
+  private readonly _address: Address;
 
   /**
    * Create a new Contract instance.
@@ -27,8 +27,8 @@ export class Contract {
    * @param abi Contract ABI
    */
   constructor(address: Address, abi: ABI) {
-    this.abi = abi
-    this._address = address
+    this.abi = abi;
+    this._address = address;
   }
 
   /**
@@ -36,7 +36,7 @@ export class Contract {
    * @returns The contract address
    */
   address(): Address {
-    return this._address
+    return this._address;
   }
 
   /**
@@ -49,12 +49,8 @@ export class Contract {
    * @throws Error if the contract address is missing or zero
    * @throws Error if the contract method call fails
    */
-  async call(
-    client: ContractClient,
-    method: string,
-    ...args: unknown[]
-  ): Promise<unknown[]> {
-    return client.call(this, method, ...args)
+  async call(client: ContractClient, method: string, ...args: unknown[]): Promise<unknown[]> {
+    return client.call(this, method, ...args);
   }
 
   /**
@@ -75,6 +71,6 @@ export class Contract {
     method: string,
     ...args: unknown[]
   ): Promise<Receipt> {
-    return client.execute(this, signer, method, ...args)
+    return client.execute(this, signer, method, ...args);
   }
 }

@@ -4,7 +4,15 @@
     "enabled": true
   },
   "files": {
-    "ignore": ["dist/**/*", "node_modules/**/*"]
+    "ignore": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "tsconfig*.json",
+      "packages/core/tsconfig*.json",
+      "packages/core/src/_cjs/**/*",
+      "packages/core/src/_esm/**/*",
+      "packages/core/src/_types/**/*"
+    ]
   },
   "linter": {
     "enabled": true,
@@ -33,5 +41,17 @@
       "quoteStyle": "single",
       "trailingComma": "es5"
     }
-  }
+  },
+  "overrides": [
+    {
+      "include": ["test/**/*.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    }
+  ]
 }

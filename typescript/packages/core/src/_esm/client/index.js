@@ -3,5 +3,5 @@
  * Includes the createRadiusClient factory function and related types for connecting to and
  * communicating with Radius JSON-RPC endpoints.
  */
-export { createRadiusClient, MAX_GAS, } from './client';
+export { createRadiusClient, MAX_GAS } from './client';
 //# sourceMappingURL=index.js.map

@@ -4,7 +4,7 @@
  * @param message The log message to display
  * @param data Optional structured data to include in the log
  */
-export type Logf = (message: string, data?: Record<string, unknown>) => void
+export type Logf = (message: string, data?: Record<string, unknown>) => void;
 
 /**
  * An interceptor function for modifying JSON-RPC HTTP requests and responses
@@ -13,10 +13,7 @@ export type Logf = (message: string, data?: Record<string, unknown>) => void
  * @param response The HTTP response from the JSON-RPC server
  * @returns A potentially modified response or the original response
  */
-export type Interceptor = (
-  reqBody: string,
-  response: Response,
-) => Promise<Response>
+export type Interceptor = (reqBody: string, response: Response) => Promise<Response>;
 
 /**
  * An interface for making HTTP requests and receiving responses
@@ -29,5 +26,5 @@ export interface RoundTripper {
    * @returns A Promise that resolves to the HTTP response
    * @throws Error if the request fails
    */
-  roundTrip(request: Request): Promise<Response>
+  roundTrip(request: Request): Promise<Response>;
 }

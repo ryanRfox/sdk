@@ -1,5 +1,5 @@
-import type { RadiusSigner } from '../auth'
-import type { Address, HttpClient, Receipt, Transaction } from '../common'
+import type { RadiusSigner } from '../auth';
+import type { Address, HttpClient, Receipt, Transaction } from '../common';
 
 /**
  * Client interface for account operations.
@@ -14,7 +14,7 @@ export interface AccountClient {
    * @returns The account balance in wei
    * @throws Error if the balance cannot be retrieved from the network
    */
-  balanceAt(address: Address): Promise<bigint>
+  balanceAt(address: Address): Promise<bigint>;
 
   /**
    * Returns the Radius chain ID, which is used to sign transactions.
@@ -22,7 +22,7 @@ export interface AccountClient {
    * @returns The chain ID of the connected network
    * @throws Error if the chain ID cannot be retrieved
    */
-  chainID(): Promise<bigint>
+  chainID(): Promise<bigint>;
 
   /**
    * Estimates the gas cost of a transaction with a safety margin.
@@ -31,14 +31,14 @@ export interface AccountClient {
    * @returns The estimated gas cost in gas units
    * @throws Error if the gas estimation fails
    */
-  estimateGas(tx: Transaction): Promise<bigint>
+  estimateGas(tx: Transaction): Promise<bigint>;
 
   /**
    * Returns the HTTP client used by the client to make requests.
    *
    * @returns The HTTP client used for API requests
    */
-  httpClient(): HttpClient
+  httpClient(): HttpClient;
 
   /**
    * Returns the next nonce (transaction count) for an account.
@@ -47,7 +47,7 @@ export interface AccountClient {
    * @returns The next nonce to use for transactions
    * @throws Error if the nonce cannot be retrieved from the network
    */
-  pendingNonceAt(address: Address): Promise<number>
+  pendingNonceAt(address: Address): Promise<number>;
 
   /**
    * Sends native currency to a recipient address.
@@ -59,9 +59,5 @@ export interface AccountClient {
    * @throws Error if the transaction fails
    * @throws Error if the transaction receipt is not returned
    */
-  send(
-    signer: RadiusSigner,
-    recipient: Address,
-    value: bigint,
-  ): Promise<Receipt>
+  send(signer: RadiusSigner, recipient: Address, value: bigint): Promise<Receipt>;
 }

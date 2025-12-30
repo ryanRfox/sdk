@@ -28,13 +28,13 @@
  */
 
 // Export ClefSigner
-export { ClefSigner, createClefSigner } from './clef/signer'
+export { ClefSigner, createClefSigner } from './clef/signer';
 
 // Export PrivateKeySigner
-export { createPrivateKeySigner, PrivateKeySigner } from './privatekey/signer'
+export { createPrivateKeySigner, PrivateKeySigner } from './privatekey/signer';
 // Export types
 export type {
   ClefSignerConfig,
   PrivateKeySignerConfig,
   RadiusSigner,
-} from './types'
+} from './types';

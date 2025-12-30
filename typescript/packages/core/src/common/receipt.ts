@@ -1,7 +1,7 @@
-import type { Address } from './address'
-import type { Event } from './event'
-import type { Hash } from './hash'
-import type { BigNumberish } from './transaction'
+import type { Address } from './address';
+import type { Event } from './event';
+import type { Hash } from './hash';
+import type { BigNumberish } from './transaction';
 
 /**
  * Receipt represents the result of a successfully mined transaction
@@ -28,6 +28,6 @@ export class Receipt {
     public gasUsed: BigNumberish,
     public status: number,
     public logs: Event[] = [],
-    public value?: BigNumberish,
+    public value?: BigNumberish
   ) {}
 }

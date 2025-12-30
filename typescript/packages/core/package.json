@@ -69,6 +69,11 @@
       "types": "./src/_types/chains/index.d.ts",
       "import": "./src/_esm/chains/index.js",
       "default": "./src/_cjs/chains/index.js"
+    },
+    "./events": {
+      "types": "./src/_types/events/index.d.ts",
+      "import": "./src/_esm/events/index.js",
+      "default": "./src/_cjs/events/index.js"
     }
   },
   "files": [

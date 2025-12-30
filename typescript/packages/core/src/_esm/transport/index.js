@@ -5,4 +5,5 @@
  */
 export * from './interceptor';
 export * from './types';
+export * from './websocket';
 //# sourceMappingURL=index.js.map

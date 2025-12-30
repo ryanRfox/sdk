@@ -1,9 +1,9 @@
-import type { Address, BytesLike } from './address'
+import type { Address, BytesLike } from './address';
 
 /**
  * BigNumberish represents values that can be converted to bigint
  */
-export type BigNumberish = bigint | number | string
+export type BigNumberish = bigint | number | string;
 
 /**
  * Transaction represents an unsigned Radius EVM transaction
@@ -13,32 +13,32 @@ export class Transaction {
   /**
    * The call data for the transaction (bytecode for contract creation, or method call data)
    */
-  data: BytesLike
+  data: BytesLike;
 
   /**
    * Maximum amount of gas units the transaction can consume
    */
-  gas: BigNumberish
+  gas: BigNumberish;
 
   /**
    * Price per gas unit in wei
    */
-  gasPrice: BigNumberish
+  gasPrice: BigNumberish;
 
   /**
    * Sequential transaction number for the sending account
    */
-  nonce?: number | undefined
+  nonce?: number | undefined;
 
   /**
    * Destination address (undefined for contract creation)
    */
-  to?: Address
+  to?: Address;
 
   /**
    * Amount of native currency to send in wei
    */
-  value?: BigNumberish
+  value?: BigNumberish;
 
   /**
    * Creates a new unsigned transaction
@@ -55,14 +55,14 @@ export class Transaction {
     gasPrice: BigNumberish,
     nonce?: number,
     to?: Address,
-    value?: BigNumberish,
+    value?: BigNumberish
   ) {
-    this.data = data
-    this.gas = gas
-    this.gasPrice = gasPrice
-    this.nonce = nonce
-    this.to = to
-    this.value = value
+    this.data = data;
+    this.gas = gas;
+    this.gasPrice = gasPrice;
+    this.nonce = nonce;
+    this.to = to;
+    this.value = value;
   }
 }
 
@@ -74,20 +74,20 @@ export class SignedTransaction {
   /**
    * RLP-encoded signed transaction bytes as hex string
    */
-  readonly serialized: `0x${string}`
+  readonly serialized: `0x${string}`;
 
   /**
    * Creates a new SignedTransaction
    * @param serialized The RLP-encoded signed transaction as hex string
    */
   constructor(serialized: `0x${string}`) {
-    this.serialized = serialized
+    this.serialized = serialized;
   }
 
   /**
    * Returns the serialized transaction as a hex string
    */
   toString(): string {
-    return this.serialized
+    return this.serialized;
   }
 }

@@ -1,9 +1,9 @@
-import { bytesToHex, getAddress, type Hex, hexToBytes } from 'viem'
+import { type Hex, bytesToHex, getAddress, hexToBytes } from 'viem';
 
 /**
  * BytesLike represents data that can be converted to bytes
  */
-export type BytesLike = Uint8Array | Hex | string
+export type BytesLike = Uint8Array | Hex | string;
 
 /**
  * Represents a 20-byte Radius account or contract address.
@@ -17,7 +17,7 @@ export class Address {
    * The address data as a byte array
    * @private
    */
-  private readonly data: Uint8Array
+  private readonly data: Uint8Array;
 
   /**
    * Creates a new Address instance from various input formats.
@@ -27,21 +27,21 @@ export class Address {
    */
   constructor(data: Address | BytesLike | string) {
     if (data instanceof Address) {
-      this.data = data.bytes()
+      this.data = data.bytes();
     } else if (typeof data === 'string') {
-      const cleanHex = data.startsWith('0x') ? data : `0x${data}`
-      this.data = hexToBytes(cleanHex as Hex)
+      const cleanHex = data.startsWith('0x') ? data : `0x${data}`;
+      this.data = hexToBytes(cleanHex as Hex);
     } else if (data instanceof Uint8Array) {
       if (data.length !== 20) {
-        throw new Error('Address must be 20 bytes')
+        throw new Error('Address must be 20 bytes');
       }
-      this.data = data
+      this.data = data;
     } else {
-      const bytes = hexToBytes(data as Hex)
+      const bytes = hexToBytes(data as Hex);
       if (bytes.length !== 20) {
-        throw new Error('Address must be 20 bytes')
+        throw new Error('Address must be 20 bytes');
       }
-      this.data = bytes
+      this.data = bytes;
     }
   }
 
@@ -51,7 +51,7 @@ export class Address {
    * @returns Byte array representation of the 20-byte address
    */
   bytes(): Uint8Array {
-    return this.data
+    return this.data;
   }
 
   /**
@@ -61,7 +61,7 @@ export class Address {
    * @returns Checksummed Ethereum address string
    */
   ethAddress(): string {
-    return getAddress(this.hex())
+    return getAddress(this.hex());
   }
 
   /**
@@ -70,7 +70,7 @@ export class Address {
    * @returns Hex string representation of the address with 0x prefix
    */
   hex(): Hex {
-    return bytesToHex(this.data)
+    return bytesToHex(this.data);
   }
 
   /**
@@ -80,6 +80,6 @@ export class Address {
    * @returns True if addresses are equal (case-insensitive comparison), false otherwise
    */
   equals(other: Address): boolean {
-    return this.hex().toLowerCase() === other.hex().toLowerCase()
+    return this.hex().toLowerCase() === other.hex().toLowerCase();
   }
 }

@@ -1,4 +1,4 @@
-import type { BytesLike } from './address'
+import type { BytesLike } from './address';
 
 /**
  * Event represents an EVM contract event emitted during transaction execution
@@ -23,6 +23,6 @@ export class Event {
     /**
      * The raw bytes of the event
      */
-    public raw: BytesLike,
+    public raw: BytesLike
   ) {}
 }

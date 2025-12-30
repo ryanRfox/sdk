@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup'
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
   splitting: true,
@@ -16,4 +16,4 @@ export default defineConfig({
   dts: true,
   minify: process.env.NODE_ENV === 'production',
   sourcemap: process.env.NODE_ENV !== 'production',
-})
+});

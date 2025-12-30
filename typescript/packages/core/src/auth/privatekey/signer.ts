@@ -1,15 +1,10 @@
-import type {
-  Hex,
-  PrivateKeyAccount,
-  SignableMessage,
-  TransactionSerializable,
-} from 'viem'
+import type { Hex, PrivateKeyAccount, SignableMessage, TransactionSerializable } from 'viem';
 /**
  * The privatekey package provides a RadiusSigner implementation using ECDSA private keys.
  * This is the simplest approach for signing but requires careful key management.
  */
-import { privateKeyToAccount } from 'viem/accounts'
-import type { RadiusSigner } from '../types'
+import { privateKeyToAccount } from 'viem/accounts';
+import type { RadiusSigner } from '../types';
 
 /**
  * A RadiusSigner implementation that uses a private key to sign messages and transactions.
@@ -47,12 +42,12 @@ export class PrivateKeySigner implements RadiusSigner {
    * The viem PrivateKeyAccount used for signing operations.
    * @private
    */
-  private readonly account: PrivateKeyAccount
+  private readonly account: PrivateKeyAccount;
 
   /**
    * The chain ID used for EIP-155 transaction signing.
    */
-  readonly chainId: number
+  readonly chainId: number;
 
   /**
    * Creates a new PrivateKeySigner instance.
@@ -70,8 +65,8 @@ export class PrivateKeySigner implements RadiusSigner {
    * ```
    */
   constructor(privateKey: Hex, chainId: number) {
-    this.account = privateKeyToAccount(privateKey)
-    this.chainId = chainId
+    this.account = privateKeyToAccount(privateKey);
+    this.chainId = chainId;
   }
 
   /**
@@ -79,7 +74,7 @@ export class PrivateKeySigner implements RadiusSigner {
    * @returns The checksummed Ethereum address
    */
   get address(): `0x${string}` {
-    return this.account.address
+    return this.account.address;
   }
 
   /**
@@ -98,7 +93,7 @@ export class PrivateKeySigner implements RadiusSigner {
    * ```
    */
   async signMessage(message: SignableMessage): Promise<Hex> {
-    return this.account.signMessage({ message })
+    return this.account.signMessage({ message });
   }
 
   /**
@@ -122,7 +117,7 @@ export class PrivateKeySigner implements RadiusSigner {
    * ```
    */
   async signTransaction(tx: TransactionSerializable): Promise<Hex> {
-    return this.account.signTransaction({ ...tx, chainId: this.chainId })
+    return this.account.signTransaction({ ...tx, chainId: this.chainId });
   }
 }
 
@@ -145,9 +140,6 @@ export class PrivateKeySigner implements RadiusSigner {
  * console.log(signer.address); // '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
  * ```
  */
-export function createPrivateKeySigner(
-  privateKey: Hex,
-  chainId: number,
-): PrivateKeySigner {
-  return new PrivateKeySigner(privateKey, chainId)
+export function createPrivateKeySigner(privateKey: Hex, chainId: number): PrivateKeySigner {
+  return new PrivateKeySigner(privateKey, chainId);
 }

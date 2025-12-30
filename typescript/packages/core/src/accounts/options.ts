@@ -1,11 +1,11 @@
-import type { Hex } from 'viem'
-import { PrivateKeySigner, type RadiusSigner } from '../auth'
+import type { Hex } from 'viem';
+import { PrivateKeySigner, type RadiusSigner } from '../auth';
 
 /**
  * A function that configures a Radius account.
  * This is used as a functional option pattern for creating new accounts.
  */
-export type AccountOption = (options: AccountOptions) => Promise<void>
+export type AccountOption = (options: AccountOptions) => Promise<void>;
 
 /**
  * Options for creating an account.
@@ -15,7 +15,7 @@ export interface AccountOptions {
   /**
    * The signer to use with this account
    */
-  signer?: RadiusSigner
+  signer?: RadiusSigner;
 }
 
 /**
@@ -30,8 +30,8 @@ export interface AccountOptions {
  */
 export function withPrivateKey(key: Hex, chainId: number): AccountOption {
   return async (options: AccountOptions) => {
-    options.signer = new PrivateKeySigner(key, chainId)
-  }
+    options.signer = new PrivateKeySigner(key, chainId);
+  };
 }
 
 /**
@@ -44,6 +44,6 @@ export function withPrivateKey(key: Hex, chainId: number): AccountOption {
  */
 export function withSigner(signer: RadiusSigner): AccountOption {
   return async (options: AccountOptions) => {
-    options.signer = signer
-  }
+    options.signer = signer;
+  };
 }

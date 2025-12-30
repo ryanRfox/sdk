@@ -15,9 +15,9 @@ export type {
   Hex,
   TransactionReceipt,
   Transport,
-} from 'viem'
+} from 'viem';
 // Accounts
-export * from './accounts'
+export * from './accounts';
 
 // Auth / Signers
 export {
@@ -28,9 +28,9 @@ export {
   PrivateKeySigner,
   type PrivateKeySignerConfig,
   type RadiusSigner,
-} from './auth'
+} from './auth';
 // Chains
-export { radiusMainnet, radiusTestnet } from './chains'
+export { radiusMainnet, radiusTestnet } from './chains';
 // Client - main entry point
 export {
   type ContractInstance,
@@ -39,12 +39,12 @@ export {
   type RadiusClient,
   type RadiusClientConfig,
   type RadiusReceipt,
-} from './client'
+} from './client';
 // Common utilities
-export * from './common'
+export * from './common';
 // Contracts
-export * from './contracts'
+export * from './contracts';
 // Crypto
-export * from './crypto'
+export * from './crypto';
 // Transport
-export * from './transport'
+export * from './transport';

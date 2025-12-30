@@ -3,6 +3,6 @@
  * It includes tools for creating contract instances, encoding/decoding method calls, and executing
  * transactions on Radius contracts.
  */
-export * from './contract'
-export * from './erc20'
-export * from './types'
+export * from './contract';
+export * from './erc20';
+export * from './types';

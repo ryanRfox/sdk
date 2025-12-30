@@ -1,4 +1,4 @@
-import { defineChain } from 'viem'
+import { defineChain } from 'viem';
 
 /**
  * Radius Testnet chain configuration.
@@ -26,7 +26,7 @@ export const radiusTestnet = defineChain({
     },
   },
   testnet: true,
-})
+});
 
 /**
  * Radius Mainnet chain configuration.
@@ -54,4 +54,4 @@ export const radiusMainnet = defineChain({
     },
   },
   testnet: false,
-})
+});

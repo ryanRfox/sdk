@@ -1,17 +1,18 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
   "files": {
-    "includes": [
-      "**",
-      "!**/tsconfig.json",
-      "!**/tsconfig.*.json",
-      "!**/node_modules",
-      "!**/src/_cjs",
-      "!**/src/_esm",
-      "!**/src/_types"
+    "include": ["**"],
+    "ignore": [
+      "tsconfig*.json",
+      "node_modules/**/*",
+      "src/_cjs/**/*",
+      "src/_esm/**/*",
+      "src/_types/**/*"
     ]
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "organizeImports": {
+    "enabled": true
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -32,7 +33,7 @@
   "javascript": {
     "formatter": {
       "quoteStyle": "single",
-      "trailingCommas": "all",
+      "trailingComma": "all",
       "semicolons": "asNeeded"
     }
   },

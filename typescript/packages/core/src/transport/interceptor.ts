@@ -1,5 +1,5 @@
-import { custom, type EIP1193RequestFn, type Transport } from 'viem'
-import type { Interceptor, Logf, RoundTripper } from './types'
+import { type EIP1193RequestFn, type Transport, custom } from 'viem';
+import type { Interceptor, Logf, RoundTripper } from './types';
 
 /**
  * A RoundTripper implementation that intercepts HTTP requests and responses.
@@ -15,7 +15,7 @@ export class InterceptingRoundTripper implements RoundTripper {
   constructor(
     private readonly interceptor?: Interceptor,
     private readonly logf?: Logf,
-    private readonly proxied: RoundTripper = new DefaultRoundTripper(),
+    private readonly proxied: RoundTripper = new DefaultRoundTripper()
   ) {}
 
   /**
@@ -24,47 +24,47 @@ export class InterceptingRoundTripper implements RoundTripper {
    * @returns The HTTP response, potentially modified by the interceptor
    */
   async roundTrip(request: Request): Promise<Response> {
-    const reqBody = await this.parseRequestBody(request)
+    const reqBody = await this.parseRequestBody(request);
 
     if (this.logf) {
       this.logf('Request:', {
         url: request.url,
         method: request.method,
         body: reqBody,
-      })
+      });
     }
 
-    let response: Response
+    let response: Response;
     try {
-      response = await this.proxied.roundTrip(request)
-      const body = await response.clone().text()
+      response = await this.proxied.roundTrip(request);
+      const body = await response.clone().text();
 
       if (this.logf) {
         this.logf('Response:', {
           status: response.status,
           body,
-        })
+        });
       }
 
       response = new Response(body, {
         status: response.status,
         statusText: response.statusText,
         headers: response.headers,
-      })
+      });
     } catch (err) {
       if (this.logf) {
         this.logf('Request failed', {
           error: err instanceof Error ? err.message : String(err),
-        })
+        });
       }
-      throw err
+      throw err;
     }
 
     if (this.interceptor) {
-      return this.interceptor(reqBody, response)
+      return this.interceptor(reqBody, response);
     }
 
-    return response
+    return response;
   }
 
   /**
@@ -73,14 +73,14 @@ export class InterceptingRoundTripper implements RoundTripper {
    */
   private async parseRequestBody(request: Request): Promise<string> {
     if (!request.body) {
-      return ''
+      return '';
     }
 
     try {
-      const clone = request.clone()
-      return await clone.text()
+      const clone = request.clone();
+      return await clone.text();
     } catch (err) {
-      throw new Error(`Failed to parse request body: ${err}`)
+      throw new Error(`Failed to parse request body: ${err}`);
     }
   }
 }
@@ -91,7 +91,7 @@ export class InterceptingRoundTripper implements RoundTripper {
  */
 class DefaultRoundTripper implements RoundTripper {
   async roundTrip(request: Request): Promise<Response> {
-    return fetch(request)
+    return fetch(request);
   }
 }
 
@@ -100,11 +100,11 @@ class DefaultRoundTripper implements RoundTripper {
  */
 export interface InterceptingTransportOptions {
   /** The RPC URL to connect to */
-  url: string
+  url: string;
   /** Optional function to intercept and modify responses */
-  interceptor?: Interceptor
+  interceptor?: Interceptor;
   /** Optional logging function */
-  logger?: Logf
+  logger?: Logf;
 }
 
 /**
@@ -126,13 +126,8 @@ export interface InterceptingTransportOptions {
  * });
  * ```
  */
-export function createInterceptingTransport(
-  options: InterceptingTransportOptions,
-): Transport {
-  const roundTripper = new InterceptingRoundTripper(
-    options.interceptor,
-    options.logger,
-  )
+export function createInterceptingTransport(options: InterceptingTransportOptions): Transport {
+  const roundTripper = new InterceptingRoundTripper(options.interceptor, options.logger);
 
   const request: EIP1193RequestFn = async ({ method, params }) => {
     const body = JSON.stringify({
@@ -140,7 +135,7 @@ export function createInterceptingTransport(
       id: Date.now(),
       method,
       params,
-    })
+    });
 
     const httpRequest = new Request(options.url, {
       method: 'POST',
@@ -148,17 +143,17 @@ export function createInterceptingTransport(
         'content-type': 'application/json',
       },
       body,
-    })
+    });
 
-    const response = await roundTripper.roundTrip(httpRequest)
-    const result = await response.json()
+    const response = await roundTripper.roundTrip(httpRequest);
+    const result = await response.json();
 
     if (result.error) {
-      throw new Error(result.error.message || 'RPC Error')
+      throw new Error(result.error.message || 'RPC Error');
     }
 
-    return result.result
-  }
+    return result.result;
+  };
 
-  return custom({ request })
+  return custom({ request });
 }

@@ -1,17 +1,17 @@
-'use client'
+'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { type ReactNode, useMemo } from 'react'
-import type { Chain } from 'viem'
-import { createConfig, http, WagmiProvider } from 'wagmi'
-import { radiusTestnet } from '../chains/index.js'
-import { RadiusContextProvider } from './context.js'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type ReactNode, useMemo } from 'react';
+import type { Chain } from 'viem';
+import { http, WagmiProvider, createConfig } from 'wagmi';
+import { radiusTestnet } from '../chains/index.js';
+import { RadiusContextProvider } from './context.js';
 
 export type RadiusProviderProps = {
-  chain?: Chain
-  children: ReactNode
-  queryClient?: QueryClient
-}
+  chain?: Chain;
+  children: ReactNode;
+  queryClient?: QueryClient;
+};
 
 export function RadiusProvider({
   chain = radiusTestnet,
@@ -26,10 +26,10 @@ export function RadiusProvider({
           [chain.id]: http(),
         },
       }),
-    [chain],
-  )
+    [chain]
+  );
 
-  const client = useMemo(() => queryClient ?? new QueryClient(), [queryClient])
+  const client = useMemo(() => queryClient ?? new QueryClient(), [queryClient]);
 
   return (
     <WagmiProvider config={config}>
@@ -37,5 +37,5 @@ export function RadiusProvider({
         <RadiusContextProvider chain={chain}>{children}</RadiusContextProvider>
       </QueryClientProvider>
     </WagmiProvider>
-  )
+  );
 }

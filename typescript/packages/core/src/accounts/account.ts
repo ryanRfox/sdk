@@ -1,4 +1,4 @@
-import type { RadiusSigner } from '../auth'
+import type { RadiusSigner } from '../auth';
 import {
   Address,
   type BytesLike,
@@ -6,9 +6,9 @@ import {
   SignedTransaction,
   type Transaction,
   zeroAddress,
-} from '../common'
-import type { AccountOption, AccountOptions } from './options'
-import type { AccountClient } from './types'
+} from '../common';
+import type { AccountOption, AccountOptions } from './options';
+import type { AccountClient } from './types';
 
 /**
  * Account represents a Radius account that can be used to sign transactions.
@@ -19,14 +19,14 @@ export class Account {
   /**
    * The signer used to cryptographically sign messages and transactions
    */
-  signer?: RadiusSigner
+  signer?: RadiusSigner;
 
   /**
    * Creates a new Account instance
    * @param signer Optional signer to use with this account
    */
   constructor(signer?: RadiusSigner) {
-    this.signer = signer
+    this.signer = signer;
   }
 
   /**
@@ -35,11 +35,11 @@ export class Account {
    * @returns A new Account instance configured with the provided options
    */
   static async New(...opts: AccountOption[]): Promise<Account> {
-    const options: AccountOptions = {}
+    const options: AccountOptions = {};
     for (const opt of opts) {
-      await opt(options)
+      await opt(options);
     }
-    return new Account(options.signer)
+    return new Account(options.signer);
   }
 
   /**
@@ -47,7 +47,7 @@ export class Account {
    * @returns The account address, or zero address if no signer is available
    */
   address(): Address {
-    return this.signer ? new Address(this.signer.address) : zeroAddress()
+    return this.signer ? new Address(this.signer.address) : zeroAddress();
   }
 
   /**
@@ -57,7 +57,7 @@ export class Account {
    * @throws Error if the balance cannot be retrieved from the network
    */
   async balance(client: AccountClient): Promise<bigint> {
-    return client.balanceAt(this.address())
+    return client.balanceAt(this.address());
   }
 
   /**
@@ -67,7 +67,7 @@ export class Account {
    * @throws Error if the nonce cannot be retrieved from the network
    */
   async nonce(client: AccountClient): Promise<number> {
-    return client.pendingNonceAt(this.address())
+    return client.pendingNonceAt(this.address());
   }
 
   /**
@@ -79,15 +79,11 @@ export class Account {
    * @throws Error if no signer is available
    * @throws Error if the transaction fails
    */
-  async send(
-    client: AccountClient,
-    recipient: Address,
-    value: bigint,
-  ): Promise<Receipt> {
+  async send(client: AccountClient, recipient: Address, value: bigint): Promise<Receipt> {
     if (!this.signer) {
-      throw new Error('Signer is required for sending transactions')
+      throw new Error('Signer is required for sending transactions');
     }
-    return client.send(this.signer, recipient, value)
+    return client.send(this.signer, recipient, value);
   }
 
   /**
@@ -99,19 +95,18 @@ export class Account {
    */
   async signMessage(message: BytesLike): Promise<Uint8Array> {
     if (!this.signer) {
-      throw new Error('Signer is required for signing messages')
+      throw new Error('Signer is required for signing messages');
     }
     // Convert message to the format expected by viem signer
-    const messageStr =
-      typeof message === 'string' ? message : new TextDecoder().decode(message)
-    const signature = await this.signer.signMessage(messageStr)
+    const messageStr = typeof message === 'string' ? message : new TextDecoder().decode(message);
+    const signature = await this.signer.signMessage(messageStr);
     // Convert hex signature to Uint8Array
-    const hexStr = signature.startsWith('0x') ? signature.slice(2) : signature
-    const bytes = new Uint8Array(hexStr.length / 2)
+    const hexStr = signature.startsWith('0x') ? signature.slice(2) : signature;
+    const bytes = new Uint8Array(hexStr.length / 2);
     for (let i = 0; i < bytes.length; i++) {
-      bytes[i] = parseInt(hexStr.slice(i * 2, i * 2 + 2), 16)
+      bytes[i] = parseInt(hexStr.slice(i * 2, i * 2 + 2), 16);
     }
-    return bytes
+    return bytes;
   }
 
   /**
@@ -123,15 +118,13 @@ export class Account {
    */
   async signTransaction(transaction: Transaction): Promise<SignedTransaction> {
     if (!this.signer) {
-      throw new Error('Signer is required for sending transactions')
+      throw new Error('Signer is required for sending transactions');
     }
     // Helper to convert BigNumberish to bigint
-    const toBigInt = (
-      value: bigint | number | string | undefined,
-    ): bigint | undefined => {
-      if (value === undefined) return undefined
-      return typeof value === 'bigint' ? value : BigInt(value)
-    }
+    const toBigInt = (value: bigint | number | string | undefined): bigint | undefined => {
+      if (value === undefined) return undefined;
+      return typeof value === 'bigint' ? value : BigInt(value);
+    };
     // Convert to viem transaction format
     const signedTx = await this.signer.signTransaction({
       to: transaction.to?.hex() as `0x${string}`,
@@ -141,7 +134,7 @@ export class Account {
       gas: toBigInt(transaction.gas),
       gasPrice: toBigInt(transaction.gasPrice) ?? 0n,
       chainId: this.signer.chainId,
-    })
-    return new SignedTransaction(signedTx)
+    });
+    return new SignedTransaction(signedTx);
   }
 }

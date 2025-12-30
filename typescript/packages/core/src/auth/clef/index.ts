@@ -3,4 +3,4 @@
  * This approach allows for more secure private key management by delegating signing operations
  * to an external process that can implement additional security measures.
  */
-export { ClefSigner, createClefSigner } from './signer'
+export { ClefSigner, createClefSigner } from './signer';

@@ -1,1 +1,1 @@
-export { radiusMainnet, radiusTestnet } from './radius'
+export { radiusMainnet, radiusTestnet } from './radius';

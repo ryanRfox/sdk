@@ -1,10 +1,10 @@
-import { type Hex, hexToBytes } from 'viem'
-import { ABI } from './abi'
-import { Address } from './address'
-import { Event } from './event'
-import { Hash } from './hash'
-import { Receipt } from './receipt'
-import type { BigNumberish } from './transaction'
+import { type Hex, hexToBytes } from 'viem';
+import { ABI } from './abi';
+import { Address } from './address';
+import { Event } from './event';
+import { Hash } from './hash';
+import { Receipt } from './receipt';
+import type { BigNumberish } from './transaction';
 
 /**
  * Creates a new ABI (Application Binary Interface) from a JSON string
@@ -13,9 +13,9 @@ import type { BigNumberish } from './transaction'
  */
 export function abiFromJSON(json: string): ABI | undefined {
   try {
-    return new ABI(json)
+    return new ABI(json);
   } catch {
-    return undefined
+    return undefined;
   }
 }
 
@@ -26,8 +26,8 @@ export function abiFromJSON(json: string): ABI | undefined {
  * @throws Error if the hex string is invalid
  */
 export function addressFromHex(hex: string): Address {
-  const cleanHex = hex.startsWith('0x') ? hex : `0x${hex}`
-  return new Address(hexToBytes(cleanHex as Hex))
+  const cleanHex = hex.startsWith('0x') ? hex : `0x${hex}`;
+  return new Address(hexToBytes(cleanHex as Hex));
 }
 
 /**
@@ -37,10 +37,10 @@ export function addressFromHex(hex: string): Address {
  */
 export function bytecodeFromHex(s: string): Uint8Array | undefined {
   try {
-    const cleanHex = s.startsWith('0x') ? s.slice(2) : s
-    return hexToBytes(`0x${cleanHex}` as Hex)
+    const cleanHex = s.startsWith('0x') ? s.slice(2) : s;
+    return hexToBytes(`0x${cleanHex}` as Hex);
   } catch {
-    return undefined
+    return undefined;
   }
 }
 
@@ -49,13 +49,11 @@ export function bytecodeFromHex(s: string): Uint8Array | undefined {
  * @param address Radius Address
  * @returns Ethereum Address, or undefined if the input is undefined
  */
-export function ethAddressFromRadiusAddress(
-  address?: Address,
-): string | undefined {
+export function ethAddressFromRadiusAddress(address?: Address): string | undefined {
   if (!address) {
-    return undefined
+    return undefined;
   }
-  return address.ethAddress()
+  return address.ethAddress();
 }
 
 /**
@@ -65,7 +63,7 @@ export function ethAddressFromRadiusAddress(
  */
 // biome-ignore lint/suspicious/noExplicitAny: Viem does not export a single Log type that works for all cases
 export function eventsFromEthLogs(logs: any[]): Event[] {
-  return logs.map((log) => new Event(log.topics[0], {}, log.data))
+  return logs.map((log) => new Event(log.topics[0], {}, log.data));
 }
 
 /**
@@ -75,8 +73,8 @@ export function eventsFromEthLogs(logs: any[]): Event[] {
  * @throws Error if the hex string is invalid
  */
 export function hashFromHex(hex: string): Hash {
-  const cleanHex = hex.startsWith('0x') ? hex : `0x${hex}`
-  return new Hash(hexToBytes(cleanHex as Hex))
+  const cleanHex = hex.startsWith('0x') ? hex : `0x${hex}`;
+  return new Hash(hexToBytes(cleanHex as Hex));
 }
 
 /**
@@ -92,7 +90,7 @@ export function receiptFromEthReceipt(
   receipt: any,
   from: Address,
   to: Address = new Address(zeroAddress()),
-  value?: BigNumberish,
+  value?: BigNumberish
 ): Receipt {
   return new Receipt(
     from,
@@ -100,10 +98,10 @@ export function receiptFromEthReceipt(
     new Address(receipt.contractAddress ?? zeroAddress()),
     new Hash(receipt.transactionHash ?? receipt.hash),
     receipt.gasUsed,
-    receipt.status === 'success' ? 1 : (receipt.status ?? 0),
+    receipt.status === 'success' ? 1 : receipt.status ?? 0,
     eventsFromEthLogs(receipt.logs ?? []),
-    value,
-  )
+    value
+  );
 }
 
 /**
@@ -112,5 +110,5 @@ export function receiptFromEthReceipt(
  * @returns An Address instance representing the zero address
  */
 export function zeroAddress(): Address {
-  return new Address('0x0000000000000000000000000000000000000000')
+  return new Address('0x0000000000000000000000000000000000000000');
 }

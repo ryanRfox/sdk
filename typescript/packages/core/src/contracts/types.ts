@@ -1,6 +1,6 @@
-import type { RadiusSigner } from '../auth'
-import type { Receipt } from '../common'
-import type { Contract } from './contract'
+import type { RadiusSigner } from '../auth';
+import type { Receipt } from '../common';
+import type { Contract } from './contract';
 
 /**
  * Client interface for interacting with smart contracts on the Radius platform.
@@ -17,11 +17,7 @@ export interface ContractClient {
    * @throws Error if the contract address is missing or zero
    * @throws Error if the contract method call fails
    */
-  call(
-    contract: Contract,
-    method: string,
-    ...args: unknown[]
-  ): Promise<unknown[]>
+  call(contract: Contract, method: string, ...args: unknown[]): Promise<unknown[]>;
 
   /**
    * Executes a contract method that modifies Radius state
@@ -40,5 +36,5 @@ export interface ContractClient {
     signer: RadiusSigner,
     method: string,
     ...args: unknown[]
-  ): Promise<Receipt>
+  ): Promise<Receipt>;
 }

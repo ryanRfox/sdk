@@ -10,9 +10,9 @@ import { PrivateKeySigner } from '../auth';
  * @returns An AccountOption function that configures an Account with the provided private key
  */
 export function withPrivateKey(key, chainId) {
-    return async (options) => {
-        options.signer = new PrivateKeySigner(key, chainId);
-    };
+  return async (options) => {
+    options.signer = new PrivateKeySigner(key, chainId);
+  };
 }
 /**
  * Create an AccountOption that sets the account address and signer using a custom Signer implementation.
@@ -23,8 +23,8 @@ export function withPrivateKey(key, chainId) {
  * @returns An AccountOption function that configures an Account with the provided signer
  */
 export function withSigner(signer) {
-    return async (options) => {
-        options.signer = signer;
-    };
+  return async (options) => {
+    options.signer = signer;
+  };
 }
 //# sourceMappingURL=options.js.map

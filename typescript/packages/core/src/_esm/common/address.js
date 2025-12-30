@@ -7,77 +7,74 @@ import { bytesToHex, getAddress, hexToBytes } from 'viem';
  * accounts and smart contracts in the Radius system.
  */
 export class Address {
+  /**
+   * Creates a new Address instance from various input formats.
+   *
+   * @param data Address data as Uint8Array, BytesLike, hex string, or another Address instance
+   * @throws Error if the address is not exactly 20 bytes long
+   */
+  constructor(data) {
     /**
-     * Creates a new Address instance from various input formats.
-     *
-     * @param data Address data as Uint8Array, BytesLike, hex string, or another Address instance
-     * @throws Error if the address is not exactly 20 bytes long
+     * The address data as a byte array
+     * @private
      */
-    constructor(data) {
-        /**
-         * The address data as a byte array
-         * @private
-         */
-        Object.defineProperty(this, "data", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        if (data instanceof Address) {
-            this.data = data.bytes();
-        }
-        else if (typeof data === 'string') {
-            const cleanHex = data.startsWith('0x') ? data : `0x${data}`;
-            this.data = hexToBytes(cleanHex);
-        }
-        else if (data instanceof Uint8Array) {
-            if (data.length !== 20) {
-                throw new Error('Address must be 20 bytes');
-            }
-            this.data = data;
-        }
-        else {
-            const bytes = hexToBytes(data);
-            if (bytes.length !== 20) {
-                throw new Error('Address must be 20 bytes');
-            }
-            this.data = bytes;
-        }
+    Object.defineProperty(this, 'data', {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: void 0,
+    });
+    if (data instanceof Address) {
+      this.data = data.bytes();
+    } else if (typeof data === 'string') {
+      const cleanHex = data.startsWith('0x') ? data : `0x${data}`;
+      this.data = hexToBytes(cleanHex);
+    } else if (data instanceof Uint8Array) {
+      if (data.length !== 20) {
+        throw new Error('Address must be 20 bytes');
+      }
+      this.data = data;
+    } else {
+      const bytes = hexToBytes(data);
+      if (bytes.length !== 20) {
+        throw new Error('Address must be 20 bytes');
+      }
+      this.data = bytes;
     }
-    /**
-     * Returns the address as a byte array.
-     *
-     * @returns Byte array representation of the 20-byte address
-     */
-    bytes() {
-        return this.data;
-    }
-    /**
-     * Converts a Radius Address to an Ethereum address format.
-     * This method is used when Ethereum library functionality is needed.
-     *
-     * @returns Checksummed Ethereum address string
-     */
-    ethAddress() {
-        return getAddress(this.hex());
-    }
-    /**
-     * Returns the hexadecimal string representation of the address.
-     *
-     * @returns Hex string representation of the address with 0x prefix
-     */
-    hex() {
-        return bytesToHex(this.data);
-    }
-    /**
-     * Compares this address with another address for equality.
-     *
-     * @param other Address to compare with this address
-     * @returns True if addresses are equal (case-insensitive comparison), false otherwise
-     */
-    equals(other) {
-        return this.hex().toLowerCase() === other.hex().toLowerCase();
-    }
+  }
+  /**
+   * Returns the address as a byte array.
+   *
+   * @returns Byte array representation of the 20-byte address
+   */
+  bytes() {
+    return this.data;
+  }
+  /**
+   * Converts a Radius Address to an Ethereum address format.
+   * This method is used when Ethereum library functionality is needed.
+   *
+   * @returns Checksummed Ethereum address string
+   */
+  ethAddress() {
+    return getAddress(this.hex());
+  }
+  /**
+   * Returns the hexadecimal string representation of the address.
+   *
+   * @returns Hex string representation of the address with 0x prefix
+   */
+  hex() {
+    return bytesToHex(this.data);
+  }
+  /**
+   * Compares this address with another address for equality.
+   *
+   * @param other Address to compare with this address
+   * @returns True if addresses are equal (case-insensitive comparison), false otherwise
+   */
+  equals(other) {
+    return this.hex().toLowerCase() === other.hex().toLowerCase();
+  }
 }
 //# sourceMappingURL=address.js.map

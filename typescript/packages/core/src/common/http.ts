@@ -3,5 +3,5 @@
  */
 export type HttpClient = (
   input: string | URL | Request,
-  init?: RequestInit | undefined,
-) => Promise<Response>
+  init?: RequestInit | undefined
+) => Promise<Response>;

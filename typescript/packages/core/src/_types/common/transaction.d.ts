@@ -8,58 +8,65 @@ export type BigNumberish = bigint | number | string;
  * Contains all the data needed to execute a Radius transaction
  */
 export declare class Transaction {
-    /**
-     * The call data for the transaction (bytecode for contract creation, or method call data)
-     */
-    data: BytesLike;
-    /**
-     * Maximum amount of gas units the transaction can consume
-     */
-    gas: BigNumberish;
-    /**
-     * Price per gas unit in wei
-     */
-    gasPrice: BigNumberish;
-    /**
-     * Sequential transaction number for the sending account
-     */
-    nonce?: number | undefined;
-    /**
-     * Destination address (undefined for contract creation)
-     */
-    to?: Address;
-    /**
-     * Amount of native currency to send in wei
-     */
-    value?: BigNumberish;
-    /**
-     * Creates a new unsigned transaction
-     * @param data The calldata for the transaction
-     * @param gas Maximum amount of gas units the transaction can consume
-     * @param gasPrice Price per gas unit in wei
-     * @param nonce Sequential transaction number for the sending account
-     * @param to Destination address (undefined for contract creation)
-     * @param value Amount of native currency to send in wei
-     */
-    constructor(data: BytesLike, gas: BigNumberish, gasPrice: BigNumberish, nonce?: number, to?: Address, value?: BigNumberish);
+  /**
+   * The call data for the transaction (bytecode for contract creation, or method call data)
+   */
+  data: BytesLike;
+  /**
+   * Maximum amount of gas units the transaction can consume
+   */
+  gas: BigNumberish;
+  /**
+   * Price per gas unit in wei
+   */
+  gasPrice: BigNumberish;
+  /**
+   * Sequential transaction number for the sending account
+   */
+  nonce?: number | undefined;
+  /**
+   * Destination address (undefined for contract creation)
+   */
+  to?: Address;
+  /**
+   * Amount of native currency to send in wei
+   */
+  value?: BigNumberish;
+  /**
+   * Creates a new unsigned transaction
+   * @param data The calldata for the transaction
+   * @param gas Maximum amount of gas units the transaction can consume
+   * @param gasPrice Price per gas unit in wei
+   * @param nonce Sequential transaction number for the sending account
+   * @param to Destination address (undefined for contract creation)
+   * @param value Amount of native currency to send in wei
+   */
+  constructor(
+    data: BytesLike,
+    gas: BigNumberish,
+    gasPrice: BigNumberish,
+    nonce?: number,
+    to?: Address,
+    value?: BigNumberish
+  );
 }
 /**
  * SignedTransaction represents a cryptographically signed transaction
  * ready to be sent to Radius
  */
 export declare class SignedTransaction {
-    /**
-     * RLP-encoded signed transaction bytes as hex string
-     */
-    readonly serialized: `0x${string}`;
-    /**
-     * Creates a new SignedTransaction
-     * @param serialized The RLP-encoded signed transaction as hex string
-     */
-    constructor(serialized: `0x${string}`);
-    /**
-     * Returns the serialized transaction as a hex string
-     */
-    toString(): string;
+  /**
+   * RLP-encoded signed transaction bytes as hex string
+   */
+  readonly serialized: `0x${string}`;
+  /**
+   * Creates a new SignedTransaction
+   * @param serialized The RLP-encoded signed transaction as hex string
+   */
+  constructor(serialized: `0x${string}`);
+  /**
+   * Returns the serialized transaction as a hex string
+   */
+  toString(): string;
 }
 //# sourceMappingURL=transaction.d.ts.map

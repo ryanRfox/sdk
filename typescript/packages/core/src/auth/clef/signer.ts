@@ -3,13 +3,8 @@
  * This module provides a way to sign transactions and messages with Clef,
  * which manages keys securely outside the application.
  */
-import {
-  type Hex,
-  hashMessage,
-  type SignableMessage,
-  type TransactionSerializable,
-} from 'viem'
-import type { RadiusSigner } from '../types'
+import { type Hex, type SignableMessage, type TransactionSerializable, hashMessage } from 'viem';
+import type { RadiusSigner } from '../types';
 
 /**
  * Interface for the response from Clef when signing a transaction.
@@ -17,17 +12,17 @@ import type { RadiusSigner } from '../types'
  */
 interface ClefSignTransactionResponse {
   /** The raw signed transaction data as a hex string */
-  raw: string
+  raw: string;
   tx: {
     /** The transaction hash as a hex string */
-    hash: string
+    hash: string;
     /** The v component of the signature as a hex string */
-    v: string
+    v: string;
     /** The r component of the signature as a hex string */
-    r: string
+    r: string;
     /** The s component of the signature as a hex string */
-    s: string
-  }
+    s: string;
+  };
 }
 
 /**
@@ -75,18 +70,18 @@ export class ClefSigner implements RadiusSigner {
   /**
    * The address associated with this signer.
    */
-  readonly address: `0x${string}`
+  readonly address: `0x${string}`;
 
   /**
    * The chain ID used for EIP-155 transaction signing.
    */
-  readonly chainId: number
+  readonly chainId: number;
 
   /**
    * The URL of the Clef JSON-RPC server.
    * @private
    */
-  private readonly clefUrl: string
+  private readonly clefUrl: string;
 
   /**
    * Create a new ClefSigner instance.
@@ -105,9 +100,9 @@ export class ClefSigner implements RadiusSigner {
    * ```
    */
   constructor(address: `0x${string}`, chainId: number, clefUrl: string) {
-    this.address = address
-    this.chainId = chainId
-    this.clefUrl = clefUrl
+    this.address = address;
+    this.chainId = chainId;
+    this.clefUrl = clefUrl;
   }
 
   /**
@@ -128,7 +123,7 @@ export class ClefSigner implements RadiusSigner {
    */
   async signMessage(message: SignableMessage): Promise<Hex> {
     // Compute the EIP-191 message hash
-    const messageHash = hashMessage(message)
+    const messageHash = hashMessage(message);
 
     try {
       // Use account_signData with the message hash
@@ -137,13 +132,12 @@ export class ClefSigner implements RadiusSigner {
         'application/x-clique-header', // Use a content type Clef recognizes for raw data
         this.address,
         messageHash,
-      ])
+      ]);
 
-      return this.normalizeHex(result)
+      return this.normalizeHex(result);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error)
-      throw new Error(`Clef message signing failed: ${errorMessage}`)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Clef message signing failed: ${errorMessage}`);
     }
   }
 
@@ -173,58 +167,53 @@ export class ClefSigner implements RadiusSigner {
     const clefTx: Record<string, string> = {
       from: this.address,
       chainId: this.toHex(this.chainId),
-    }
+    };
 
     // Add transaction properties
     if (tx.to) {
-      clefTx.to = tx.to
+      clefTx.to = tx.to;
     }
 
     if (tx.data) {
-      clefTx.data = tx.data
+      clefTx.data = tx.data;
     }
 
     if (tx.value !== undefined && tx.value !== null) {
-      clefTx.value = this.toHex(tx.value)
+      clefTx.value = this.toHex(tx.value);
     }
 
     if (tx.gas !== undefined && tx.gas !== null) {
-      clefTx.gas = this.toHex(tx.gas)
+      clefTx.gas = this.toHex(tx.gas);
     }
 
     if (tx.gasPrice !== undefined && tx.gasPrice !== null) {
-      clefTx.gasPrice = this.toHex(tx.gasPrice)
+      clefTx.gasPrice = this.toHex(tx.gasPrice);
     }
 
     if (tx.nonce !== undefined && tx.nonce !== null) {
-      clefTx.nonce = this.toHex(tx.nonce)
+      clefTx.nonce = this.toHex(tx.nonce);
     }
 
     // Handle EIP-1559 transactions
     if (tx.maxFeePerGas !== undefined && tx.maxFeePerGas !== null) {
-      clefTx.maxFeePerGas = this.toHex(tx.maxFeePerGas)
+      clefTx.maxFeePerGas = this.toHex(tx.maxFeePerGas);
     }
 
-    if (
-      tx.maxPriorityFeePerGas !== undefined &&
-      tx.maxPriorityFeePerGas !== null
-    ) {
-      clefTx.maxPriorityFeePerGas = this.toHex(tx.maxPriorityFeePerGas)
+    if (tx.maxPriorityFeePerGas !== undefined && tx.maxPriorityFeePerGas !== null) {
+      clefTx.maxPriorityFeePerGas = this.toHex(tx.maxPriorityFeePerGas);
     }
 
     try {
       // Call Clef to sign the transaction
-      const result = await this.rpcCall<ClefSignTransactionResponse>(
-        'account_signTransaction',
-        [clefTx],
-      )
+      const result = await this.rpcCall<ClefSignTransactionResponse>('account_signTransaction', [
+        clefTx,
+      ]);
 
       // Return the raw signed transaction
-      return this.normalizeHex(result.raw)
+      return this.normalizeHex(result.raw);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error)
-      throw new Error(`Clef transaction signing failed: ${errorMessage}`)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Clef transaction signing failed: ${errorMessage}`);
     }
   }
 
@@ -244,27 +233,26 @@ export class ClefSigner implements RadiusSigner {
   async verifyConnection(): Promise<boolean> {
     try {
       // Check Clef version
-      const version = await this.rpcCall<string>('account_version', [])
+      const version = await this.rpcCall<string>('account_version', []);
       if (!version) {
-        throw new Error('Failed to get Clef version')
+        throw new Error('Failed to get Clef version');
       }
 
       // List accounts to verify our address is available
-      const accounts = await this.rpcCall<string[]>('account_list', [])
-      const normalizedAddress = this.address.toLowerCase()
+      const accounts = await this.rpcCall<string[]>('account_list', []);
+      const normalizedAddress = this.address.toLowerCase();
       const addressFound = accounts.some(
-        (account: string) => account.toLowerCase() === normalizedAddress,
-      )
+        (account: string) => account.toLowerCase() === normalizedAddress
+      );
 
       if (!addressFound) {
-        throw new Error(`Address ${this.address} not found in Clef accounts`)
+        throw new Error(`Address ${this.address} not found in Clef accounts`);
       }
 
-      return true
+      return true;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error)
-      throw new Error(`Failed to verify Clef connection: ${errorMessage}`)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to verify Clef connection: ${errorMessage}`);
     }
   }
 
@@ -289,22 +277,22 @@ export class ClefSigner implements RadiusSigner {
         method,
         params,
       }),
-    })
+    });
 
     if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status} ${response.statusText}`)
+      throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
     }
 
     const data = (await response.json()) as {
-      result?: T
-      error?: { message: string }
-    }
+      result?: T;
+      error?: { message: string };
+    };
 
     if (data.error) {
-      throw new Error(data.error.message)
+      throw new Error(data.error.message);
     }
 
-    return data.result as T
+    return data.result as T;
   }
 
   /**
@@ -315,7 +303,7 @@ export class ClefSigner implements RadiusSigner {
    * @private
    */
   private toHex(value: number | bigint): Hex {
-    return `0x${value.toString(16)}`
+    return `0x${value.toString(16)}`;
   }
 
   /**
@@ -326,7 +314,7 @@ export class ClefSigner implements RadiusSigner {
    * @private
    */
   private normalizeHex(hex: string): Hex {
-    return (hex.startsWith('0x') ? hex : `0x${hex}`) as Hex
+    return (hex.startsWith('0x') ? hex : `0x${hex}`) as Hex;
   }
 }
 
@@ -355,7 +343,7 @@ export class ClefSigner implements RadiusSigner {
 export function createClefSigner(
   address: `0x${string}`,
   chainId: number,
-  clefUrl: string,
+  clefUrl: string
 ): ClefSigner {
-  return new ClefSigner(address, chainId, clefUrl)
+  return new ClefSigner(address, chainId, clefUrl);
 }

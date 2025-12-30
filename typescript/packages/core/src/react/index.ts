@@ -1,5 +1,5 @@
 // Re-export chain configs
-export { radiusMainnet, radiusTestnet } from '../chains/index.js'
+export { radiusMainnet, radiusTestnet } from '../chains/index.js';
 
 // Context
 export {
@@ -7,7 +7,7 @@ export {
   type RadiusContextProviderProps,
   type RadiusContextValue,
   useRadiusContext,
-} from './context.js'
+} from './context.js';
 // Hooks
 export {
   type UseERC20AllowanceParams,
@@ -27,6 +27,6 @@ export {
   useERC20Transfer,
   useRadiusBalance,
   useRadiusSend,
-} from './hooks/index.js'
+} from './hooks/index.js';
 // Provider
-export { RadiusProvider, type RadiusProviderProps } from './provider.js'
+export { RadiusProvider, type RadiusProviderProps } from './provider.js';

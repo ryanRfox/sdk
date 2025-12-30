@@ -1,25 +1,20 @@
-import {
-  bytesToHex,
-  type Hex,
-  hexToBytes,
-  keccak256 as viemKeccak256,
-} from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { Address, type BytesLike } from '../common'
-import type { SigningKey } from './types'
+import { type Hex, bytesToHex, hexToBytes, keccak256 as viemKeccak256 } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { Address, type BytesLike } from '../common';
+import type { SigningKey } from './types';
 
 /**
  * Convert input to bytes.
  */
 function toBytes(data: BytesLike): Uint8Array {
   if (data instanceof Uint8Array) {
-    return data
+    return data;
   }
   if (typeof data === 'string') {
-    const hex = data.startsWith('0x') ? data : `0x${data}`
-    return hexToBytes(hex as Hex)
+    const hex = data.startsWith('0x') ? data : `0x${data}`;
+    return hexToBytes(hex as Hex);
   }
-  throw new Error('Invalid BytesLike input')
+  throw new Error('Invalid BytesLike input');
 }
 
 /**
@@ -29,16 +24,16 @@ function toBytes(data: BytesLike): Uint8Array {
  * @returns SigningKey containing both public and private keys
  */
 export function hexToSigningKey(key: string): SigningKey {
-  const formattedKey = (key.startsWith('0x') ? key : `0x${key}`) as Hex
-  const account = privateKeyToAccount(formattedKey)
+  const formattedKey = (key.startsWith('0x') ? key : `0x${key}`) as Hex;
+  const account = privateKeyToAccount(formattedKey);
 
   // Get the public key from the account (viem accounts expose publicKey)
-  const publicKeyHex = account.publicKey
+  const publicKeyHex = account.publicKey;
 
   return {
     publicKey: hexToBytes(publicKeyHex),
     privateKey: hexToBytes(formattedKey),
-  }
+  };
 }
 
 /**
@@ -50,19 +45,19 @@ export function hexToSigningKey(key: string): SigningKey {
 export function keccak256(data: BytesLike | BytesLike[]): Uint8Array {
   if (Array.isArray(data)) {
     // Concatenate all byte arrays
-    const totalLength = data.reduce((sum, d) => sum + toBytes(d).length, 0)
-    const combined = new Uint8Array(totalLength)
-    let offset = 0
+    const totalLength = data.reduce((sum, d) => sum + toBytes(d).length, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
     for (const d of data) {
-      const bytes = toBytes(d)
-      combined.set(bytes, offset)
-      offset += bytes.length
+      const bytes = toBytes(d);
+      combined.set(bytes, offset);
+      offset += bytes.length;
     }
-    const hash = viemKeccak256(bytesToHex(combined))
-    return hexToBytes(hash)
+    const hash = viemKeccak256(bytesToHex(combined));
+    return hexToBytes(hash);
   }
-  const hash = viemKeccak256(bytesToHex(toBytes(data)))
-  return hexToBytes(hash)
+  const hash = viemKeccak256(bytesToHex(toBytes(data)));
+  return hexToBytes(hash);
 }
 
 /**
@@ -73,13 +68,13 @@ export function keccak256(data: BytesLike | BytesLike[]): Uint8Array {
  * @returns Account address as an Address object
  */
 export function pubkeyToAddress(publicKey: BytesLike): Address {
-  const bytes = toBytes(publicKey)
+  const bytes = toBytes(publicKey);
   // Remove the prefix byte (0x04 for uncompressed public keys)
-  const keyWithoutPrefix = bytes.slice(1)
-  const hash = viemKeccak256(bytesToHex(keyWithoutPrefix))
+  const keyWithoutPrefix = bytes.slice(1);
+  const hash = viemKeccak256(bytesToHex(keyWithoutPrefix));
   // Take the last 20 bytes (40 hex chars)
-  const addressHex = `0x${hash.slice(-40)}` as Hex
-  return new Address(addressHex)
+  const addressHex = `0x${hash.slice(-40)}` as Hex;
+  return new Address(addressHex);
 }
 
 /**
@@ -89,18 +84,15 @@ export function pubkeyToAddress(publicKey: BytesLike): Address {
  * @param key Signing key containing the private key
  * @returns The signature as a Uint8Array
  */
-export async function sign(
-  digestHash: BytesLike,
-  key: SigningKey,
-): Promise<Uint8Array> {
-  const privateKeyHex = bytesToHex(key.privateKey) as Hex
-  const account = privateKeyToAccount(privateKeyHex)
-  const hashHex = bytesToHex(toBytes(digestHash)) as Hex
+export async function sign(digestHash: BytesLike, key: SigningKey): Promise<Uint8Array> {
+  const privateKeyHex = bytesToHex(key.privateKey) as Hex;
+  const account = privateKeyToAccount(privateKeyHex);
+  const hashHex = bytesToHex(toBytes(digestHash)) as Hex;
 
   // Sign the raw message hash
   const signature = await account.signMessage({
     message: { raw: hashHex },
-  })
+  });
 
-  return hexToBytes(signature)
+  return hexToBytes(signature);
 }

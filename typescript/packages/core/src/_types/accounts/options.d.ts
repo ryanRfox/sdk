@@ -10,10 +10,10 @@ export type AccountOption = (options: AccountOptions) => Promise<void>;
  * Contains configuration values that can be set using functional options.
  */
 export interface AccountOptions {
-    /**
-     * The signer to use with this account
-     */
-    signer?: RadiusSigner;
+  /**
+   * The signer to use with this account
+   */
+  signer?: RadiusSigner;
 }
 /**
  * Create an AccountOption that sets the account address and signer using a private key.

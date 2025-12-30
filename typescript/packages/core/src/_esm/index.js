@@ -8,11 +8,11 @@
 // Accounts
 export * from './accounts';
 // Auth / Signers
-export { ClefSigner, createClefSigner, createPrivateKeySigner, PrivateKeySigner, } from './auth';
+export { ClefSigner, createClefSigner, createPrivateKeySigner, PrivateKeySigner } from './auth';
 // Chains
 export { radiusMainnet, radiusTestnet } from './chains';
 // Client - main entry point
-export { createRadiusClient, MAX_GAS, } from './client';
+export { createRadiusClient, MAX_GAS } from './client';
 // Common utilities
 export * from './common';
 // Contracts

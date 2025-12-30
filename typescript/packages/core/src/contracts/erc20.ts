@@ -1,13 +1,13 @@
 import {
   type Account,
-  formatUnits,
   type Hash,
   type PublicClient,
-  parseAbi,
-  parseUnits,
   type TransactionReceipt,
   type WalletClient,
-} from 'viem'
+  formatUnits,
+  parseAbi,
+  parseUnits,
+} from 'viem';
 
 /**
  * Standard ERC-20 ABI definition using viem's parseAbi.
@@ -25,16 +25,16 @@ export const ERC20_ABI = parseAbi([
   'function transferFrom(address from, address to, uint256 amount) returns (bool)',
   'event Transfer(address indexed from, address indexed to, uint256 value)',
   'event Approval(address indexed owner, address indexed spender, uint256 value)',
-])
+]);
 
 /**
  * Signer type that can be used for write operations.
  * Combines a WalletClient with an Account for transaction signing.
  */
 export type ERC20Signer = {
-  walletClient: WalletClient
-  account: Account
-}
+  walletClient: WalletClient;
+  account: Account;
+};
 
 /**
  * ERC20 class for interacting with ERC-20 token contracts on Radius.
@@ -49,31 +49,31 @@ export class ERC20 {
   /**
    * The token contract address
    */
-  readonly address: `0x${string}`
+  readonly address: `0x${string}`;
 
   /**
    * The public client used for read operations
    * @private
    */
-  private readonly publicClient: PublicClient
+  private readonly publicClient: PublicClient;
 
   /**
    * Cached token decimals
    * @private
    */
-  private _decimals?: number
+  private _decimals?: number;
 
   /**
    * Cached token symbol
    * @private
    */
-  private _symbol?: string
+  private _symbol?: string;
 
   /**
    * Cached token name
    * @private
    */
-  private _name?: string
+  private _name?: string;
 
   /**
    * Creates a new ERC20 instance for interacting with a token contract.
@@ -82,8 +82,8 @@ export class ERC20 {
    * @param publicClient The viem PublicClient to use for read operations
    */
   constructor(address: `0x${string}`, publicClient: PublicClient) {
-    this.address = address
-    this.publicClient = publicClient
+    this.address = address;
+    this.publicClient = publicClient;
   }
 
   // ============================================================================
@@ -99,17 +99,17 @@ export class ERC20 {
    */
   async name(): Promise<string> {
     if (this._name !== undefined) {
-      return this._name
+      return this._name;
     }
 
     const name = await this.publicClient.readContract({
       address: this.address,
       abi: ERC20_ABI,
       functionName: 'name',
-    })
+    });
 
-    this._name = name
-    return name
+    this._name = name;
+    return name;
   }
 
   /**
@@ -121,17 +121,17 @@ export class ERC20 {
    */
   async symbol(): Promise<string> {
     if (this._symbol !== undefined) {
-      return this._symbol
+      return this._symbol;
     }
 
     const symbol = await this.publicClient.readContract({
       address: this.address,
       abi: ERC20_ABI,
       functionName: 'symbol',
-    })
+    });
 
-    this._symbol = symbol
-    return symbol
+    this._symbol = symbol;
+    return symbol;
   }
 
   /**
@@ -143,17 +143,17 @@ export class ERC20 {
    */
   async decimals(): Promise<number> {
     if (this._decimals !== undefined) {
-      return this._decimals
+      return this._decimals;
     }
 
     const decimals = await this.publicClient.readContract({
       address: this.address,
       abi: ERC20_ABI,
       functionName: 'decimals',
-    })
+    });
 
-    this._decimals = decimals
-    return decimals
+    this._decimals = decimals;
+    return decimals;
   }
 
   /**
@@ -167,7 +167,7 @@ export class ERC20 {
       address: this.address,
       abi: ERC20_ABI,
       functionName: 'totalSupply',
-    })
+    });
   }
 
   /**
@@ -183,7 +183,7 @@ export class ERC20 {
       abi: ERC20_ABI,
       functionName: 'balanceOf',
       args: [owner],
-    })
+    });
   }
 
   /**
@@ -194,16 +194,13 @@ export class ERC20 {
    * @returns The allowance as a bigint (in the smallest unit)
    * @throws Error if the contract call fails
    */
-  async allowance(
-    owner: `0x${string}`,
-    spender: `0x${string}`,
-  ): Promise<bigint> {
+  async allowance(owner: `0x${string}`, spender: `0x${string}`): Promise<bigint> {
     return this.publicClient.readContract({
       address: this.address,
       abi: ERC20_ABI,
       functionName: 'allowance',
       args: [owner, spender],
-    })
+    });
   }
 
   // ============================================================================
@@ -220,11 +217,7 @@ export class ERC20 {
    * @returns The transaction hash
    * @throws Error if the transaction fails to submit
    */
-  async transfer(
-    signer: ERC20Signer,
-    to: `0x${string}`,
-    amount: bigint,
-  ): Promise<Hash> {
+  async transfer(signer: ERC20Signer, to: `0x${string}`, amount: bigint): Promise<Hash> {
     const hash = await signer.walletClient.writeContract({
       address: this.address,
       abi: ERC20_ABI,
@@ -232,9 +225,9 @@ export class ERC20 {
       args: [to, amount],
       account: signer.account,
       chain: signer.walletClient.chain,
-    })
+    });
 
-    return hash
+    return hash;
   }
 
   /**
@@ -250,10 +243,10 @@ export class ERC20 {
   async transferSync(
     signer: ERC20Signer,
     to: `0x${string}`,
-    amount: bigint,
+    amount: bigint
   ): Promise<TransactionReceipt> {
-    const hash = await this.transfer(signer, to, amount)
-    return this.publicClient.waitForTransactionReceipt({ hash })
+    const hash = await this.transfer(signer, to, amount);
+    return this.publicClient.waitForTransactionReceipt({ hash });
   }
 
   /**
@@ -266,11 +259,7 @@ export class ERC20 {
    * @returns The transaction hash
    * @throws Error if the transaction fails to submit
    */
-  async approve(
-    signer: ERC20Signer,
-    spender: `0x${string}`,
-    amount: bigint,
-  ): Promise<Hash> {
+  async approve(signer: ERC20Signer, spender: `0x${string}`, amount: bigint): Promise<Hash> {
     const hash = await signer.walletClient.writeContract({
       address: this.address,
       abi: ERC20_ABI,
@@ -278,9 +267,9 @@ export class ERC20 {
       args: [spender, amount],
       account: signer.account,
       chain: signer.walletClient.chain,
-    })
+    });
 
-    return hash
+    return hash;
   }
 
   /**
@@ -296,10 +285,10 @@ export class ERC20 {
   async approveSync(
     signer: ERC20Signer,
     spender: `0x${string}`,
-    amount: bigint,
+    amount: bigint
   ): Promise<TransactionReceipt> {
-    const hash = await this.approve(signer, spender, amount)
-    return this.publicClient.waitForTransactionReceipt({ hash })
+    const hash = await this.approve(signer, spender, amount);
+    return this.publicClient.waitForTransactionReceipt({ hash });
   }
 
   /**
@@ -318,7 +307,7 @@ export class ERC20 {
     signer: ERC20Signer,
     from: `0x${string}`,
     to: `0x${string}`,
-    amount: bigint,
+    amount: bigint
   ): Promise<Hash> {
     const hash = await signer.walletClient.writeContract({
       address: this.address,
@@ -327,9 +316,9 @@ export class ERC20 {
       args: [from, to, amount],
       account: signer.account,
       chain: signer.walletClient.chain,
-    })
+    });
 
-    return hash
+    return hash;
   }
 
   /**
@@ -348,10 +337,10 @@ export class ERC20 {
     signer: ERC20Signer,
     from: `0x${string}`,
     to: `0x${string}`,
-    amount: bigint,
+    amount: bigint
   ): Promise<TransactionReceipt> {
-    const hash = await this.transferFrom(signer, from, to, amount)
-    return this.publicClient.waitForTransactionReceipt({ hash })
+    const hash = await this.transferFrom(signer, from, to, amount);
+    return this.publicClient.waitForTransactionReceipt({ hash });
   }
 
   // ============================================================================
@@ -372,8 +361,8 @@ export class ERC20 {
    * // Returns "1.5"
    */
   async formatAmount(amount: bigint): Promise<string> {
-    const decimals = await this.decimals()
-    return formatUnits(amount, decimals)
+    const decimals = await this.decimals();
+    return formatUnits(amount, decimals);
   }
 
   /**
@@ -391,8 +380,8 @@ export class ERC20 {
    * // Returns 1500000000000000000n
    */
   async parseAmount(amount: string): Promise<bigint> {
-    const decimals = await this.decimals()
-    return parseUnits(amount, decimals)
+    const decimals = await this.decimals();
+    return parseUnits(amount, decimals);
   }
 
   /**
@@ -400,9 +389,9 @@ export class ERC20 {
    * Call this if the token contract has been upgraded or if you need fresh data.
    */
   clearCache(): void {
-    this._name = undefined
-    this._symbol = undefined
-    this._decimals = undefined
+    this._name = undefined;
+    this._symbol = undefined;
+    this._decimals = undefined;
   }
 }
 
@@ -427,9 +416,6 @@ export class ERC20 {
  * const usdc = createERC20('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', publicClient);
  * const balance = await usdc.balanceOf('0x...');
  */
-export function createERC20(
-  address: `0x${string}`,
-  publicClient: PublicClient,
-): ERC20 {
-  return new ERC20(address, publicClient)
+export function createERC20(address: `0x${string}`, publicClient: PublicClient): ERC20 {
+  return new ERC20(address, publicClient);
 }

@@ -17,4 +17,4 @@ export {
   type RadiusReceipt,
   type TransactionReceipt,
   type Transport,
-} from './client'
+} from './client';
