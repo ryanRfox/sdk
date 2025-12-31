@@ -13,11 +13,30 @@ import {
   useRadiusSend,
 } from '@radiustechsystems/sdk/react';
 import { QueryClient } from '@tanstack/react-query';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
 import React, { ReactNode } from 'react';
 import type { Address, Chain } from 'viem';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as wagmi from 'wagmi';
+
+// Type helpers for mocking wagmi hooks
+type MockUseAccountReturn = Partial<ReturnType<typeof wagmi.useAccount>> &
+  Pick<ReturnType<typeof wagmi.useAccount>, 'address' | 'status' | 'isConnected'>;
+
+type MockUseBalanceReturn = Partial<ReturnType<typeof wagmi.useBalance>> &
+  Pick<ReturnType<typeof wagmi.useBalance>, 'data' | 'isLoading' | 'isError'>;
+
+type MockUseReadContractReturn = Partial<ReturnType<typeof wagmi.useReadContract>> &
+  Pick<ReturnType<typeof wagmi.useReadContract>, 'data' | 'isLoading' | 'isError'>;
+
+type MockUseSendTransactionReturn = Partial<ReturnType<typeof wagmi.useSendTransaction>> &
+  Pick<ReturnType<typeof wagmi.useSendTransaction>, 'data' | 'error' | 'isPending' | 'sendTransaction' | 'reset'>;
+
+type MockUseWriteContractReturn = Partial<ReturnType<typeof wagmi.useWriteContract>> &
+  Pick<ReturnType<typeof wagmi.useWriteContract>, 'data' | 'error' | 'isPending' | 'writeContract' | 'reset'>;
+
+type MockUseWaitForTransactionReceiptReturn = Partial<ReturnType<typeof wagmi.useWaitForTransactionReceipt>> &
+  Pick<ReturnType<typeof wagmi.useWaitForTransactionReceipt>, 'data' | 'isLoading' | 'isSuccess'>;
 
 // Mock wagmi hooks
 vi.mock('wagmi', async () => {
@@ -201,7 +220,7 @@ describe('useRadiusBalance', () => {
       address: mockAddress,
       status: 'connected',
       isConnected: true,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       const balance = useRadiusBalance();
@@ -231,7 +250,7 @@ describe('useRadiusBalance', () => {
       address: undefined,
       status: 'disconnected',
       isConnected: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       const balance = useRadiusBalance({ address: mockAddress });
@@ -254,13 +273,13 @@ describe('useRadiusBalance', () => {
       data: undefined,
       isLoading: true,
       isError: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useBalance>);
 
     vi.mocked(wagmi.useAccount).mockReturnValue({
       address: mockAddress,
       status: 'connected',
       isConnected: true,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       const balance = useRadiusBalance();
@@ -287,13 +306,13 @@ describe('useRadiusBalance', () => {
       isLoading: false,
       isError: true,
       error: mockError,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useBalance>);
 
     vi.mocked(wagmi.useAccount).mockReturnValue({
       address: mockAddress,
       status: 'connected',
       isConnected: true,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       const balance = useRadiusBalance();
@@ -337,13 +356,13 @@ describe('useRadiusSend', () => {
       isPending: false,
       sendTransaction: mockSendTransaction,
       reset: mockReset,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useSendTransaction>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const send = useRadiusSend();
@@ -385,13 +404,13 @@ describe('useRadiusSend', () => {
       isPending: true,
       sendTransaction: mockSendTransaction,
       reset: mockReset,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useSendTransaction>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const send = useRadiusSend();
@@ -430,13 +449,13 @@ describe('useRadiusSend', () => {
       isPending: true,
       sendTransaction: mockSendTransaction,
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useSendTransaction>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: true,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const send = useRadiusSend();
@@ -461,13 +480,13 @@ describe('useRadiusSend', () => {
       isPending: false,
       sendTransaction: vi.fn(),
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useSendTransaction>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: mockReceipt,
       isLoading: false,
       isSuccess: true,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const send = useRadiusSend();
@@ -498,13 +517,13 @@ describe('useRadiusSend', () => {
       isPending: false,
       sendTransaction: vi.fn(),
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useSendTransaction>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const send = useRadiusSend();
@@ -546,7 +565,7 @@ describe('useERC20Balance', () => {
       address: mockAddress,
       status: 'connected',
       isConnected: true,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       const balance = useERC20Balance({ token: mockTokenAddress });
@@ -581,7 +600,7 @@ describe('useERC20Balance', () => {
       address: undefined,
       status: 'disconnected',
       isConnected: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       const balance = useERC20Balance({ token: mockTokenAddress, address: mockAddress });
@@ -616,7 +635,7 @@ describe('useERC20Balance', () => {
       address: undefined,
       status: 'disconnected',
       isConnected: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       useERC20Balance({ token: mockTokenAddress });
@@ -642,13 +661,13 @@ describe('useERC20Balance', () => {
       data: undefined,
       isLoading: true,
       isError: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useReadContract>);
 
     vi.mocked(wagmi.useAccount).mockReturnValue({
       address: mockAddress,
       status: 'connected',
       isConnected: true,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       const balance = useERC20Balance({ token: mockTokenAddress });
@@ -671,13 +690,13 @@ describe('useERC20Balance', () => {
       isLoading: false,
       isError: true,
       error: mockError,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useReadContract>);
 
     vi.mocked(wagmi.useAccount).mockReturnValue({
       address: mockAddress,
       status: 'connected',
       isConnected: true,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       const balance = useERC20Balance({ token: mockTokenAddress });
@@ -717,13 +736,13 @@ describe('useERC20Transfer', () => {
       isPending: false,
       writeContract: mockWriteContract,
       reset: mockReset,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWriteContract>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const transfer = useERC20Transfer({ token: mockTokenAddress });
@@ -763,13 +782,13 @@ describe('useERC20Transfer', () => {
       isPending: false,
       writeContract: mockWriteContract,
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWriteContract>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const transfer = useERC20Transfer({ token: mockTokenAddress });
@@ -809,13 +828,13 @@ describe('useERC20Transfer', () => {
       isPending: true,
       writeContract: vi.fn(),
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWriteContract>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: true,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const transfer = useERC20Transfer({ token: mockTokenAddress });
@@ -842,13 +861,13 @@ describe('useERC20Transfer', () => {
       isPending: false,
       writeContract: vi.fn(),
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWriteContract>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: mockReceipt,
       isLoading: false,
       isSuccess: true,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const transfer = useERC20Transfer({ token: mockTokenAddress });
@@ -879,13 +898,13 @@ describe('useERC20Transfer', () => {
       isPending: false,
       writeContract: vi.fn(),
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWriteContract>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const transfer = useERC20Transfer({ token: mockTokenAddress });
@@ -925,13 +944,13 @@ describe('useERC20Approve', () => {
       isPending: false,
       writeContract: mockWriteContract,
       reset: mockReset,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWriteContract>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const approve = useERC20Approve({ token: mockTokenAddress });
@@ -971,13 +990,13 @@ describe('useERC20Approve', () => {
       isPending: false,
       writeContract: mockWriteContract,
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWriteContract>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const approve = useERC20Approve({ token: mockTokenAddress });
@@ -1017,13 +1036,13 @@ describe('useERC20Approve', () => {
       isPending: true,
       writeContract: vi.fn(),
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWriteContract>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: true,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const approve = useERC20Approve({ token: mockTokenAddress });
@@ -1050,13 +1069,13 @@ describe('useERC20Approve', () => {
       isPending: false,
       writeContract: vi.fn(),
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWriteContract>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: mockReceipt,
       isLoading: false,
       isSuccess: true,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const approve = useERC20Approve({ token: mockTokenAddress });
@@ -1087,13 +1106,13 @@ describe('useERC20Approve', () => {
       isPending: false,
       writeContract: vi.fn(),
       reset: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWriteContract>);
 
     vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
     function TestComponent() {
       const approve = useERC20Approve({ token: mockTokenAddress });
@@ -1135,7 +1154,7 @@ describe('useERC20Allowance', () => {
       address: mockAddress,
       status: 'connected',
       isConnected: true,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       const allowance = useERC20Allowance({
@@ -1173,7 +1192,7 @@ describe('useERC20Allowance', () => {
       address: undefined,
       status: 'disconnected',
       isConnected: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       const allowance = useERC20Allowance({
@@ -1212,7 +1231,7 @@ describe('useERC20Allowance', () => {
       address: undefined,
       status: 'disconnected',
       isConnected: false,
-    } as any);
+    } as unknown as ReturnType<typeof wagmi.useAccount>);
 
     function TestComponent() {
       useERC20Allowance({
@@ -1292,9 +1311,9 @@ describe('useERC20Metadata', () => {
     vi.mocked(wagmi.useReadContract).mockImplementation(() => {
       callCount += 1;
       if (callCount === 2) {
-        return { data: undefined, isLoading: true, isError: false } as any;
+        return { data: undefined, isLoading: true, isError: false } as unknown as ReturnType<typeof wagmi.useReadContract>;
       }
-      return { data: undefined, isLoading: false, isError: false } as any;
+      return { data: undefined, isLoading: false, isError: false } as unknown as ReturnType<typeof wagmi.useReadContract>;
     });
 
     function TestComponent() {
@@ -1316,9 +1335,9 @@ describe('useERC20Metadata', () => {
     vi.mocked(wagmi.useReadContract).mockImplementation(() => {
       callCount += 1;
       if (callCount === 3) {
-        return { data: undefined, isLoading: false, isError: true } as any;
+        return { data: undefined, isLoading: false, isError: true } as unknown as ReturnType<typeof wagmi.useReadContract>;
       }
-      return { data: undefined, isLoading: false, isError: false } as any;
+      return { data: undefined, isLoading: false, isError: false } as unknown as ReturnType<typeof wagmi.useReadContract>;
     });
 
     function TestComponent() {
@@ -1345,7 +1364,7 @@ describe('useERC20Metadata', () => {
         isLoading: false,
         isError: false,
         refetch: mockRefetch,
-      } as any;
+      } as unknown as ReturnType<typeof wagmi.useReadContract>;
     });
 
     function TestComponent() {
@@ -1374,6 +1393,709 @@ describe('useERC20Metadata', () => {
 
     await waitFor(() => {
       expect(mockRefetch).toHaveBeenCalled();
+    });
+  });
+});
+
+// ============================================================================
+// Hook Reactivity Tests
+// ============================================================================
+
+describe('Hook Reactivity', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  describe('useRadiusBalance', () => {
+    it('should respond to address parameter changes', () => {
+      const mockUseBalance = vi.fn().mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+      });
+
+      vi.mocked(wagmi.useBalance).mockImplementation(mockUseBalance);
+      vi.mocked(wagmi.useAccount).mockReturnValue({
+        address: undefined,
+        status: 'disconnected',
+        isConnected: false,
+      } as unknown as ReturnType<typeof wagmi.useAccount>);
+
+      let accountAddress: Address | undefined = undefined;
+
+      const { rerender } = renderHook(
+        () => useRadiusBalance({ address: accountAddress }),
+        {
+          wrapper: ({ children }: { children: ReactNode }) => (
+            <TestWrapper>{children}</TestWrapper>
+          ),
+        }
+      );
+
+      // Initially called with undefined
+      expect(mockUseBalance).toHaveBeenLastCalledWith({
+        address: undefined,
+      });
+
+      // Change parameter
+      accountAddress = mockAddress;
+      mockUseBalance.mockReturnValue({
+        data: { value: BigInt('1000000000000000000'), decimals: 18 },
+        isLoading: false,
+        isError: false,
+      });
+      rerender();
+
+      // Should have been called with new address
+      expect(mockUseBalance).toHaveBeenLastCalledWith({
+        address: mockAddress,
+      });
+    });
+
+    it('should transition from disabled to enabled when address becomes available', () => {
+      const mockUseBalance = vi.fn().mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+      });
+
+      vi.mocked(wagmi.useBalance).mockImplementation(mockUseBalance);
+
+      // Start with no address
+      vi.mocked(wagmi.useAccount).mockReturnValue({
+        address: undefined,
+        status: 'disconnected',
+        isConnected: false,
+      } as unknown as ReturnType<typeof wagmi.useAccount>);
+
+      const { result, rerender } = renderHook(() => useRadiusBalance(), {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <TestWrapper>{children}</TestWrapper>
+        ),
+      });
+
+      // Initially disabled (no address)
+      expect(mockUseBalance).toHaveBeenLastCalledWith({
+        address: undefined,
+      });
+      expect(result.current.isLoading).toBe(false);
+
+      // Connect wallet with address
+      vi.mocked(wagmi.useAccount).mockReturnValue({
+        address: mockAddress,
+        status: 'connected',
+        isConnected: true,
+      } as unknown as ReturnType<typeof wagmi.useAccount>);
+
+      mockUseBalance.mockReturnValue({
+        data: { value: BigInt('2000000000000000000'), decimals: 18 },
+        isLoading: false,
+        isError: false,
+      });
+
+      rerender();
+
+      // Should now be enabled with address
+      expect(mockUseBalance).toHaveBeenLastCalledWith({
+        address: mockAddress,
+      });
+    });
+  });
+
+  describe('useERC20Balance', () => {
+    it('should respond to token parameter changes', () => {
+      const mockUseReadContract = vi.fn().mockReturnValue({
+        data: BigInt('1000000000000000000'),
+        isLoading: false,
+        isError: false,
+      });
+
+      vi.mocked(wagmi.useReadContract).mockImplementation(mockUseReadContract);
+      vi.mocked(wagmi.useAccount).mockReturnValue({
+        address: mockAddress,
+        status: 'connected',
+        isConnected: true,
+      } as unknown as ReturnType<typeof wagmi.useAccount>);
+
+      const tokenAddress1 = mockTokenAddress;
+      const tokenAddress2 = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address;
+
+      let currentToken = tokenAddress1;
+
+      const { rerender } = renderHook(() => useERC20Balance({ token: currentToken }), {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <TestWrapper>{children}</TestWrapper>
+        ),
+      });
+
+      // Initially called with first token
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: tokenAddress1,
+          functionName: 'balanceOf',
+          args: [mockAddress],
+          query: { enabled: true },
+        })
+      );
+
+      // Change token parameter
+      currentToken = tokenAddress2;
+      mockUseReadContract.mockReturnValue({
+        data: BigInt('2000000000000000000'),
+        isLoading: false,
+        isError: false,
+      });
+      rerender();
+
+      // Should have been called with new token
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: tokenAddress2,
+          functionName: 'balanceOf',
+          args: [mockAddress],
+          query: { enabled: true },
+        })
+      );
+    });
+
+    it('should respond to address parameter changes', () => {
+      const mockUseReadContract = vi.fn().mockReturnValue({
+        data: BigInt('1000000000000000000'),
+        isLoading: false,
+        isError: false,
+      });
+
+      vi.mocked(wagmi.useReadContract).mockImplementation(mockUseReadContract);
+      vi.mocked(wagmi.useAccount).mockReturnValue({
+        address: undefined,
+        status: 'disconnected',
+        isConnected: false,
+      } as unknown as ReturnType<typeof wagmi.useAccount>);
+
+      const address1 = mockAddress;
+      const address2 = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as Address;
+
+      let currentAddress: Address | undefined = address1;
+
+      const { rerender } = renderHook(
+        () => useERC20Balance({ token: mockTokenAddress, address: currentAddress }),
+        {
+          wrapper: ({ children }: { children: ReactNode }) => (
+            <TestWrapper>{children}</TestWrapper>
+          ),
+        }
+      );
+
+      // Initially called with first address
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: mockTokenAddress,
+          functionName: 'balanceOf',
+          args: [address1],
+          query: { enabled: true },
+        })
+      );
+
+      // Change address parameter
+      currentAddress = address2;
+      mockUseReadContract.mockReturnValue({
+        data: BigInt('3000000000000000000'),
+        isLoading: false,
+        isError: false,
+      });
+      rerender();
+
+      // Should have been called with new address
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: mockTokenAddress,
+          functionName: 'balanceOf',
+          args: [address2],
+          query: { enabled: true },
+        })
+      );
+    });
+
+    it('should disable query when address becomes undefined', () => {
+      const mockUseReadContract = vi.fn().mockReturnValue({
+        data: BigInt('1000000000000000000'),
+        isLoading: false,
+        isError: false,
+      });
+
+      vi.mocked(wagmi.useReadContract).mockImplementation(mockUseReadContract);
+      vi.mocked(wagmi.useAccount).mockReturnValue({
+        address: undefined,
+        status: 'disconnected',
+        isConnected: false,
+      } as unknown as ReturnType<typeof wagmi.useAccount>);
+
+      let currentAddress: Address | undefined = mockAddress;
+
+      const { rerender } = renderHook(
+        () => useERC20Balance({ token: mockTokenAddress, address: currentAddress }),
+        {
+          wrapper: ({ children }: { children: ReactNode }) => (
+            <TestWrapper>{children}</TestWrapper>
+          ),
+        }
+      );
+
+      // Initially enabled with address
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          args: [mockAddress],
+          query: { enabled: true },
+        })
+      );
+
+      // Remove address
+      currentAddress = undefined;
+      mockUseReadContract.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+      });
+      rerender();
+
+      // Should be disabled
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          args: undefined,
+          query: { enabled: false },
+        })
+      );
+    });
+  });
+
+  describe('useERC20Transfer', () => {
+    it('should respond to token parameter changes', () => {
+      const mockWriteContract = vi.fn();
+
+      vi.mocked(wagmi.useWriteContract).mockReturnValue({
+        data: undefined,
+        error: null,
+        isPending: false,
+        writeContract: mockWriteContract,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof wagmi.useWriteContract>);
+
+      vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isSuccess: false,
+      } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
+
+      const tokenAddress1 = mockTokenAddress;
+      const tokenAddress2 = '0xcccccccccccccccccccccccccccccccccccccccc' as Address;
+
+      let currentToken = tokenAddress1;
+
+      const { result, rerender } = renderHook(
+        () => useERC20Transfer({ token: currentToken }),
+        {
+          wrapper: ({ children }: { children: ReactNode }) => (
+            <TestWrapper>{children}</TestWrapper>
+          ),
+        }
+      );
+
+      // Call transfer with first token
+      result.current.transfer(mockAddress, BigInt('1000000000000000000'));
+
+      expect(mockWriteContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: tokenAddress1,
+          functionName: 'transfer',
+        })
+      );
+
+      // Change token parameter
+      currentToken = tokenAddress2;
+      rerender();
+
+      // Call transfer with new token
+      result.current.transfer(mockAddress, BigInt('2000000000000000000'));
+
+      expect(mockWriteContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: tokenAddress2,
+          functionName: 'transfer',
+        })
+      );
+    });
+  });
+
+  describe('useERC20Approve', () => {
+    it('should respond to token parameter changes', () => {
+      const mockWriteContract = vi.fn();
+
+      vi.mocked(wagmi.useWriteContract).mockReturnValue({
+        data: undefined,
+        error: null,
+        isPending: false,
+        writeContract: mockWriteContract,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof wagmi.useWriteContract>);
+
+      vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isSuccess: false,
+      } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
+
+      const tokenAddress1 = mockTokenAddress;
+      const tokenAddress2 = '0xdddddddddddddddddddddddddddddddddddddddd' as Address;
+
+      let currentToken = tokenAddress1;
+
+      const { result, rerender } = renderHook(() => useERC20Approve({ token: currentToken }), {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <TestWrapper>{children}</TestWrapper>
+        ),
+      });
+
+      // Call approve with first token
+      result.current.approve(mockSpenderAddress, BigInt('1000000000000000000'));
+
+      expect(mockWriteContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: tokenAddress1,
+          functionName: 'approve',
+        })
+      );
+
+      // Change token parameter
+      currentToken = tokenAddress2;
+      rerender();
+
+      // Call approve with new token
+      result.current.approve(mockSpenderAddress, BigInt('2000000000000000000'));
+
+      expect(mockWriteContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: tokenAddress2,
+          functionName: 'approve',
+        })
+      );
+    });
+  });
+
+  describe('useERC20Allowance', () => {
+    it('should respond to spender parameter changes', () => {
+      const mockUseReadContract = vi.fn().mockReturnValue({
+        data: BigInt('1000000000000000000'),
+        isLoading: false,
+        isError: false,
+      });
+
+      vi.mocked(wagmi.useReadContract).mockImplementation(mockUseReadContract);
+      vi.mocked(wagmi.useAccount).mockReturnValue({
+        address: mockAddress,
+        status: 'connected',
+        isConnected: true,
+      } as unknown as ReturnType<typeof wagmi.useAccount>);
+
+      const spender1 = mockSpenderAddress;
+      const spender2 = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' as Address;
+
+      let currentSpender = spender1;
+
+      const { rerender } = renderHook(
+        () =>
+          useERC20Allowance({
+            token: mockTokenAddress,
+            spender: currentSpender,
+          }),
+        {
+          wrapper: ({ children }: { children: ReactNode }) => (
+            <TestWrapper>{children}</TestWrapper>
+          ),
+        }
+      );
+
+      // Initially called with first spender
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: mockTokenAddress,
+          functionName: 'allowance',
+          args: [mockAddress, spender1],
+          query: { enabled: true },
+        })
+      );
+
+      // Change spender parameter
+      currentSpender = spender2;
+      mockUseReadContract.mockReturnValue({
+        data: BigInt('2000000000000000000'),
+        isLoading: false,
+        isError: false,
+      });
+      rerender();
+
+      // Should have been called with new spender
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: mockTokenAddress,
+          functionName: 'allowance',
+          args: [mockAddress, spender2],
+          query: { enabled: true },
+        })
+      );
+    });
+
+    it('should respond to owner parameter changes', () => {
+      const mockUseReadContract = vi.fn().mockReturnValue({
+        data: BigInt('1000000000000000000'),
+        isLoading: false,
+        isError: false,
+      });
+
+      vi.mocked(wagmi.useReadContract).mockImplementation(mockUseReadContract);
+      vi.mocked(wagmi.useAccount).mockReturnValue({
+        address: undefined,
+        status: 'disconnected',
+        isConnected: false,
+      } as unknown as ReturnType<typeof wagmi.useAccount>);
+
+      const owner1 = mockAddress;
+      const owner2 = '0xffffffffffffffffffffffffffffffffffffffff' as Address;
+
+      let currentOwner: Address | undefined = owner1;
+
+      const { rerender } = renderHook(
+        () =>
+          useERC20Allowance({
+            token: mockTokenAddress,
+            owner: currentOwner,
+            spender: mockSpenderAddress,
+          }),
+        {
+          wrapper: ({ children }: { children: ReactNode }) => (
+            <TestWrapper>{children}</TestWrapper>
+          ),
+        }
+      );
+
+      // Initially called with first owner
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: mockTokenAddress,
+          functionName: 'allowance',
+          args: [owner1, mockSpenderAddress],
+          query: { enabled: true },
+        })
+      );
+
+      // Change owner parameter
+      currentOwner = owner2;
+      mockUseReadContract.mockReturnValue({
+        data: BigInt('3000000000000000000'),
+        isLoading: false,
+        isError: false,
+      });
+      rerender();
+
+      // Should have been called with new owner
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: mockTokenAddress,
+          functionName: 'allowance',
+          args: [owner2, mockSpenderAddress],
+          query: { enabled: true },
+        })
+      );
+    });
+
+    it('should disable query when owner becomes undefined', () => {
+      const mockUseReadContract = vi.fn().mockReturnValue({
+        data: BigInt('1000000000000000000'),
+        isLoading: false,
+        isError: false,
+      });
+
+      vi.mocked(wagmi.useReadContract).mockImplementation(mockUseReadContract);
+      vi.mocked(wagmi.useAccount).mockReturnValue({
+        address: undefined,
+        status: 'disconnected',
+        isConnected: false,
+      } as unknown as ReturnType<typeof wagmi.useAccount>);
+
+      let currentOwner: Address | undefined = mockAddress;
+
+      const { rerender } = renderHook(
+        () =>
+          useERC20Allowance({
+            token: mockTokenAddress,
+            owner: currentOwner,
+            spender: mockSpenderAddress,
+          }),
+        {
+          wrapper: ({ children }: { children: ReactNode }) => (
+            <TestWrapper>{children}</TestWrapper>
+          ),
+        }
+      );
+
+      // Initially enabled with owner
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          args: [mockAddress, mockSpenderAddress],
+          query: { enabled: true },
+        })
+      );
+
+      // Remove owner
+      currentOwner = undefined;
+      mockUseReadContract.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+      });
+      rerender();
+
+      // Should be disabled
+      expect(mockUseReadContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          args: undefined,
+          query: { enabled: false },
+        })
+      );
+    });
+  });
+
+  describe('useERC20Metadata', () => {
+    it('should respond to token parameter changes', () => {
+      const mockUseReadContract = vi.fn();
+      vi.mocked(wagmi.useReadContract).mockImplementation(mockUseReadContract);
+
+      const tokenAddress1 = mockTokenAddress;
+      const tokenAddress2 = '0x1111111111111111111111111111111111111111' as Address;
+
+      let currentToken = tokenAddress1;
+
+      // First render with token1
+      let callCount = 0;
+      mockUseReadContract.mockImplementation(() => {
+        callCount += 1;
+        const responses: any[] = [
+          { data: 'Token1', isLoading: false, isError: false },
+          { data: 'TK1', isLoading: false, isError: false },
+          { data: 18, isLoading: false, isError: false },
+          { data: BigInt('1000'), isLoading: false, isError: false },
+        ];
+        return responses[callCount - 1];
+      });
+
+      const { result, rerender } = renderHook(
+        () => useERC20Metadata({ token: currentToken }),
+        {
+          wrapper: ({ children }: { children: ReactNode }) => (
+            <TestWrapper>{children}</TestWrapper>
+          ),
+        }
+      );
+
+      // Verify first token metadata
+      expect(result.current.name).toBe('Token1');
+      expect(result.current.symbol).toBe('TK1');
+
+      // Change to token2
+      currentToken = tokenAddress2;
+      callCount = 0;
+      mockUseReadContract.mockImplementation(() => {
+        callCount += 1;
+        const responses: any[] = [
+          { data: 'Token2', isLoading: false, isError: false },
+          { data: 'TK2', isLoading: false, isError: false },
+          { data: 6, isLoading: false, isError: false },
+          { data: BigInt('2000'), isLoading: false, isError: false },
+        ];
+        return responses[callCount - 1];
+      });
+      rerender();
+
+      // Verify second token metadata
+      expect(result.current.name).toBe('Token2');
+      expect(result.current.symbol).toBe('TK2');
+      expect(result.current.decimals).toBe(6);
+    });
+  });
+
+  describe('useRadiusSend', () => {
+    it('should update state when transaction completes', () => {
+      const mockSendTransaction = vi.fn();
+
+      vi.mocked(wagmi.useSendTransaction).mockReturnValue({
+        data: undefined,
+        error: null,
+        isPending: false,
+        sendTransaction: mockSendTransaction,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof wagmi.useSendTransaction>);
+
+      vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isSuccess: false,
+      } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
+
+      const { result, rerender } = renderHook(() => useRadiusSend(), {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <TestWrapper>{children}</TestWrapper>
+        ),
+      });
+
+      // Initially not pending
+      expect(result.current.isPending).toBe(false);
+      expect(result.current.isConfirmed).toBe(false);
+
+      // Simulate transaction sent
+      vi.mocked(wagmi.useSendTransaction).mockReturnValue({
+        data: mockHash,
+        error: null,
+        isPending: true,
+        sendTransaction: mockSendTransaction,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof wagmi.useSendTransaction>);
+
+      vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isSuccess: false,
+      } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
+
+      rerender();
+
+      // Should be pending
+      expect(result.current.isPending).toBe(true);
+      expect(result.current.isConfirming).toBe(true);
+
+      // Simulate transaction confirmed
+      vi.mocked(wagmi.useSendTransaction).mockReturnValue({
+        data: mockHash,
+        error: null,
+        isPending: false,
+        sendTransaction: mockSendTransaction,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof wagmi.useSendTransaction>);
+
+      vi.mocked(wagmi.useWaitForTransactionReceipt).mockReturnValue({
+        data: mockReceipt,
+        isLoading: false,
+        isSuccess: true,
+      } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
+
+      rerender();
+
+      // Should be confirmed
+      expect(result.current.isPending).toBe(false);
+      expect(result.current.isConfirmed).toBe(true);
+      expect(result.current.receipt).toBeDefined();
     });
   });
 });

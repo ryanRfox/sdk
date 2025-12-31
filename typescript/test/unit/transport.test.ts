@@ -401,7 +401,7 @@ describe('createInterceptingTransport', () => {
       });
 
       // The transport should be a function that can be invoked
-      expect(typeof (transport as any)).toBe('function');
+      expect(typeof transport).toBe('function');
     });
 
     test('should accept method and params in request', () => {
@@ -410,8 +410,7 @@ describe('createInterceptingTransport', () => {
       });
 
       // Transport function should exist and be callable with method/params
-      const requestFn = transport as any;
-      expect(typeof requestFn).toBe('function');
+      expect(typeof transport).toBe('function');
     });
 
     test('should handle different request methods', () => {

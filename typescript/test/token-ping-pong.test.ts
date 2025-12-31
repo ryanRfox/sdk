@@ -39,6 +39,29 @@ import { radiusTestnet } from '../packages/core/src/chains/index';
 import { ERC20 } from '../packages/core/src/contracts/erc20';
 
 /**
+ * Global state for token ping-pong test
+ * Stores balances and transaction hashes across test cases
+ */
+interface TokenPingPongGlobalState {
+  __initialBalance1?: bigint;
+  __initialBalance2?: bigint;
+  __transfer1TxHash?: string;
+  __afterTransfer1Balance1?: bigint;
+  __afterTransfer1Balance2?: bigint;
+  __transfer2TxHash?: string;
+}
+
+// Extend globalThis with our test state
+declare global {
+  var __tokenPingPongState: TokenPingPongGlobalState;
+}
+
+// Initialize global state
+if (!globalThis.__tokenPingPongState) {
+  globalThis.__tokenPingPongState = {};
+}
+
+/**
  * Test configuration
  */
 const RADIUS_ENDPOINT = process.env.RADIUS_ENDPOINT || 'https://rpc.testnet.radiustech.xyz';
@@ -153,8 +176,8 @@ describe('Token Ping-Pong Integration Tests', () => {
         expect(typeof balance2).toBe('bigint');
 
         // Store initial balances for later verification
-        (globalThis as any).__initialBalance1 = balance1;
-        (globalThis as any).__initialBalance2 = balance2;
+        globalThis.__tokenPingPongState.__initialBalance1 = balance1;
+        globalThis.__tokenPingPongState.__initialBalance2 = balance2;
 
         console.log('\n[PASS] Successfully retrieved initial balances');
       } catch (error) {
@@ -212,7 +235,7 @@ describe('Token Ping-Pong Integration Tests', () => {
         console.log(`  Gas Used: ${receipt.gasUsed}`);
 
         // Store transaction info for reference
-        (globalThis as any).__transfer1TxHash = txHash;
+        globalThis.__tokenPingPongState.__transfer1TxHash = txHash;
 
         console.log('\n[PASS] Transfer from Account 1 → Account 2 completed');
       } catch (error) {
@@ -233,8 +256,8 @@ describe('Token Ping-Pong Integration Tests', () => {
       try {
         console.log('\n[TEST 3] Verify Balances After Transfer 1');
 
-        const initialBalance1 = (globalThis as any).__initialBalance1 as bigint;
-        const initialBalance2 = (globalThis as any).__initialBalance2 as bigint;
+        const initialBalance1 = globalThis.__tokenPingPongState.__initialBalance1 ?? 0n;
+        const initialBalance2 = globalThis.__tokenPingPongState.__initialBalance2 ?? 0n;
 
         const newBalance1 = await token.balanceOf(account1.address);
         const newBalance2 = await token.balanceOf(account2.address);
@@ -260,8 +283,8 @@ describe('Token Ping-Pong Integration Tests', () => {
         console.log(`  ✓ Account 2 increased by exactly ${TRANSFER_AMOUNT.toString()} wei`);
 
         // Store new balances for next test
-        (globalThis as any).__afterTransfer1Balance1 = newBalance1;
-        (globalThis as any).__afterTransfer1Balance2 = newBalance2;
+        globalThis.__tokenPingPongState.__afterTransfer1Balance1 = newBalance1;
+        globalThis.__tokenPingPongState.__afterTransfer1Balance2 = newBalance2;
 
         console.log('\n[PASS] Balances verified after first transfer');
       } catch (error) {
@@ -319,7 +342,7 @@ describe('Token Ping-Pong Integration Tests', () => {
         console.log(`  Gas Used: ${receipt.gasUsed}`);
 
         // Store transaction info for reference
-        (globalThis as any).__transfer2TxHash = txHash;
+        globalThis.__tokenPingPongState.__transfer2TxHash = txHash;
 
         console.log('\n[PASS] Transfer from Account 2 → Account 1 completed');
       } catch (error) {
@@ -340,8 +363,8 @@ describe('Token Ping-Pong Integration Tests', () => {
       try {
         console.log('\n[TEST 5] Verify Final Balances (Should Match Original)');
 
-        const initialBalance1 = (globalThis as any).__initialBalance1 as bigint;
-        const initialBalance2 = (globalThis as any).__initialBalance2 as bigint;
+        const initialBalance1 = globalThis.__tokenPingPongState.__initialBalance1 ?? 0n;
+        const initialBalance2 = globalThis.__tokenPingPongState.__initialBalance2 ?? 0n;
 
         const finalBalance1 = await token.balanceOf(account1.address);
         const finalBalance2 = await token.balanceOf(account2.address);

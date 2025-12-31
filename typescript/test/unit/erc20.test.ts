@@ -6,6 +6,7 @@
 import { type Account, type PublicClient, type WalletClient } from 'viem';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ERC20, type ERC20Signer } from '../../packages/core/src/contracts/erc20';
+import { createMockPublicClient, createMockWalletClient, createMockAccount } from '../fixtures/mocks';
 
 describe('ERC20 Contract Class', () => {
   // Mock address and test data
@@ -23,21 +24,19 @@ describe('ERC20 Contract Class', () => {
 
   beforeEach(() => {
     // Create mock public client
-    mockPublicClient = {
+    mockPublicClient = createMockPublicClient({
       readContract: vi.fn(),
       waitForTransactionReceipt: vi.fn(),
-    } as any;
+    });
 
     // Create mock wallet client
-    mockWalletClient = {
+    mockWalletClient = createMockWalletClient({
       writeContract: vi.fn(),
       chain: { id: 1 },
-    } as any;
+    });
 
     // Create mock account
-    mockAccount = {
-      address: ownerAddress,
-    } as any;
+    mockAccount = createMockAccount(ownerAddress);
 
     // Create signer
     signer = {
@@ -412,7 +411,7 @@ describe('ERC20 Contract Class', () => {
       const mockReceipt = {
         transactionHash: txHash,
         status: 'success',
-      } as any;
+      };
 
       vi.mocked(mockWalletClient.writeContract).mockResolvedValueOnce(txHash);
       vi.mocked(mockPublicClient.waitForTransactionReceipt).mockResolvedValueOnce(mockReceipt);
@@ -426,7 +425,7 @@ describe('ERC20 Contract Class', () => {
 
     test('should pass transaction hash to waitForTransactionReceipt', async () => {
       const txHash = '0x1234567890123456789012345678901234567890123456789012345678901234' as const;
-      const mockReceipt = { transactionHash: txHash } as any;
+      const mockReceipt = { transactionHash: txHash };
 
       vi.mocked(mockWalletClient.writeContract).mockResolvedValueOnce(txHash);
       vi.mocked(mockPublicClient.waitForTransactionReceipt).mockResolvedValueOnce(mockReceipt);
@@ -496,7 +495,7 @@ describe('ERC20 Contract Class', () => {
       const mockReceipt = {
         transactionHash: txHash,
         status: 'success',
-      } as any;
+      };
 
       vi.mocked(mockWalletClient.writeContract).mockResolvedValueOnce(txHash);
       vi.mocked(mockPublicClient.waitForTransactionReceipt).mockResolvedValueOnce(mockReceipt);
@@ -572,7 +571,7 @@ describe('ERC20 Contract Class', () => {
       const mockReceipt = {
         transactionHash: txHash,
         status: 'success',
-      } as any;
+      };
 
       vi.mocked(mockWalletClient.writeContract).mockResolvedValueOnce(txHash);
       vi.mocked(mockPublicClient.waitForTransactionReceipt).mockResolvedValueOnce(mockReceipt);

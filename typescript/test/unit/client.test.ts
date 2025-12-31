@@ -3,7 +3,7 @@
  * Tests createRadiusClient function with various configurations
  */
 
-import { http } from 'viem';
+import { type Chain, http } from 'viem';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { radiusMainnet, radiusTestnet } from '../../packages/core/src/chains/radius';
 import {
@@ -93,7 +93,7 @@ describe('RadiusClient Creation', () => {
     });
 
     test('should throw error if chain has no RPC URL', () => {
-      const invalidChain = {
+      const invalidChain: Chain = {
         id: 999,
         name: 'Invalid Chain',
         rpcUrls: {
@@ -105,25 +105,25 @@ describe('RadiusClient Creation', () => {
 
       expect(() => {
         createRadiusClient({
-          chain: invalidChain as any,
+          chain: invalidChain,
         });
       }).toThrow('No RPC URL configured for chain');
     });
 
     test('should throw error if chain RPC URL is missing', () => {
-      const invalidChain = {
+      const invalidChain: Chain = {
         id: 999,
         name: 'Invalid Chain',
         rpcUrls: {
           default: {
-            http: undefined,
+            http: [],
           },
         },
       };
 
       expect(() => {
         createRadiusClient({
-          chain: invalidChain as any,
+          chain: invalidChain,
         });
       }).toThrow();
     });
@@ -223,7 +223,7 @@ describe('RadiusClient Creation', () => {
     test('should handle empty config object gracefully', () => {
       // Chain is required, so this should throw
       expect(() => {
-        createRadiusClient({} as any);
+        createRadiusClient({} as RadiusClientConfig);
       }).toThrow();
     });
 

@@ -269,7 +269,7 @@ describe('Radius SDK Event Integration Tests', () => {
           });
 
           let blockCount = 0;
-          let timeoutId: NodeJS.Timeout = null as any;
+          let timeoutId: NodeJS.Timeout | null = null;
 
           const unwatch = watchBlockNumber(wsClient, {
             onBlockNumber: (blockNumber) => {
@@ -374,11 +374,11 @@ describe('Radius SDK Event Integration Tests', () => {
           const toBlock = latestBlock;
 
           // Radius requires address parameter
-          await httpClient.getLogs({
+          await (httpClient.getLogs as (params: { fromBlock: bigint; toBlock: bigint }) => Promise<any>)({
             fromBlock,
             toBlock,
             // Missing address - this should fail on Radius
-          } as any);
+          });
 
           console.log('[WARN] getLogs succeeded without address parameter');
           // If this passes, Radius doesn't enforce address requirement
@@ -575,7 +575,7 @@ describe('Radius SDK Event Integration Tests', () => {
         try {
           const version = await httpClient.request({
             method: 'web3_clientVersion',
-          } as any);
+          } as Parameters<typeof httpClient.request>[0]);
 
           console.log('[PASS] RPC endpoint is accessible');
           console.log(`  Client version: ${version}`);

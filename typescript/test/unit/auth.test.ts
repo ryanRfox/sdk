@@ -98,10 +98,11 @@ describe('PrivateKeySigner', () => {
       // Should not throw, chainID should default to 0
       expect(signer).toBeDefined();
 
-      // Wait a bit for async chainID call to complete
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      // chainID defaults to 0 (number, not necessarily bigint)
-      expect(signer.chainID()).toBe(0);
+      // Wait for async chainID call to complete
+      await vi.waitFor(() => {
+        // chainID defaults to 0 (number, not necessarily bigint)
+        expect(signer.chainID()).toBe(0);
+      }, { timeout: 1000 });
     });
   });
 
@@ -142,10 +143,9 @@ describe('PrivateKeySigner', () => {
     test('should return chain ID from client', async () => {
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
 
-      // Wait for async chainID to be set
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      expect(signer.chainID()).toBe(TEST_CHAIN_ID);
+      await vi.waitFor(() => {
+        expect(signer.chainID()).toBe(TEST_CHAIN_ID);
+      }, { timeout: 1000 });
     });
 
     test('should default to 0 if client fails', async () => {
@@ -156,11 +156,10 @@ describe('PrivateKeySigner', () => {
 
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, failingClient);
 
-      // Wait for async chainID call
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      // chainID defaults to 0 (not necessarily 0n since it's initialized as number)
-      expect(signer.chainID()).toBe(0);
+      await vi.waitFor(() => {
+        // chainID defaults to 0 (not necessarily 0n since it's initialized as number)
+        expect(signer.chainID()).toBe(0);
+      }, { timeout: 1000 });
     });
 
     test('should handle different chain IDs', async () => {
@@ -174,9 +173,9 @@ describe('PrivateKeySigner', () => {
 
         const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, client);
 
-        await new Promise((resolve) => setTimeout(resolve, 10));
-
-        expect(signer.chainID()).toBe(chainId);
+        await vi.waitFor(() => {
+          expect(signer.chainID()).toBe(chainId);
+        }, { timeout: 1000 });
       }
     });
   });
@@ -301,86 +300,86 @@ describe('PrivateKeySigner', () => {
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
       const tx = new Transaction('0x', 21000n, 1n, 0, new Address(TEST_ADDRESS));
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const signedTx = await signer.signTransaction(tx);
 
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(signedTx).toBeDefined();
-      expect(signedTx.r).toBeDefined();
-      expect(signedTx.s).toBeDefined();
-      expect(signedTx.v).toBeDefined();
-      expect(signedTx.serialized).toBeDefined();
+        expect(signedTx).toBeDefined();
+        expect(signedTx.r).toBeDefined();
+        expect(signedTx.s).toBeDefined();
+        expect(signedTx.v).toBeDefined();
+        expect(signedTx.serialized).toBeDefined();
+      }, { timeout: 1000 });
     });
 
     test('should return SignedTransaction with all transaction fields', async () => {
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
       const tx = new Transaction('0x1234', 21000n, 10n, 1, new Address(TEST_ADDRESS), 100n);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const signedTx = await signer.signTransaction(tx);
 
-      const signedTx = await signer.signTransaction(tx);
-
-      // Should preserve original transaction fields
-      expect(signedTx.data).toBe(tx.data);
-      expect(signedTx.gas).toBe(tx.gas);
-      expect(signedTx.gasPrice).toBe(tx.gasPrice);
-      expect(signedTx.nonce).toBe(tx.nonce);
-      expect(signedTx.value).toBe(tx.value);
+        // Should preserve original transaction fields
+        expect(signedTx.data).toBe(tx.data);
+        expect(signedTx.gas).toBe(tx.gas);
+        expect(signedTx.gasPrice).toBe(tx.gasPrice);
+        expect(signedTx.nonce).toBe(tx.nonce);
+        expect(signedTx.value).toBe(tx.value);
+      }, { timeout: 1000 });
     });
 
     test('should produce valid signature components', async () => {
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
       const tx = new Transaction('0x', 21000n, 1n, 0, new Address(TEST_ADDRESS));
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const signedTx = await signer.signTransaction(tx);
 
-      const signedTx = await signer.signTransaction(tx);
+        // r and s should be bigints
+        expect(typeof signedTx.r).toBe('bigint');
+        expect(typeof signedTx.s).toBe('bigint');
 
-      // r and s should be bigints
-      expect(typeof signedTx.r).toBe('bigint');
-      expect(typeof signedTx.s).toBe('bigint');
-
-      // v should be a number (recovery id)
-      expect(typeof signedTx.v).toBe('number');
-      expect(signedTx.v).toBeGreaterThanOrEqual(0);
-      // v can be 0-3 for EIP-155 transactions or 27-30 for older format
-      expect(signedTx.v).toBeGreaterThanOrEqual(0);
+        // v should be a number (recovery id)
+        expect(typeof signedTx.v).toBe('number');
+        expect(signedTx.v).toBeGreaterThanOrEqual(0);
+        // v can be 0-3 for EIP-155 transactions or 27-30 for older format
+        expect(signedTx.v).toBeGreaterThanOrEqual(0);
+      }, { timeout: 1000 });
     });
 
     test('should produce serialized transaction', async () => {
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
       const tx = new Transaction('0x', 21000n, 1n, 0, new Address(TEST_ADDRESS));
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const signedTx = await signer.signTransaction(tx);
 
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(typeof signedTx.serialized).toBe('string');
-      expect(signedTx.serialized).toMatch(/^0x[0-9a-f]+$/);
+        expect(typeof signedTx.serialized).toBe('string');
+        expect(signedTx.serialized).toMatch(/^0x[0-9a-f]+$/);
+      }, { timeout: 1000 });
     });
 
     test('should handle transaction without to field', async () => {
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
       const tx = new Transaction('0xdeadbeef', 100000n, 1n, 0);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const signedTx = await signer.signTransaction(tx);
 
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(signedTx).toBeDefined();
-      expect(signedTx.serialized).toBeDefined();
+        expect(signedTx).toBeDefined();
+        expect(signedTx.serialized).toBeDefined();
+      }, { timeout: 1000 });
     });
 
     test('should handle transaction without value field', async () => {
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
       const tx = new Transaction('0x', 21000n, 1n, 0, new Address(TEST_ADDRESS));
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const signedTx = await signer.signTransaction(tx);
 
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(signedTx).toBeDefined();
-      expect(signedTx.serialized).toBeDefined();
+        expect(signedTx).toBeDefined();
+        expect(signedTx.serialized).toBeDefined();
+      }, { timeout: 1000 });
     });
 
     test('should use chain ID from client', async () => {
@@ -392,12 +391,12 @@ describe('PrivateKeySigner', () => {
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, client);
       const tx = new Transaction('0x', 21000n, 1n, 0, new Address(TEST_ADDRESS));
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const signedTx = await signer.signTransaction(tx);
 
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(signedTx).toBeDefined();
-      expect(signedTx.serialized).toBeDefined();
+        expect(signedTx).toBeDefined();
+        expect(signedTx.serialized).toBeDefined();
+      }, { timeout: 1000 });
     });
   });
 
@@ -409,22 +408,22 @@ describe('PrivateKeySigner', () => {
       const signer1 = new PrivateKeySigner(key1, mockClient);
       const signer2 = new PrivateKeySigner(key2, mockClient);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      expect(signer1.address().hex()).not.toBe(signer2.address().hex());
+      await vi.waitFor(() => {
+        expect(signer1.address().hex()).not.toBe(signer2.address().hex());
+      }, { timeout: 1000 });
     });
 
     test('should not share state between instances', async () => {
       const signer1 = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
       const signer2 = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(() => {
+        const addr1 = signer1.address();
+        const addr2 = signer2.address();
 
-      const addr1 = signer1.address();
-      const addr2 = signer2.address();
-
-      expect(addr1.hex()).toBe(addr2.hex());
-      expect(addr1 === addr2).toBe(false); // Different instances
+        expect(addr1.hex()).toBe(addr2.hex());
+        expect(addr1 === addr2).toBe(false); // Different instances
+      }, { timeout: 1000 });
     });
   });
 });
@@ -455,10 +454,10 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      expect(signer).toBeDefined();
-      expect(signer).toBeInstanceOf(ClefSigner);
-
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(() => {
+        expect(signer).toBeDefined();
+        expect(signer).toBeInstanceOf(ClefSigner);
+      }, { timeout: 1000 });
     });
 
     test('should call client.chainID() during construction', async () => {
@@ -467,9 +466,9 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       new ClefSigner(address, mockClient, CLEF_URL);
 
-      expect(mockClient.chainID).toHaveBeenCalled();
-
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(() => {
+        expect(mockClient.chainID).toHaveBeenCalled();
+      }, { timeout: 1000 });
     });
 
     test('should verify Clef connection', async () => {
@@ -478,9 +477,9 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const _signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      expect(mockJsonRpcProvider.send).toHaveBeenCalledWith('account_version', []);
+      await vi.waitFor(() => {
+        expect(mockJsonRpcProvider.send).toHaveBeenCalledWith('account_version', []);
+      }, { timeout: 1000 });
     });
 
     test('should handle Clef connection verification failure', async () => {
@@ -489,11 +488,11 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
 
       // Should not throw during construction
-      expect(() => {
-        new ClefSigner(address, mockClient, CLEF_URL);
-      }).not.toThrow();
-
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(() => {
+        expect(() => {
+          new ClefSigner(address, mockClient, CLEF_URL);
+        }).not.toThrow();
+      }, { timeout: 1000 });
     });
 
     test('should handle chainID retrieval failure', async () => {
@@ -506,9 +505,9 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, failingClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      expect(signer).toBeDefined();
+      await vi.waitFor(() => {
+        expect(signer).toBeDefined();
+      }, { timeout: 1000 });
     });
   });
 
@@ -545,9 +544,9 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      expect(signer.chainID()).toBe(TEST_CHAIN_ID);
+      await vi.waitFor(() => {
+        expect(signer.chainID()).toBe(TEST_CHAIN_ID);
+      }, { timeout: 1000 });
     });
 
     test('should default to 0 if client fails', async () => {
@@ -560,9 +559,9 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, failingClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      expect(signer.chainID()).toBe(0n);
+      await vi.waitFor(() => {
+        expect(signer.chainID()).toBe(0n);
+      }, { timeout: 1000 });
     });
   });
 
@@ -708,15 +707,15 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const tx = new Transaction('0x', 21000n, 1n, 0, address);
+        await signer.signTransaction(tx);
 
-      const tx = new Transaction('0x', 21000n, 1n, 0, address);
-      await signer.signTransaction(tx);
-
-      expect(mockJsonRpcProvider.send).toHaveBeenCalledWith(
-        'account_signTransaction',
-        expect.arrayContaining([expect.any(Object)])
-      );
+        expect(mockJsonRpcProvider.send).toHaveBeenCalledWith(
+          'account_signTransaction',
+          expect.arrayContaining([expect.any(Object)])
+        );
+      }, { timeout: 1000 });
     });
 
     test('should return signed transaction with all required fields', async () => {
@@ -737,15 +736,15 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const tx = new Transaction('0x', 21000n, 1n, 0, address);
+        const signedTx = await signer.signTransaction(tx);
 
-      const tx = new Transaction('0x', 21000n, 1n, 0, address);
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(signedTx.r).toBeDefined();
-      expect(signedTx.s).toBeDefined();
-      expect(signedTx.v).toBeDefined();
-      expect(signedTx.serialized).toBeDefined();
+        expect(signedTx.r).toBeDefined();
+        expect(signedTx.s).toBeDefined();
+        expect(signedTx.v).toBeDefined();
+        expect(signedTx.serialized).toBeDefined();
+      }, { timeout: 1000 });
     });
 
     test('should preserve original transaction fields', async () => {
@@ -766,16 +765,16 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const tx = new Transaction('0x1234', 21000n, 10n, 5, address, 100n);
+        const signedTx = await signer.signTransaction(tx);
 
-      const tx = new Transaction('0x1234', 21000n, 10n, 5, address, 100n);
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(signedTx.data).toBe(tx.data);
-      expect(signedTx.gas).toBe(tx.gas);
-      expect(signedTx.gasPrice).toBe(tx.gasPrice);
-      expect(signedTx.nonce).toBe(tx.nonce);
-      expect(signedTx.value).toBe(tx.value);
+        expect(signedTx.data).toBe(tx.data);
+        expect(signedTx.gas).toBe(tx.gas);
+        expect(signedTx.gasPrice).toBe(tx.gasPrice);
+        expect(signedTx.nonce).toBe(tx.nonce);
+        expect(signedTx.value).toBe(tx.value);
+      }, { timeout: 1000 });
     });
 
     test('should handle transaction without value field', async () => {
@@ -796,13 +795,13 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const tx = new Transaction('0x', 21000n, 1n, 0, address);
+        const signedTx = await signer.signTransaction(tx);
 
-      const tx = new Transaction('0x', 21000n, 1n, 0, address);
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(signedTx).toBeDefined();
-      expect(signedTx.serialized).toBeDefined();
+        expect(signedTx).toBeDefined();
+        expect(signedTx.serialized).toBeDefined();
+      }, { timeout: 1000 });
     });
 
     test('should parse signature components correctly', async () => {
@@ -823,14 +822,14 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const tx = new Transaction('0x', 21000n, 1n, 0, address);
+        const signedTx = await signer.signTransaction(tx);
 
-      const tx = new Transaction('0x', 21000n, 1n, 0, address);
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(typeof signedTx.r).toBe('bigint');
-      expect(typeof signedTx.s).toBe('bigint');
-      expect(typeof signedTx.v).toBe('number');
+        expect(typeof signedTx.r).toBe('bigint');
+        expect(typeof signedTx.s).toBe('bigint');
+        expect(typeof signedTx.v).toBe('number');
+      }, { timeout: 1000 });
     });
 
     test('should handle v without 0x prefix', async () => {
@@ -851,12 +850,12 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const tx = new Transaction('0x', 21000n, 1n, 0, address);
+        const signedTx = await signer.signTransaction(tx);
 
-      const tx = new Transaction('0x', 21000n, 1n, 0, address);
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(typeof signedTx.v).toBe('number');
+        expect(typeof signedTx.v).toBe('number');
+      }, { timeout: 1000 });
     });
 
     test('should handle raw without 0x prefix', async () => {
@@ -877,12 +876,12 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const tx = new Transaction('0x', 21000n, 1n, 0, address);
+        const signedTx = await signer.signTransaction(tx);
 
-      const tx = new Transaction('0x', 21000n, 1n, 0, address);
-      const signedTx = await signer.signTransaction(tx);
-
-      expect(signedTx.serialized).toMatch(/^0x/);
+        expect(signedTx.serialized).toMatch(/^0x/);
+      }, { timeout: 1000 });
     });
 
     test('should throw error if Clef signing fails', async () => {
@@ -893,11 +892,11 @@ describe('ClefSigner', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const tx = new Transaction('0x', 21000n, 1n, 0, address);
 
-      const tx = new Transaction('0x', 21000n, 1n, 0, address);
-
-      await expect(signer.signTransaction(tx)).rejects.toThrow('Clef signing failed');
+        await expect(signer.signTransaction(tx)).rejects.toThrow('Clef signing failed');
+      }, { timeout: 1000 });
     });
   });
 
@@ -949,13 +948,12 @@ describe('Signer Implementation Compliance', () => {
     test('chainID() should return BigNumberish type', async () => {
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
 
-      // Wait for async chainID to be set
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(() => {
+        const chainId = signer.chainID();
 
-      const chainId = signer.chainID();
-
-      // chainID can be either number or bigint (BigNumberish type)
-      expect(typeof chainId === 'bigint' || typeof chainId === 'number').toBe(true);
+        // chainID can be either number or bigint (BigNumberish type)
+        expect(typeof chainId === 'bigint' || typeof chainId === 'number').toBe(true);
+      }, { timeout: 1000 });
     });
 
     test('hash() should return Hash type', () => {
@@ -983,17 +981,17 @@ describe('Signer Implementation Compliance', () => {
       const signer = new PrivateKeySigner(TEST_PRIVATE_KEY, mockClient);
       const tx = new Transaction('0x', 21000n, 1n, 0);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(async () => {
+        const result = signer.signTransaction(tx);
 
-      const result = signer.signTransaction(tx);
+        expect(result).toBeInstanceOf(Promise);
 
-      expect(result).toBeInstanceOf(Promise);
-
-      const signedTx = await result;
-      expect(signedTx.r).toBeDefined();
-      expect(signedTx.s).toBeDefined();
-      expect(signedTx.v).toBeDefined();
-      expect(signedTx.serialized).toBeDefined();
+        const signedTx = await result;
+        expect(signedTx.r).toBeDefined();
+        expect(signedTx.s).toBeDefined();
+        expect(signedTx.v).toBeDefined();
+        expect(signedTx.serialized).toBeDefined();
+      }, { timeout: 1000 });
     });
   });
 
@@ -1032,11 +1030,11 @@ describe('Signer Implementation Compliance', () => {
       const address = new Address(TEST_ADDRESS);
       const signer = new ClefSigner(address, mockClient, CLEF_URL);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await vi.waitFor(() => {
+        const chainId = signer.chainID();
 
-      const chainId = signer.chainID();
-
-      expect(typeof chainId).toBe('bigint');
+        expect(typeof chainId).toBe('bigint');
+      }, { timeout: 1000 });
     });
 
     test('hash() should return Hash type', () => {
