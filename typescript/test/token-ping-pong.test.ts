@@ -455,5 +455,5 @@ describe.skipIf(shouldSkip)('Token Ping-Pong Integration Tests', () => {
  * - All tests use WRITE operations (actual token transfers)
  * - Test uses real token transfers on testnet
  * - Balances may be affected by concurrent tests or network issues
- * - Gas costs will be deducted from account's native ETH balance
+ * - Gas costs will be deducted from account's native USD balance
  */

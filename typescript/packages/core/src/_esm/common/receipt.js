@@ -13,7 +13,7 @@ export class Receipt {
      * @param gasUsed The amount of gas used
      * @param status The transaction status (1 for success, 0 for failure)
      * @param logs The transaction logs/events
-     * @param value The amount of ETH transferred
+     * @param value The amount of native currency (USD) transferred
      */
     constructor(from, to, contractAddress, txHash, gasUsed, status, logs = [], value) {
         Object.defineProperty(this, "from", {

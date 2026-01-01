@@ -143,7 +143,7 @@ export class ClefSigner {
      * ```typescript
      * const signedTx = await signer.signTransaction({
      *   to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-     *   value: 1000000000000000000n, // 1 ETH
+     *   value: 1000000000000000000n, // 1 USD
      *   nonce: 0,
      *   gasPrice: 20000000000n,
      *   gas: 21000n,

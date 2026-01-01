@@ -7,8 +7,8 @@ exports.radiusTestnet = (0, viem_1.defineChain)({
     name: 'Radius Testnet',
     nativeCurrency: {
         decimals: 18,
-        name: 'Ether',
-        symbol: 'ETH',
+        name: 'USD',
+        symbol: 'USD',
     },
     rpcUrls: {
         default: {
@@ -28,8 +28,8 @@ exports.radiusMainnet = (0, viem_1.defineChain)({
     name: 'Radius',
     nativeCurrency: {
         decimals: 18,
-        name: 'Ether',
-        symbol: 'ETH',
+        name: 'USD',
+        symbol: 'USD',
     },
     rpcUrls: {
         default: {

@@ -22,8 +22,8 @@ describe('Chain Configurations', () => {
 
     test('should have native currency configuration', () => {
       expect(radiusTestnet.nativeCurrency).toBeDefined();
-      expect(radiusTestnet.nativeCurrency.name).toBe('Ether');
-      expect(radiusTestnet.nativeCurrency.symbol).toBe('ETH');
+      expect(radiusTestnet.nativeCurrency.name).toBe('USD');
+      expect(radiusTestnet.nativeCurrency.symbol).toBe('USD');
       expect(radiusTestnet.nativeCurrency.decimals).toBe(18);
     });
 
@@ -61,8 +61,8 @@ describe('Chain Configurations', () => {
 
     test('should have native currency configuration', () => {
       expect(radiusMainnet.nativeCurrency).toBeDefined();
-      expect(radiusMainnet.nativeCurrency.name).toBe('Ether');
-      expect(radiusMainnet.nativeCurrency.symbol).toBe('ETH');
+      expect(radiusMainnet.nativeCurrency.name).toBe('USD');
+      expect(radiusMainnet.nativeCurrency.symbol).toBe('USD');
       expect(radiusMainnet.nativeCurrency.decimals).toBe(18);
     });
 

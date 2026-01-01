@@ -52,7 +52,7 @@ describe('Integration Tests', async () => {
     const initialBalance = await fundedAccount.balance(client);
     console.log(`Initial balance: ${initialBalance}`);
 
-    // Send ETH from test account to recipient
+    // Send USD from test account to recipient
     const receipt = await fundedAccount.send(client, recipient.address(), amount);
     expect(receipt, 'Transaction receipt should be defined').toBeDefined();
     expect(receipt.from, 'Transaction from address should match sender').toEqual(

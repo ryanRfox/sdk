@@ -26,8 +26,8 @@ export declare const radiusTestnet: {
     name: "Radius Testnet";
     nativeCurrency: {
         readonly decimals: 18;
-        readonly name: "Ether";
-        readonly symbol: "ETH";
+        readonly name: "USD";
+        readonly symbol: "USD";
     };
     experimental_preconfirmationTime?: number | undefined | undefined;
     rpcUrls: {
@@ -79,8 +79,8 @@ export declare const radiusMainnet: {
     name: "Radius";
     nativeCurrency: {
         readonly decimals: 18;
-        readonly name: "Ether";
-        readonly symbol: "ETH";
+        readonly name: "USD";
+        readonly symbol: "USD";
     };
     experimental_preconfirmationTime?: number | undefined | undefined;
     rpcUrls: {

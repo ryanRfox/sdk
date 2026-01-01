@@ -1,0 +1,1547 @@
+---
+title: Radius SDK for TypeScript
+description: Complete API reference for the Radius TypeScript SDK - viem-based SDK for interacting with the Radius platform
+---
+
+# Radius SDK for TypeScript
+
+A viem-based SDK for interacting with the Radius platform. This SDK provides a comprehensive set of tools for connecting to Radius, managing accounts, signing transactions, and interacting with smart contracts.
+
+## Installation
+
+Install the SDK using your preferred package manager:
+
+```bash
+pnpm add @radiustechsystems/sdk
+```
+
+```bash
+npm install @radiustechsystems/sdk
+```
+
+```bash
+yarn add @radiustechsystems/sdk
+```
+
+## Quick Start
+
+Get started with a basic example that creates a client, connects to Radius Testnet, and queries a balance:
+
+```typescript
+import { createRadiusClient, createPrivateKeySigner, radiusTestnet } from '@radiustechsystems/sdk';
+import { http } from 'viem';
+
+// Create a Radius client
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+// Create a signer for transactions
+const signer = createPrivateKeySigner(
+  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+  radiusTestnet.id
+);
+
+// Get balance
+const balance = await client.getBalance(signer.address);
+console.log('Balance:', balance);
+
+// Send a transaction
+const receipt = await client.sendSync(
+  signer,
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  1000000000000000000n // 1 USD in wei
+);
+console.log('Transaction hash:', receipt.transactionHash);
+```
+
+## Client
+
+The RadiusClient is the main entry point for interacting with the Radius platform.
+
+### createRadiusClient()
+
+Creates a new RadiusClient instance configured for the Radius network.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| config | `RadiusClientConfig` | Configuration object for the client |
+
+**Returns:** `RadiusClient`
+
+**Example:**
+
+```typescript
+import { createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
+import { http } from 'viem';
+
+// Basic usage
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+// With custom transport (requires webSocket import from viem)
+import { webSocket } from 'viem';
+
+const clientWithWs = createRadiusClient({
+  chain: radiusTestnet,
+  transport: webSocket('wss://rpc.testnet.radiustech.xyz'),
+});
+
+// With logging
+const clientWithLogging = createRadiusClient({
+  chain: radiusTestnet,
+  logger: console.log,
+});
+
+// With custom interceptor
+const clientWithInterceptor = createRadiusClient({
+  chain: radiusTestnet,
+  interceptor: async (reqBody, response) => {
+    console.log('Request:', reqBody);
+    console.log('Response:', response);
+    return response;
+  },
+});
+```
+
+### RadiusClientConfig
+
+Configuration options for creating a RadiusClient.
+
+**Properties:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| chain | `Chain` | Yes | The chain configuration (use `radiusTestnet` or `radiusMainnet`) |
+| transport | `Transport` | No | Viem transport (defaults to HTTP based on chain config) |
+| interceptor | `Interceptor` | No | Optional response interceptor for modifying/monitoring JSON-RPC responses |
+| logger | `Logf` | No | Optional logger function for debugging |
+
+### RadiusClient Methods
+
+#### getChainId()
+
+Get the chain ID of the connected network.
+
+**Returns:** `Promise<bigint>`
+
+```typescript
+const chainId = await client.getChainId();
+console.log('Chain ID:', chainId);
+```
+
+#### getBalance()
+
+Get the balance of an address in wei.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| address | `Address` | The address to check |
+
+**Returns:** `Promise<bigint>` - Balance in wei
+
+```typescript
+const balance = await client.getBalance('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266');
+console.log('Balance:', balance.toString(), 'wei');
+```
+
+#### getCode()
+
+Get the bytecode deployed at a contract address.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| address | `Address` | The contract address |
+
+**Returns:** `Promise<Hex>` - The bytecode as a hex string, or '0x' if no code
+
+```typescript
+const code = await client.getCode('0x5FbDB2315678afecb367f032d93F642f64180aa3');
+console.log('Contract code:', code);
+```
+
+#### getNonce()
+
+Get the pending nonce for an address.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| address | `Address` | The address to check |
+
+**Returns:** `Promise<number>` - The next nonce to use
+
+```typescript
+const nonce = await client.getNonce('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266');
+console.log('Next nonce:', nonce);
+```
+
+#### estimateGas()
+
+Estimate gas for a transaction with a 20% safety margin, capped at MAX_GAS.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| tx | `TransactionRequest` | The transaction parameters |
+
+**Returns:** `Promise<bigint>` - Estimated gas with safety margin
+
+```typescript
+const gas = await client.estimateGas({
+  to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  value: 1000000000000000000n,
+});
+console.log('Estimated gas:', gas.toString());
+```
+
+#### call()
+
+Call a read-only contract method without creating a transaction.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| contract | `ContractInstance` | The contract instance with ABI and address |
+| method | `string` | The method name to call |
+| args | `...unknown[]` | Arguments to pass to the method |
+
+**Returns:** `Promise<T>` - The decoded return value(s)
+
+```typescript
+const name = await client.call<string>(
+  { address: tokenAddress, abi: ERC20_ABI },
+  'name'
+);
+console.log('Token name:', name);
+```
+
+#### execute()
+
+Execute a state-changing contract method. Returns immediately after the transaction is sent.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| contract | `ContractInstance` | The contract instance with ABI and address |
+| signer | `RadiusSigner` | The signer to sign the transaction |
+| method | `string` | The method name to execute |
+| args | `...unknown[]` | Arguments to pass to the method |
+
+**Returns:** `Promise<Hash>` - The transaction hash
+
+```typescript
+const hash = await client.execute(
+  { address: tokenAddress, abi: ERC20_ABI },
+  signer,
+  'transfer',
+  recipientAddress,
+  1000000000000000000n
+);
+console.log('Transaction hash:', hash);
+```
+
+#### executeSync()
+
+Execute a state-changing contract method and wait for the receipt.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| contract | `ContractInstance` | The contract instance with ABI and address |
+| signer | `RadiusSigner` | The signer to sign the transaction |
+| method | `string` | The method name to execute |
+| args | `...unknown[]` | Arguments to pass to the method |
+
+**Returns:** `Promise<RadiusReceipt>` - The transaction receipt
+
+```typescript
+const receipt = await client.executeSync(
+  { address: tokenAddress, abi: ERC20_ABI },
+  signer,
+  'transfer',
+  recipientAddress,
+  1000000000000000000n
+);
+console.log('Transaction confirmed:', receipt.transactionHash);
+console.log('Gas used:', receipt.gasUsed.toString());
+```
+
+#### send()
+
+Send native currency to an address. Returns immediately after the transaction is sent.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| signer | `RadiusSigner` | The signer to sign the transaction |
+| to | `Address` | The recipient address |
+| value | `bigint` | The amount to send in wei |
+
+**Returns:** `Promise<Hash>` - The transaction hash
+
+```typescript
+const hash = await client.send(
+  signer,
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  1000000000000000000n
+);
+console.log('Transaction hash:', hash);
+```
+
+#### sendSync()
+
+Send native currency to an address and wait for the receipt.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| signer | `RadiusSigner` | The signer to sign the transaction |
+| to | `Address` | The recipient address |
+| value | `bigint` | The amount to send in wei |
+
+**Returns:** `Promise<RadiusReceipt>` - The transaction receipt
+
+```typescript
+const receipt = await client.sendSync(
+  signer,
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  1000000000000000000n
+);
+console.log('Transaction confirmed:', receipt.transactionHash);
+console.log('Status:', receipt.status);
+```
+
+#### deployContract()
+
+Deploy a smart contract to the Radius network.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| signer | `RadiusSigner` | The signer to sign the deployment transaction |
+| bytecode | `Hex` | The contract bytecode |
+| abi | `Abi` | The contract ABI |
+| args | `...unknown[]` | Constructor arguments (if any) |
+
+**Returns:** `Promise<{ address: Address; receipt: RadiusReceipt }>` - The deployed contract address and receipt
+
+```typescript
+import { parseAbi } from 'viem';
+
+const abi = parseAbi([
+  'constructor(string memory name, string memory symbol)',
+  'function name() view returns (string)',
+]);
+
+const { address, receipt } = await client.deployContract(
+  signer,
+  '0x608060405234801561001057600080fd5b50...', // bytecode
+  abi,
+  'My Token',
+  'MTK'
+);
+console.log('Contract deployed at:', address);
+console.log('Deployment gas used:', receipt.gasUsed.toString());
+```
+
+#### sendRawTransaction()
+
+Send a raw signed transaction.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| signedTx | `Hex` | The signed transaction as a hex string |
+
+**Returns:** `Promise<Hash>` - The transaction hash
+
+```typescript
+const signedTx = await signer.signTransaction({
+  to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  value: 1000000000000000000n,
+  nonce: 0,
+  gas: 21000n,
+  gasPrice: 0n,
+  chainId: radiusTestnet.id,
+});
+
+const hash = await client.sendRawTransaction(signedTx);
+console.log('Transaction hash:', hash);
+```
+
+#### waitForReceipt()
+
+Wait for a transaction receipt.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| hash | `Hash` | The transaction hash to wait for |
+
+**Returns:** `Promise<RadiusReceipt>` - The transaction receipt
+
+```typescript
+const receipt = await client.waitForReceipt('0x1234...');
+console.log('Transaction confirmed:', receipt.status);
+```
+
+### RadiusReceipt
+
+Receipt returned from transaction execution.
+
+**Properties:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| transactionHash | `Hash` | The transaction hash |
+| from | `Address` | The sender address |
+| to | `Address \| null` | The recipient address (null for contract creation) |
+| contractAddress | `Address \| null` | The created contract address (if any) |
+| gasUsed | `bigint` | The amount of gas used |
+| status | `'success' \| 'reverted'` | The transaction status |
+| blockNumber | `bigint` | The block number the transaction was included in |
+| blockHash | `Hash` | The block hash |
+| logs | `TransactionReceipt['logs']` | Transaction logs |
+
+## Chains
+
+The SDK includes pre-configured chain definitions for Radius networks.
+
+### radiusTestnet
+
+Radius Testnet chain configuration.
+
+**Properties:**
+- **Chain ID:** 1223953 (0x12ad11)
+- **RPC URL:** https://rpc.testnet.radiustech.xyz
+- **Explorer:** https://explorer.testnet.radiustech.xyz
+- **Native Currency:** USD (18 decimals)
+
+**Example:**
+
+```typescript
+import { radiusTestnet } from '@radiustechsystems/sdk';
+
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+console.log('Chain ID:', radiusTestnet.id);
+console.log('RPC URL:', radiusTestnet.rpcUrls.default.http[0]);
+```
+
+### radiusMainnet
+
+Radius Mainnet chain configuration.
+
+**Note:** Mainnet configuration uses placeholder values. These will be updated when mainnet launches.
+
+**Properties:**
+- **Chain ID:** 1223954 (placeholder)
+- **RPC URL:** https://rpc.radiustech.xyz (placeholder)
+- **Explorer:** https://explorer.radiustech.xyz (placeholder)
+- **Native Currency:** USD (18 decimals)
+
+**Example:**
+
+```typescript
+import { radiusMainnet } from '@radiustechsystems/sdk';
+
+const client = createRadiusClient({
+  chain: radiusMainnet,
+  transport: http(),
+});
+```
+
+## Signers
+
+Signers are used to cryptographically sign transactions and messages. The SDK provides two signer implementations.
+
+### PrivateKeySigner
+
+A signer implementation that uses an ECDSA private key for signing operations.
+
+**Warning:** This signer keeps the private key in memory. For production systems with high security requirements, consider using a hardware security module, key management service, or the ClefSigner.
+
+#### createPrivateKeySigner()
+
+Factory function to create a PrivateKeySigner instance.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| privateKey | `Hex` | The private key as a hex string (must include 0x prefix) |
+| chainId | `number` | The chain ID used for transaction signing |
+
+**Returns:** `PrivateKeySigner`
+
+**Example:**
+
+```typescript
+import { createPrivateKeySigner, radiusTestnet } from '@radiustechsystems/sdk';
+
+const signer = createPrivateKeySigner(
+  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+  radiusTestnet.id
+);
+
+console.log('Signer address:', signer.address);
+// '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+
+// Sign a message
+const signature = await signer.signMessage('Hello, Radius!');
+console.log('Signature:', signature);
+
+// Sign a transaction
+const signedTx = await signer.signTransaction({
+  to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  value: 1000000000000000000n,
+  nonce: 0,
+  gas: 21000n,
+  gasPrice: 0n,
+  chainId: radiusTestnet.id,
+});
+```
+
+#### PrivateKeySigner Class
+
+**Constructor:**
+
+```typescript
+new PrivateKeySigner(privateKey: Hex, chainId: number)
+```
+
+**Properties:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| address | `Address` | The checksummed Ethereum address |
+| chainId | `number` | The chain ID for transaction signing |
+
+**Methods:**
+
+##### signMessage()
+
+Sign a message using the EIP-191 standard.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| message | `SignableMessage` | The message to sign (string, hex bytes, or raw bytes) |
+
+**Returns:** `Promise<Hex>` - The signature as a hex string
+
+```typescript
+// Sign a string message
+const sig1 = await signer.signMessage('Hello, World!');
+
+// Sign hex data
+const sig2 = await signer.signMessage({ raw: '0x1234' });
+```
+
+##### signTransaction()
+
+Sign a transaction using the EIP-155 standard.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| tx | `TransactionSerializable` | The transaction to sign |
+
+**Returns:** `Promise<Hex>` - The signed transaction as a hex string (RLP encoded)
+
+```typescript
+const signedTx = await signer.signTransaction({
+  to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  value: 1000000000000000000n,
+  nonce: 0,
+  gasPrice: 20000000000n,
+  gas: 21000n,
+});
+```
+
+### ClefSigner
+
+A signer implementation that uses the Clef external signing tool for secure key management.
+
+Clef is a secure key management service that can be used to sign transactions without exposing the private key to the application. This is useful for securing private keys in production systems.
+
+**Prerequisites:** Clef must be running and accessible to the application. Learn more about Clef: https://geth.ethereum.org/docs/tools/clef/introduction
+
+#### createClefSigner()
+
+Factory function to create a ClefSigner instance.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| address | `Address` | The address to use for signing (must be managed by Clef) |
+| chainId | `number` | The chain ID used for transaction signing |
+| clefUrl | `string` | The URL of the Clef server (e.g., "http://localhost:8550") |
+
+**Returns:** `ClefSigner`
+
+**Example:**
+
+```typescript
+import { createClefSigner, radiusTestnet } from '@radiustechsystems/sdk';
+
+const signer = createClefSigner(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  radiusTestnet.id,
+  'http://localhost:8550'
+);
+
+// Verify connection to Clef
+await signer.verifyConnection();
+console.log('Clef connection verified');
+
+// Sign a message
+const signature = await signer.signMessage('Hello, Radius!');
+
+// Sign a transaction
+const signedTx = await signer.signTransaction({
+  to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  value: 1000000000000000000n,
+  nonce: 0,
+  gas: 21000n,
+  gasPrice: 0n,
+  chainId: radiusTestnet.id,
+});
+```
+
+#### ClefSigner Class
+
+**Constructor:**
+
+```typescript
+new ClefSigner(address: Address, chainId: number, clefUrl: string)
+```
+
+**Properties:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| address | `Address` | The address associated with this signer |
+| chainId | `number` | The chain ID for transaction signing |
+
+**Methods:**
+
+##### signMessage()
+
+Sign a message using the EIP-191 standard via Clef.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| message | `SignableMessage` | The message to sign |
+
+**Returns:** `Promise<Hex>` - The signature as a hex string
+
+**Throws:** Error if signing fails or Clef is unavailable
+
+```typescript
+const sig = await signer.signMessage('Hello, World!');
+```
+
+##### signTransaction()
+
+Sign a transaction using the EIP-155 standard via Clef.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| tx | `TransactionSerializable` | The transaction to sign |
+
+**Returns:** `Promise<Hex>` - The signed transaction as a hex string (RLP encoded)
+
+**Throws:** Error if signing fails or Clef is unavailable
+
+```typescript
+const signedTx = await signer.signTransaction({
+  to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  value: 1000000000000000000n,
+  nonce: 0,
+  gasPrice: 20000000000n,
+  gas: 21000n,
+});
+```
+
+##### verifyConnection()
+
+Verify that the Clef server is accessible and the address is available.
+
+**Returns:** `Promise<boolean>` - True if verification succeeds
+
+**Throws:** Error if verification fails
+
+```typescript
+try {
+  await signer.verifyConnection();
+  console.log('Clef connection verified');
+} catch (error) {
+  console.error('Clef connection failed:', error);
+}
+```
+
+### RadiusSigner Interface
+
+The base interface implemented by all signers.
+
+**Properties:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| address | `Address` | The Radius account address (checksummed) |
+| chainId | `number` | The Chain ID for EIP-155 transaction signing |
+
+**Methods:**
+
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| signMessage | `message: SignableMessage` | `Promise<Hex>` | Signs a message using EIP-191 standard |
+| signTransaction | `tx: TransactionSerializable` | `Promise<Hex>` | Signs a transaction using EIP-155 standard |
+
+## ERC20
+
+The ERC20 class provides convenient methods for interacting with ERC-20 token contracts.
+
+### Constructor
+
+```typescript
+new ERC20(address: Address, publicClient: PublicClient)
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| address | `Address` | The token contract address |
+| publicClient | `PublicClient` | The viem PublicClient for read operations |
+
+**Example:**
+
+```typescript
+import { ERC20 } from '@radiustechsystems/sdk';
+import { createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
+import { http } from 'viem';
+
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+const token = new ERC20(
+  '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+  client.publicClient
+);
+```
+
+### createERC20()
+
+Factory function for creating an ERC20 instance. This is the recommended way to instantiate ERC20 tokens.
+
+**Signature:**
+
+```typescript
+function createERC20(address: `0x${string}`, publicClient: PublicClient): ERC20
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| address | `` `0x${string}` `` | The token contract address |
+| publicClient | `PublicClient` | The viem PublicClient for read operations |
+
+**Returns:** `ERC20` - An ERC20 instance
+
+**Example:**
+
+```typescript
+import { createERC20, createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
+import { http } from 'viem';
+
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+const usdc = createERC20(
+  '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  client.publicClient
+);
+
+// Now use the token
+const symbol = await usdc.symbol();
+console.log('Token:', symbol);
+```
+
+### Read Methods
+
+#### name()
+
+Gets the token name. The result is cached after the first call.
+
+**Returns:** `Promise<string>` - The token name (e.g., "Wrapped Ether")
+
+**Throws:** Error if the contract call fails
+
+```typescript
+const name = await token.name();
+console.log('Token name:', name);
+```
+
+#### symbol()
+
+Gets the token symbol. The result is cached after the first call.
+
+**Returns:** `Promise<string>` - The token symbol (e.g., "WETH")
+
+**Throws:** Error if the contract call fails
+
+```typescript
+const symbol = await token.symbol();
+console.log('Token symbol:', symbol);
+```
+
+#### decimals()
+
+Gets the number of decimals the token uses. The result is cached after the first call.
+
+**Returns:** `Promise<number>` - The number of decimals (e.g., 18)
+
+**Throws:** Error if the contract call fails
+
+```typescript
+const decimals = await token.decimals();
+console.log('Token decimals:', decimals);
+```
+
+#### totalSupply()
+
+Gets the total token supply.
+
+**Returns:** `Promise<bigint>` - The total supply in the smallest unit
+
+**Throws:** Error if the contract call fails
+
+```typescript
+const totalSupply = await token.totalSupply();
+console.log('Total supply:', totalSupply.toString());
+```
+
+#### balanceOf()
+
+Gets the token balance of an address.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| owner | `Address` | The address to check the balance for |
+
+**Returns:** `Promise<bigint>` - The balance in the smallest unit
+
+**Throws:** Error if the contract call fails
+
+```typescript
+const balance = await token.balanceOf('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266');
+console.log('Balance:', balance.toString());
+```
+
+#### allowance()
+
+Gets the allowance that an owner has granted to a spender.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| owner | `Address` | The address that owns the tokens |
+| spender | `Address` | The address that is allowed to spend the tokens |
+
+**Returns:** `Promise<bigint>` - The allowance in the smallest unit
+
+**Throws:** Error if the contract call fails
+
+```typescript
+const allowance = await token.allowance(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+);
+console.log('Allowance:', allowance.toString());
+```
+
+### Write Methods
+
+All write methods come in two variants:
+- **Async variant** (e.g., `transfer`): Returns immediately with the transaction hash
+- **Sync variant** (e.g., `transferSync`): Waits for the transaction to be confirmed
+
+#### transfer()
+
+Transfers tokens to another address. Returns immediately with the transaction hash.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| signer | `ERC20Signer` | The signer containing the wallet client and account |
+| to | `Address` | The recipient address |
+| amount | `bigint` | The amount to transfer in the smallest unit |
+
+**Returns:** `Promise<Hash>` - The transaction hash
+
+**Throws:** Error if the transaction fails to submit
+
+```typescript
+const hash = await token.transfer(
+  { walletClient, account },
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  1000000000000000000n // 1 token with 18 decimals
+);
+console.log('Transaction hash:', hash);
+```
+
+#### transferSync()
+
+Transfers tokens to another address and waits for the transaction receipt.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| signer | `ERC20Signer` | The signer containing the wallet client and account |
+| to | `Address` | The recipient address |
+| amount | `bigint` | The amount to transfer in the smallest unit |
+
+**Returns:** `Promise<TransactionReceipt>` - The transaction receipt
+
+**Throws:** Error if the transaction fails
+
+```typescript
+const receipt = await token.transferSync(
+  { walletClient, account },
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  1000000000000000000n
+);
+console.log('Transaction confirmed:', receipt.transactionHash);
+console.log('Status:', receipt.status);
+```
+
+#### approve()
+
+Approves a spender to transfer tokens on behalf of the owner. Returns immediately with the transaction hash.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| signer | `ERC20Signer` | The signer containing the wallet client and account |
+| spender | `Address` | The address to approve |
+| amount | `bigint` | The amount to approve in the smallest unit |
+
+**Returns:** `Promise<Hash>` - The transaction hash
+
+**Throws:** Error if the transaction fails to submit
+
+```typescript
+const hash = await token.approve(
+  { walletClient, account },
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  1000000000000000000n
+);
+console.log('Approval transaction hash:', hash);
+```
+
+#### approveSync()
+
+Approves a spender to transfer tokens and waits for the transaction receipt.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| signer | `ERC20Signer` | The signer containing the wallet client and account |
+| spender | `Address` | The address to approve |
+| amount | `bigint` | The amount to approve in the smallest unit |
+
+**Returns:** `Promise<TransactionReceipt>` - The transaction receipt
+
+**Throws:** Error if the transaction fails
+
+```typescript
+const receipt = await token.approveSync(
+  { walletClient, account },
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  1000000000000000000n
+);
+console.log('Approval confirmed:', receipt.transactionHash);
+```
+
+#### transferFrom()
+
+Transfers tokens from one address to another using an allowance. The caller must have been approved by the `from` address. Returns immediately with the transaction hash.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| signer | `ERC20Signer` | The signer containing the wallet client and account |
+| from | `Address` | The address to transfer from |
+| to | `Address` | The address to transfer to |
+| amount | `bigint` | The amount to transfer in the smallest unit |
+
+**Returns:** `Promise<Hash>` - The transaction hash
+
+**Throws:** Error if the transaction fails to submit
+
+```typescript
+const hash = await token.transferFrom(
+  { walletClient, account },
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  1000000000000000000n
+);
+console.log('Transfer transaction hash:', hash);
+```
+
+#### transferFromSync()
+
+Transfers tokens from one address to another and waits for the transaction receipt. The caller must have been approved by the `from` address.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| signer | `ERC20Signer` | The signer containing the wallet client and account |
+| from | `Address` | The address to transfer from |
+| to | `Address` | The address to transfer to |
+| amount | `bigint` | The amount to transfer in the smallest unit |
+
+**Returns:** `Promise<TransactionReceipt>` - The transaction receipt
+
+**Throws:** Error if the transaction fails
+
+```typescript
+const receipt = await token.transferFromSync(
+  { walletClient, account },
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  1000000000000000000n
+);
+console.log('Transfer confirmed:', receipt.transactionHash);
+```
+
+### Utility Methods
+
+#### formatAmount()
+
+Formats a token amount from the smallest unit to a human-readable string using the token's decimals.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| amount | `bigint` | The amount in the smallest unit |
+
+**Returns:** `Promise<string>` - The formatted amount as a string
+
+**Throws:** Error if decimals cannot be fetched
+
+```typescript
+// For a token with 18 decimals:
+const formatted = await token.formatAmount(1500000000000000000n);
+console.log('Formatted amount:', formatted); // "1.5"
+```
+
+#### parseAmount()
+
+Parses a human-readable token amount to the smallest unit using the token's decimals.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| amount | `string` | The human-readable amount as a string |
+
+**Returns:** `Promise<bigint>` - The amount in the smallest unit
+
+**Throws:** Error if decimals cannot be fetched or if the amount string is invalid
+
+```typescript
+// For a token with 18 decimals:
+const parsed = await token.parseAmount("1.5");
+console.log('Parsed amount:', parsed.toString()); // "1500000000000000000"
+```
+
+#### clearCache()
+
+Clears the cached metadata (name, symbol, decimals). Call this if the token contract has been upgraded or if you need fresh data.
+
+```typescript
+token.clearCache();
+```
+
+### ERC20Signer Type
+
+Type for signing ERC20 transactions.
+
+**Properties:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| walletClient | `WalletClient` | The viem wallet client |
+| account | `Account` | The account for signing |
+
+## Contract
+
+The Contract class provides methods to interact with any smart contract using its ABI.
+
+### Constructor
+
+```typescript
+new Contract(address: Address, abi: ABI)
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| address | `Address` | The contract address |
+| abi | `ABI` | The contract ABI |
+
+**Example:**
+
+```typescript
+import { Contract } from '@radiustechsystems/sdk';
+import { parseAbi } from 'viem';
+
+const abi = parseAbi([
+  'function getValue() view returns (uint256)',
+  'function setValue(uint256 value)',
+]);
+
+const contract = new Contract(
+  '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+  abi
+);
+```
+
+### Methods
+
+#### address()
+
+Get the contract address.
+
+**Returns:** `Address` - The contract address
+
+```typescript
+const addr = contract.address();
+console.log('Contract address:', addr);
+```
+
+#### call()
+
+Calls a read-only contract method without creating a transaction.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| client | `ContractClient` | Radius client instance used to make the call |
+| method | `string` | Name of the method to call |
+| args | `...unknown[]` | Arguments to pass to the method |
+
+**Returns:** `Promise<unknown[]>` - Array of decoded return values
+
+**Throws:** Error if the contract call fails
+
+```typescript
+const [value] = await contract.call(client, 'getValue');
+console.log('Value:', value);
+```
+
+#### execute()
+
+Executes a contract method that modifies state.
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| client | `ContractClient` | Radius client instance used to execute |
+| signer | `RadiusSigner` | The signer used to sign the transaction |
+| method | `string` | Name of the method to execute |
+| args | `...unknown[]` | Arguments to pass to the method |
+
+**Returns:** `Promise<Receipt>` - Transaction receipt after execution
+
+**Throws:** Error if the transaction fails
+
+```typescript
+const receipt = await contract.execute(
+  client,
+  signer,
+  'setValue',
+  42n
+);
+console.log('Transaction hash:', receipt.transactionHash);
+```
+
+## Common Utilities
+
+The SDK exports common utilities and types from viem for convenience.
+
+### Types
+
+#### Address
+
+Represents a 20-byte Ethereum/Radius address.
+
+**Type:** `0x${string}` (hex string with 0x prefix)
+
+```typescript
+import type { Address } from '@radiustechsystems/sdk';
+
+const address: Address = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+```
+
+#### Hash
+
+Represents a 32-byte hash (transaction hash, block hash, etc.).
+
+**Type:** `0x${string}` (hex string with 0x prefix)
+
+```typescript
+import type { Hash } from '@radiustechsystems/sdk';
+
+const txHash: Hash = '0x1234567890abcdef...';
+```
+
+#### Hex
+
+Represents any hexadecimal string.
+
+**Type:** `0x${string}`
+
+```typescript
+import type { Hex } from '@radiustechsystems/sdk';
+
+const data: Hex = '0x1234';
+```
+
+#### Abi
+
+Represents a contract ABI (Application Binary Interface).
+
+```typescript
+import type { Abi } from '@radiustechsystems/sdk';
+import { parseAbi } from 'viem';
+
+const abi: Abi = parseAbi([
+  'function name() view returns (string)',
+  'function transfer(address to, uint256 amount) returns (bool)',
+]);
+```
+
+#### Chain
+
+Represents a blockchain network configuration.
+
+```typescript
+import type { Chain } from '@radiustechsystems/sdk';
+import { radiusTestnet } from '@radiustechsystems/sdk';
+
+const chain: Chain = radiusTestnet;
+```
+
+#### TransactionReceipt
+
+Represents a transaction receipt from the blockchain.
+
+```typescript
+import type { TransactionReceipt } from '@radiustechsystems/sdk';
+
+const receipt: TransactionReceipt = await client.waitForReceipt(hash);
+console.log('Status:', receipt.status);
+console.log('Gas used:', receipt.gasUsed);
+```
+
+### Address Class
+
+The Address class provides utility methods for working with Radius addresses.
+
+**Constructor:**
+
+```typescript
+new Address(data: Address | BytesLike | string)
+```
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| bytes() | `Uint8Array` | Returns the address as a byte array |
+| hex() | `Hex` | Returns the hexadecimal string with 0x prefix |
+| ethAddress() | `string` | Returns the checksummed Ethereum address |
+| equals(other) | `boolean` | Compares with another address |
+
+**Example:**
+
+```typescript
+import { Address } from '@radiustechsystems/sdk';
+
+const addr = new Address('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266');
+console.log('Hex:', addr.hex());
+console.log('Bytes:', addr.bytes());
+console.log('Checksum:', addr.ethAddress());
+
+const addr2 = new Address('0x70997970C51812dc3A010C7d01b50e0d17dc79C8');
+console.log('Equal?', addr.equals(addr2)); // false
+```
+
+### Hash Class
+
+The Hash class represents a 32-byte hash value.
+
+**Constructor:**
+
+```typescript
+new Hash(data: BytesLike)
+```
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| bytes() | `Uint8Array` | Returns the hash as a byte array |
+| hex() | `Hex` | Returns the hexadecimal string with 0x prefix |
+| hexWithoutPrefix() | `string` | Returns the hex string without 0x prefix |
+
+**Example:**
+
+```typescript
+import { Hash } from '@radiustechsystems/sdk';
+
+const hash = new Hash('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
+console.log('Hex:', hash.hex());
+console.log('Without prefix:', hash.hexWithoutPrefix());
+console.log('Bytes:', hash.bytes());
+```
+
+## Constants
+
+### MAX_GAS
+
+Maximum gas limit for transactions. Used to cap gas estimates to prevent unexpectedly high costs.
+
+**Value:** `1319413953330n` (bigint)
+
+```typescript
+import { MAX_GAS } from '@radiustechsystems/sdk';
+
+console.log('Max gas:', MAX_GAS.toString());
+```
+
+## Advanced Usage
+
+### Custom Transport
+
+You can provide a custom viem transport to the client for advanced networking configurations:
+
+```typescript
+import { createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
+import { http, webSocket } from 'viem';
+
+// HTTP transport
+const httpClient = createRadiusClient({
+  chain: radiusTestnet,
+  transport: http('https://rpc.testnet.radiustech.xyz'),
+});
+
+// WebSocket transport
+const wsClient = createRadiusClient({
+  chain: radiusTestnet,
+  transport: webSocket('wss://rpc.testnet.radiustech.xyz'),
+});
+```
+
+### Request Interceptor
+
+Intercept and modify JSON-RPC requests and responses:
+
+```typescript
+import { createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
+
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  interceptor: async (reqBody, response) => {
+    console.log('Request:', reqBody);
+    console.log('Response:', response);
+
+    // Modify response if needed
+    return response;
+  },
+});
+```
+
+### Logging
+
+Enable request/response logging for debugging:
+
+```typescript
+import { createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
+
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  logger: (message) => {
+    console.log('[Radius SDK]', message);
+  },
+});
+```
+
+### Working with BigInt
+
+JavaScript's BigInt type is used for all numeric values in the SDK to prevent precision loss:
+
+```typescript
+// Creating BigInt values
+const wei = 1000000000000000000n; // 1 USD in wei
+const gwei = BigInt(20e9); // 20 Gwei
+
+// Converting strings to BigInt
+const amount = BigInt('1000000000000000000');
+
+// Arithmetic with BigInt
+const total = wei + wei;
+const half = wei / 2n;
+
+// Formatting for display
+console.log(wei.toString()); // "1000000000000000000"
+```
+
+### Using parseAbi
+
+The `parseAbi` utility from viem allows you to define ABIs using human-readable function signatures:
+
+```typescript
+import { parseAbi } from 'viem';
+
+const abi = parseAbi([
+  // Read functions
+  'function name() view returns (string)',
+  'function balanceOf(address owner) view returns (uint256)',
+
+  // Write functions
+  'function transfer(address to, uint256 amount) returns (bool)',
+
+  // Events
+  'event Transfer(address indexed from, address indexed to, uint256 value)',
+]);
+```
+
+## TypeScript Support
+
+The SDK is written in TypeScript and provides full type definitions. Import types for better type safety:
+
+```typescript
+import type {
+  RadiusClient,
+  RadiusClientConfig,
+  RadiusSigner,
+  RadiusReceipt,
+  Address,
+  Hash,
+  Hex,
+  Abi,
+  Chain,
+  TransactionReceipt,
+} from '@radiustechsystems/sdk';
+
+// Use types in your functions
+async function sendTransaction(
+  client: RadiusClient,
+  signer: RadiusSigner,
+  to: Address,
+  value: bigint
+): Promise<RadiusReceipt> {
+  return client.sendSync(signer, to, value);
+}
+```
+
+## Error Handling
+
+Always wrap SDK calls in try-catch blocks to handle errors gracefully:
+
+```typescript
+import { createRadiusClient, createPrivateKeySigner, radiusTestnet } from '@radiustechsystems/sdk';
+
+const client = createRadiusClient({
+  chain: radiusTestnet,
+});
+
+const signer = createPrivateKeySigner(
+  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+  radiusTestnet.id
+);
+
+try {
+  const receipt = await client.sendSync(
+    signer,
+    '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    1000000000000000000n
+  );
+
+  if (receipt.status === 'success') {
+    console.log('Transaction successful:', receipt.transactionHash);
+  } else {
+    console.error('Transaction reverted');
+  }
+} catch (error) {
+  console.error('Transaction failed:', error);
+}
+```
+
+## Next Steps
+
+- Explore the [Radius documentation](https://docs.radiustech.xyz)
+- View [example projects](https://github.com/radiustechsystems/examples)
+- Join the [Radius community](https://discord.gg/radius)
+- Read about [viem](https://viem.sh) for advanced features
+
+## Contributing
+
+Contributions are welcome! Please see the [contribution guidelines](https://github.com/radiustechsystems/radius-sdk-typescript/blob/main/CONTRIBUTING.md) for more information.
+
+## License
+
+MIT License - see [LICENSE](https://github.com/radiustechsystems/radius-sdk-typescript/blob/main/LICENSE) for details.

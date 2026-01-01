@@ -10,8 +10,8 @@ export const radiusTestnet = defineChain({
     name: 'Radius Testnet',
     nativeCurrency: {
         decimals: 18,
-        name: 'Ether',
-        symbol: 'ETH',
+        name: 'USD',
+        symbol: 'USD',
     },
     rpcUrls: {
         default: {
@@ -37,8 +37,8 @@ export const radiusMainnet = defineChain({
     name: 'Radius',
     nativeCurrency: {
         decimals: 18,
-        name: 'Ether',
-        symbol: 'ETH',
+        name: 'USD',
+        symbol: 'USD',
     },
     rpcUrls: {
         default: {

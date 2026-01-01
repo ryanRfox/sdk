@@ -38,7 +38,7 @@ describe('Client Integration Tests', () => {
   test.skipIf(shouldSkip)('should get balance of test account', async () => {
     const balance = await publicClient.getBalance({ address: testAccount.address });
     expect(typeof balance).toBe('bigint');
-    console.log(`Test account balance: ${formatEther(balance)} ETH`);
+    console.log(`Test account balance: ${formatEther(balance)} USD`);
   });
 
   test.skipIf(shouldSkip)('should get transaction count (nonce)', async () => {
