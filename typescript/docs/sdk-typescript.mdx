@@ -474,6 +474,46 @@ const client = createRadiusClient({
 });
 ```
 
+## Contract Addresses
+
+### Radius Testnet
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| SBC Token | `0xF966020a30946A64B39E2e243049036367590858` | Fee token used for gas payments on Radius |
+
+### Using the SBC Token
+
+The SBC token is an ERC20 token used for fee payments on the Radius network. Here's how to interact with it:
+
+```typescript
+import { createRadiusClient, createERC20, radiusTestnet } from '@radiustechsystems/sdk';
+import { http } from 'viem';
+
+// SBC Token address on Radius Testnet
+const SBC_TOKEN_ADDRESS = '0xF966020a30946A64B39E2e243049036367590858';
+
+// Create client
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+// Create ERC20 instance for SBC token
+const sbcToken = createERC20(SBC_TOKEN_ADDRESS, client.publicClient);
+
+// Get token metadata
+const name = await sbcToken.name();       // Token name
+const symbol = await sbcToken.symbol();   // Token symbol
+const decimals = await sbcToken.decimals(); // Token decimals
+
+console.log(`${name} (${symbol}) - ${decimals} decimals`);
+
+// Check balance
+const balance = await sbcToken.balanceOf('0xYourAddressHere');
+console.log(`Balance: ${balance}`);
+```
+
 ## Signers
 
 Signers are used to cryptographically sign transactions and messages. The SDK provides two signer implementations.
