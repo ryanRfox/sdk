@@ -15,28 +15,9 @@ import {
 import { QueryClient } from '@tanstack/react-query';
 import { cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
 import React, { ReactNode } from 'react';
-import type { Address, Chain } from 'viem';
+import type { Address, Chain, TransactionReceipt } from 'viem';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as wagmi from 'wagmi';
-
-// Type helpers for mocking wagmi hooks
-type MockUseAccountReturn = Partial<ReturnType<typeof wagmi.useAccount>> &
-  Pick<ReturnType<typeof wagmi.useAccount>, 'address' | 'status' | 'isConnected'>;
-
-type MockUseBalanceReturn = Partial<ReturnType<typeof wagmi.useBalance>> &
-  Pick<ReturnType<typeof wagmi.useBalance>, 'data' | 'isLoading' | 'isError'>;
-
-type MockUseReadContractReturn = Partial<ReturnType<typeof wagmi.useReadContract>> &
-  Pick<ReturnType<typeof wagmi.useReadContract>, 'data' | 'isLoading' | 'isError'>;
-
-type MockUseSendTransactionReturn = Partial<ReturnType<typeof wagmi.useSendTransaction>> &
-  Pick<ReturnType<typeof wagmi.useSendTransaction>, 'data' | 'error' | 'isPending' | 'sendTransaction' | 'reset'>;
-
-type MockUseWriteContractReturn = Partial<ReturnType<typeof wagmi.useWriteContract>> &
-  Pick<ReturnType<typeof wagmi.useWriteContract>, 'data' | 'error' | 'isPending' | 'writeContract' | 'reset'>;
-
-type MockUseWaitForTransactionReceiptReturn = Partial<ReturnType<typeof wagmi.useWaitForTransactionReceipt>> &
-  Pick<ReturnType<typeof wagmi.useWaitForTransactionReceipt>, 'data' | 'isLoading' | 'isSuccess'>;
 
 // Mock wagmi hooks
 vi.mock('wagmi', async () => {
@@ -78,7 +59,7 @@ const mockTokenAddress = '0x0987654321098765432109876543210987654321' as Address
 const mockSpenderAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address;
 const mockHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' as const;
 
-const mockReceipt: any = {
+const mockReceipt: Partial<TransactionReceipt> = {
   transactionHash: mockHash,
   blockNumber: BigInt(100),
   blockHash: '0xblockhash',
@@ -1311,9 +1292,13 @@ describe('useERC20Metadata', () => {
     vi.mocked(wagmi.useReadContract).mockImplementation(() => {
       callCount += 1;
       if (callCount === 2) {
-        return { data: undefined, isLoading: true, isError: false } as unknown as ReturnType<typeof wagmi.useReadContract>;
+        return { data: undefined, isLoading: true, isError: false } as unknown as ReturnType<
+          typeof wagmi.useReadContract
+        >;
       }
-      return { data: undefined, isLoading: false, isError: false } as unknown as ReturnType<typeof wagmi.useReadContract>;
+      return { data: undefined, isLoading: false, isError: false } as unknown as ReturnType<
+        typeof wagmi.useReadContract
+      >;
     });
 
     function TestComponent() {
@@ -1335,9 +1320,13 @@ describe('useERC20Metadata', () => {
     vi.mocked(wagmi.useReadContract).mockImplementation(() => {
       callCount += 1;
       if (callCount === 3) {
-        return { data: undefined, isLoading: false, isError: true } as unknown as ReturnType<typeof wagmi.useReadContract>;
+        return { data: undefined, isLoading: false, isError: true } as unknown as ReturnType<
+          typeof wagmi.useReadContract
+        >;
       }
-      return { data: undefined, isLoading: false, isError: false } as unknown as ReturnType<typeof wagmi.useReadContract>;
+      return { data: undefined, isLoading: false, isError: false } as unknown as ReturnType<
+        typeof wagmi.useReadContract
+      >;
     });
 
     function TestComponent() {
@@ -1427,14 +1416,9 @@ describe('Hook Reactivity', () => {
 
       let accountAddress: Address | undefined = undefined;
 
-      const { rerender } = renderHook(
-        () => useRadiusBalance({ address: accountAddress }),
-        {
-          wrapper: ({ children }: { children: ReactNode }) => (
-            <TestWrapper>{children}</TestWrapper>
-          ),
-        }
-      );
+      const { rerender } = renderHook(() => useRadiusBalance({ address: accountAddress }), {
+        wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
+      });
 
       // Initially called with undefined
       expect(mockUseBalance).toHaveBeenLastCalledWith({
@@ -1473,9 +1457,7 @@ describe('Hook Reactivity', () => {
       } as unknown as ReturnType<typeof wagmi.useAccount>);
 
       const { result, rerender } = renderHook(() => useRadiusBalance(), {
-        wrapper: ({ children }: { children: ReactNode }) => (
-          <TestWrapper>{children}</TestWrapper>
-        ),
+        wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
       });
 
       // Initially disabled (no address)
@@ -1527,9 +1509,7 @@ describe('Hook Reactivity', () => {
       let currentToken = tokenAddress1;
 
       const { rerender } = renderHook(() => useERC20Balance({ token: currentToken }), {
-        wrapper: ({ children }: { children: ReactNode }) => (
-          <TestWrapper>{children}</TestWrapper>
-        ),
+        wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
       });
 
       // Initially called with first token
@@ -1584,9 +1564,7 @@ describe('Hook Reactivity', () => {
       const { rerender } = renderHook(
         () => useERC20Balance({ token: mockTokenAddress, address: currentAddress }),
         {
-          wrapper: ({ children }: { children: ReactNode }) => (
-            <TestWrapper>{children}</TestWrapper>
-          ),
+          wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
         }
       );
 
@@ -1639,9 +1617,7 @@ describe('Hook Reactivity', () => {
       const { rerender } = renderHook(
         () => useERC20Balance({ token: mockTokenAddress, address: currentAddress }),
         {
-          wrapper: ({ children }: { children: ReactNode }) => (
-            <TestWrapper>{children}</TestWrapper>
-          ),
+          wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
         }
       );
 
@@ -1695,14 +1671,9 @@ describe('Hook Reactivity', () => {
 
       let currentToken = tokenAddress1;
 
-      const { result, rerender } = renderHook(
-        () => useERC20Transfer({ token: currentToken }),
-        {
-          wrapper: ({ children }: { children: ReactNode }) => (
-            <TestWrapper>{children}</TestWrapper>
-          ),
-        }
-      );
+      const { result, rerender } = renderHook(() => useERC20Transfer({ token: currentToken }), {
+        wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
+      });
 
       // Call transfer with first token
       result.current.transfer(mockAddress, BigInt('1000000000000000000'));
@@ -1754,9 +1725,7 @@ describe('Hook Reactivity', () => {
       let currentToken = tokenAddress1;
 
       const { result, rerender } = renderHook(() => useERC20Approve({ token: currentToken }), {
-        wrapper: ({ children }: { children: ReactNode }) => (
-          <TestWrapper>{children}</TestWrapper>
-        ),
+        wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
       });
 
       // Call approve with first token
@@ -1812,9 +1781,7 @@ describe('Hook Reactivity', () => {
             spender: currentSpender,
           }),
         {
-          wrapper: ({ children }: { children: ReactNode }) => (
-            <TestWrapper>{children}</TestWrapper>
-          ),
+          wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
         }
       );
 
@@ -1875,9 +1842,7 @@ describe('Hook Reactivity', () => {
             spender: mockSpenderAddress,
           }),
         {
-          wrapper: ({ children }: { children: ReactNode }) => (
-            <TestWrapper>{children}</TestWrapper>
-          ),
+          wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
         }
       );
 
@@ -1935,9 +1900,7 @@ describe('Hook Reactivity', () => {
             spender: mockSpenderAddress,
           }),
         {
-          wrapper: ({ children }: { children: ReactNode }) => (
-            <TestWrapper>{children}</TestWrapper>
-          ),
+          wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
         }
       );
 
@@ -1991,14 +1954,9 @@ describe('Hook Reactivity', () => {
         return responses[callCount - 1];
       });
 
-      const { result, rerender } = renderHook(
-        () => useERC20Metadata({ token: currentToken }),
-        {
-          wrapper: ({ children }: { children: ReactNode }) => (
-            <TestWrapper>{children}</TestWrapper>
-          ),
-        }
-      );
+      const { result, rerender } = renderHook(() => useERC20Metadata({ token: currentToken }), {
+        wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
+      });
 
       // Verify first token metadata
       expect(result.current.name).toBe('Token1');
@@ -2045,9 +2003,7 @@ describe('Hook Reactivity', () => {
       } as unknown as ReturnType<typeof wagmi.useWaitForTransactionReceipt>);
 
       const { result, rerender } = renderHook(() => useRadiusSend(), {
-        wrapper: ({ children }: { children: ReactNode }) => (
-          <TestWrapper>{children}</TestWrapper>
-        ),
+        wrapper: ({ children }: { children: ReactNode }) => <TestWrapper>{children}</TestWrapper>,
       });
 
       // Initially not pending

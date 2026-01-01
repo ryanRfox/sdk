@@ -31,12 +31,12 @@
  */
 
 import { http, createPublicClient, createWalletClient, parseEther } from 'viem';
-import type { PublicClient, WalletClient } from 'viem';
-import type { Account } from 'viem';
+import type { Account, PublicClient, WalletClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { radiusTestnet } from '../packages/core/src/chains/index';
 import { ERC20 } from '../packages/core/src/contracts/erc20';
+import { skipIfNoTestnet } from './fixtures/radius-testnet';
 
 /**
  * Global state for token ping-pong test
@@ -53,6 +53,7 @@ interface TokenPingPongGlobalState {
 
 // Extend globalThis with our test state
 declare global {
+  // biome-ignore lint/style/noVar: Required for TypeScript global declarations
   var __tokenPingPongState: TokenPingPongGlobalState;
 }
 
@@ -92,7 +93,10 @@ function deriveSecondaryAccount(primaryKey: `0x${string}`): `0x${string}` {
   return `0x${keyBuffer.toString('hex')}`;
 }
 
-describe('Token Ping-Pong Integration Tests', () => {
+// Skip entire test suite if no testnet credentials
+const shouldSkip = skipIfNoTestnet();
+
+describe.skipIf(shouldSkip)('Token Ping-Pong Integration Tests', () => {
   let publicClient: PublicClient;
   let walletClient: WalletClient;
   let account1: Account;
@@ -103,9 +107,9 @@ describe('Token Ping-Pong Integration Tests', () => {
    * Setup: Initialize clients and accounts
    */
   beforeAll(async () => {
-    // Validate required environment variables
+    // Guard clause - shouldn't be reached if skipIf works, but just in case
     if (!RADIUS_PRIVATE_KEY) {
-      throw new Error('RADIUS_PRIVATE_KEY environment variable is required');
+      return;
     }
 
     // Create clients
