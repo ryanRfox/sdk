@@ -1,9 +1,9 @@
-import { hexToBytes } from 'viem';
+import { getAddress, hexToBytes, } from 'viem';
 import { ABI } from './abi';
-import { Address } from './address';
+import { ZERO_ADDRESS } from './address';
 import { Event } from './event';
 import { Hash } from './hash';
-import { Receipt } from './receipt';
+import { createReceipt } from './receipt';
 /**
  * Creates a new ABI (Application Binary Interface) from a JSON string
  * @param json ABI definition in JSON string format
@@ -18,14 +18,22 @@ export function abiFromJSON(json) {
     }
 }
 /**
- * Creates an Address from a hex string
- * @param hex Hex string with or without 0x prefix
- * @returns Address instance
+ * Normalizes and validates an address string.
+ * Returns a checksummed viem Address type.
+ *
+ * @param hex - Hex string with or without 0x prefix
+ * @returns Checksummed address
  * @throws Error if the hex string is invalid
+ *
+ * @example
+ * ```typescript
+ * const address = addressFromHex('742d35cc6634c0532925a3b844bc9e7595f7e9f1');
+ * // Returns: '0x742d35Cc6634C0532925a3b844Bc9e7595f7E9F1'
+ * ```
  */
 export function addressFromHex(hex) {
     const cleanHex = hex.startsWith('0x') ? hex : `0x${hex}`;
-    return new Address(hexToBytes(cleanHex));
+    return getAddress(cleanHex);
 }
 /**
  * Converts a hex string to a byte array
@@ -42,17 +50,6 @@ export function bytecodeFromHex(s) {
     }
 }
 /**
- * Converts a Radius Address to an Ethereum Address
- * @param address Radius Address
- * @returns Ethereum Address, or undefined if the input is undefined
- */
-export function ethAddressFromRadiusAddress(address) {
-    if (!address) {
-        return undefined;
-    }
-    return address.ethAddress();
-}
-/**
  * Converts Ethereum logs to Radius events
  * @param logs Ethereum logs
  * @returns Array of Radius events
@@ -61,9 +58,10 @@ export function eventsFromEthLogs(logs) {
     return logs.map((log) => new Event(log.topics[0] ?? '', {}, log.data ?? '0x'));
 }
 /**
- * Creates a Hash from a hexadecimal string
- * @param hex The hexadecimal string (with or without 0x prefix)
- * @returns A new Hash instance
+ * Normalizes a hash string to proper hex format.
+ *
+ * @param hex - The hexadecimal string (with or without 0x prefix)
+ * @returns Normalized hash with 0x prefix
  * @throws Error if the hex string is invalid
  */
 export function hashFromHex(hex) {
@@ -71,22 +69,28 @@ export function hashFromHex(hex) {
     return new Hash(hexToBytes(cleanHex));
 }
 /**
- * Creates a new Radius receipt from an Ethereum receipt
- * @param receipt Ethereum receipt
- * @param from Sender address
- * @param to Recipient address
- * @param value Transaction value
- * @returns Radius receipt
+ * Creates a new Radius receipt from an Ethereum/viem receipt.
+ *
+ * @param receipt - viem TransactionReceipt
+ * @param from - Sender address (optional, uses receipt.from)
+ * @param to - Recipient address (optional, uses receipt.to)
+ * @param value - Transaction value (optional)
+ * @returns Radius Receipt
+ *
+ * @deprecated Use RadiusReceipt from client directly instead
  */
-export function receiptFromEthReceipt(receipt, from, to = new Address(zeroAddress()), value) {
-    return new Receipt(from, to, new Address(receipt.contractAddress ?? zeroAddress()), new Hash(receipt.transactionHash), receipt.gasUsed, receipt.status === 'success' ? 1 : 0, eventsFromEthLogs(receipt.logs ?? []), value);
+export function receiptFromEthReceipt(receipt, from, to, value) {
+    const status = receipt.status;
+    return createReceipt(from ?? receipt.from, to ?? receipt.to ?? null, receipt.contractAddress ?? null, receipt.transactionHash, receipt.gasUsed, status, eventsFromEthLogs(receipt.logs ?? []), value);
 }
 /**
- * Creates a zero address (0x0000000000000000000000000000000000000000)
- * Used as a default value or to represent the zero address in the Ethereum ecosystem
- * @returns An Address instance representing the zero address
+ * Returns the zero address constant.
+ *
+ * @returns The zero address (0x0000000000000000000000000000000000000000)
+ *
+ * @deprecated Import ZERO_ADDRESS constant directly instead
  */
 export function zeroAddress() {
-    return new Address('0x0000000000000000000000000000000000000000');
+    return ZERO_ADDRESS;
 }
 //# sourceMappingURL=utils.js.map

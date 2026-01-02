@@ -30,7 +30,12 @@ export {
 	type RadiusSigner,
 } from './auth';
 // Chains
-export { radiusMainnet, radiusTestnet } from './chains';
+export {
+	radiusMainnet,
+	radiusTestnet,
+	RADIUS_MAINNET_CONTRACTS,
+	RADIUS_TESTNET_CONTRACTS,
+} from './chains';
 // Client - main entry point
 export {
 	type ContractInstance,
@@ -46,5 +51,7 @@ export * from './common';
 export * from './contracts';
 // Crypto
 export * from './crypto';
+// Errors
+export * from './errors';
 // Transport
 export * from './transport';

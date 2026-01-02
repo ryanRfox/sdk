@@ -10,7 +10,7 @@ export * from './accounts';
 // Auth / Signers
 export { ClefSigner, createClefSigner, createPrivateKeySigner, PrivateKeySigner, } from './auth';
 // Chains
-export { radiusMainnet, radiusTestnet } from './chains';
+export { radiusMainnet, radiusTestnet, RADIUS_MAINNET_CONTRACTS, RADIUS_TESTNET_CONTRACTS, } from './chains';
 // Client - main entry point
 export { createRadiusClient, MAX_GAS, } from './client';
 // Common utilities
@@ -19,6 +19,8 @@ export * from './common';
 export * from './contracts';
 // Crypto
 export * from './crypto';
+// Errors
+export * from './errors';
 // Transport
 export * from './transport';
 //# sourceMappingURL=index.js.map

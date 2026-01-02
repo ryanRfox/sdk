@@ -1,4 +1,4 @@
-import { Address, type BytesLike } from '../common';
+import type { Address, BytesLike } from '../common';
 import type { SigningKey } from './types';
 /**
  * Convert a hex string private key to a SigningKey.
@@ -19,7 +19,7 @@ export declare function keccak256(data: BytesLike | BytesLike[]): Uint8Array;
  * The address is derived by taking the Keccak256 hash of the public key
  * (without the prefix byte) and keeping the last 20 bytes.
  * @param publicKey Public key as BytesLike
- * @returns Account address as an Address object
+ * @returns Account address as a checksummed viem Address
  */
 export declare function pubkeyToAddress(publicKey: BytesLike): Address;
 /**

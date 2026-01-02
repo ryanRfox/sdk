@@ -5,16 +5,26 @@ exports.createRadiusClient = createRadiusClient;
 const viem_1 = require("viem");
 const transport_1 = require("../transport");
 exports.MAX_GAS = 1319413953330n;
+function getRpcUrl(chain) {
+    if (typeof process !== 'undefined' && process.env) {
+        const envUrl = process.env.RADIUS_RPC_URL || process.env.RADIUS_ENDPOINT;
+        if (envUrl) {
+            return envUrl;
+        }
+    }
+    const chainUrl = chain.rpcUrls.default.http[0];
+    if (!chainUrl) {
+        throw new Error('No RPC URL configured. Set RADIUS_RPC_URL environment variable or configure chain.rpcUrls');
+    }
+    return chainUrl;
+}
 function createRadiusClient(config) {
+    const rpcUrl = getRpcUrl(config.chain);
     let transport;
     if (config.transport) {
         transport = config.transport;
     }
     else if (config.logger || config.interceptor) {
-        const rpcUrl = config.chain.rpcUrls.default.http[0];
-        if (!rpcUrl) {
-            throw new Error('No RPC URL configured for chain');
-        }
         transport = (0, transport_1.createInterceptingTransport)({
             url: rpcUrl,
             interceptor: config.interceptor,
@@ -22,10 +32,6 @@ function createRadiusClient(config) {
         });
     }
     else {
-        const rpcUrl = config.chain.rpcUrls.default.http[0];
-        if (!rpcUrl) {
-            throw new Error('No RPC URL configured for chain');
-        }
         transport = (0, transport_1.createInterceptingTransport)({ url: rpcUrl });
     }
     const publicClient = (0, viem_1.createPublicClient)({
@@ -148,9 +154,12 @@ function createRadiusClient(config) {
                 value: 0n,
             });
         },
-        async executeSync(contract, signer, method, ...args) {
+        async executeAndWait(contract, signer, method, ...args) {
             const hash = await this.execute(contract, signer, method, ...args);
             return this.waitForReceipt(hash);
+        },
+        async executeSync(contract, signer, method, ...args) {
+            return this.executeAndWait(contract, signer, method, ...args);
         },
         async send(signer, to, value) {
             return signAndSendTransaction(signer, {
@@ -158,9 +167,12 @@ function createRadiusClient(config) {
                 value,
             });
         },
-        async sendSync(signer, to, value) {
+        async sendAndWait(signer, to, value) {
             const hash = await this.send(signer, to, value);
             return this.waitForReceipt(hash);
+        },
+        async sendSync(signer, to, value) {
+            return this.sendAndWait(signer, to, value);
         },
         async deployContract(signer, bytecode, abi, ...args) {
             let deployData = bytecode;
@@ -198,6 +210,10 @@ function createRadiusClient(config) {
         async waitForReceipt(hash) {
             const receipt = await publicClient.waitForTransactionReceipt({ hash });
             return toRadiusReceipt(receipt);
+        },
+        extend(extender) {
+            const extension = extender(this);
+            return Object.assign(Object.create(this), extension);
         },
     };
 }

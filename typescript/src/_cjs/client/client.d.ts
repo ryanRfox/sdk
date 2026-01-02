@@ -32,8 +32,10 @@ export interface RadiusClient {
     estimateGas(tx: TransactionRequest): Promise<bigint>;
     call<T = unknown>(contract: ContractInstance, method: string, ...args: unknown[]): Promise<T>;
     execute(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<Hash>;
+    executeAndWait(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
     executeSync(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
     send(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<Hash>;
+    sendAndWait(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
     sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
     deployContract(signer: RadiusSigner, bytecode: Hex, abi: Abi, ...args: unknown[]): Promise<{
         address: ViemAddress;
@@ -41,6 +43,7 @@ export interface RadiusClient {
     }>;
     sendRawTransaction(signedTx: Hex): Promise<Hash>;
     waitForReceipt(hash: Hash): Promise<RadiusReceipt>;
+    extend<TExtension extends Record<string, unknown>>(extender: (client: RadiusClient) => TExtension): RadiusClient & TExtension;
 }
 export declare function createRadiusClient(config: RadiusClientConfig): RadiusClient;
 export type { Chain, Transport, Abi, Hash, Hex, TransactionReceipt };

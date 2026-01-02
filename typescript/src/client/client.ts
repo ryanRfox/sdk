@@ -111,9 +111,9 @@ export interface ContractInstance {
  * // Get balance
  * const balance = await client.getBalance('0x...');
  *
- * // Send transaction
+ * // Send transaction and wait for receipt
  * const signer = createPrivateKeySigner('0x...privateKey', radiusTestnet.id);
- * const receipt = await client.sendSync(signer, '0x...recipient', 1000000000000000000n);
+ * const receipt = await client.sendAndWait(signer, '0x...recipient', 1000000000000000000n);
  * ```
  */
 export interface RadiusClient {
@@ -190,6 +190,16 @@ export interface RadiusClient {
 	 * @param args - Arguments to pass to the method
 	 * @returns The transaction receipt
 	 */
+	executeAndWait(
+		contract: ContractInstance,
+		signer: RadiusSigner,
+		method: string,
+		...args: unknown[]
+	): Promise<RadiusReceipt>;
+
+	/**
+	 * @deprecated Use executeAndWait instead
+	 */
 	executeSync(
 		contract: ContractInstance,
 		signer: RadiusSigner,
@@ -213,6 +223,11 @@ export interface RadiusClient {
 	 * @param to - The recipient address
 	 * @param value - The amount to send in wei
 	 * @returns The transaction receipt
+	 */
+	sendAndWait(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
+
+	/**
+	 * @deprecated Use sendAndWait instead
 	 */
 	sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
 
@@ -245,6 +260,28 @@ export interface RadiusClient {
 	 * @returns The transaction receipt
 	 */
 	waitForReceipt(hash: Hash): Promise<RadiusReceipt>;
+
+	/**
+	 * Extend the client with custom actions.
+	 *
+	 * @param extender - A function that receives the base client and returns custom actions
+	 * @returns A new client with the custom actions added
+	 *
+	 * @example
+	 * ```typescript
+	 * const client = createRadiusClient({ chain: radiusTestnet }).extend((base) => ({
+	 *   async getBalanceFormatted(address: Address) {
+	 *     const balance = await base.getBalance(address);
+	 *     return formatEther(balance);
+	 *   },
+	 * }));
+	 *
+	 * const formatted = await client.getBalanceFormatted('0x...');
+	 * ```
+	 */
+	extend<TExtension extends Record<string, unknown>>(
+		extender: (client: RadiusClient) => TExtension,
+	): RadiusClient & TExtension;
 }
 
 /**
@@ -281,16 +318,38 @@ export interface RadiusClient {
  * });
  * ```
  */
+/**
+ * Get RPC URL from environment variables or chain config.
+ * Checks RADIUS_RPC_URL and RADIUS_ENDPOINT environment variables.
+ */
+function getRpcUrl(chain: Chain): string {
+	// Check environment variables first (Node.js only)
+	if (typeof process !== 'undefined' && process.env) {
+		const envUrl = process.env.RADIUS_RPC_URL || process.env.RADIUS_ENDPOINT;
+		if (envUrl) {
+			return envUrl;
+		}
+	}
+
+	// Fall back to chain config
+	const chainUrl = chain.rpcUrls.default.http[0];
+	if (!chainUrl) {
+		throw new Error(
+			'No RPC URL configured. Set RADIUS_RPC_URL environment variable or configure chain.rpcUrls',
+		);
+	}
+	return chainUrl;
+}
+
 export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
+	// Get RPC URL from config, env vars, or chain default
+	const rpcUrl = getRpcUrl(config.chain);
+
 	// Create transport - use provided transport or create intercepting transport if logger/interceptor provided
 	let transport: Transport;
 	if (config.transport) {
 		transport = config.transport;
 	} else if (config.logger || config.interceptor) {
-		const rpcUrl = config.chain.rpcUrls.default.http[0];
-		if (!rpcUrl) {
-			throw new Error('No RPC URL configured for chain');
-		}
 		transport = createInterceptingTransport({
 			url: rpcUrl,
 			interceptor: config.interceptor,
@@ -298,10 +357,6 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 		});
 	} else {
 		// Create a basic http transport using the intercepting transport without logger/interceptor
-		const rpcUrl = config.chain.rpcUrls.default.http[0];
-		if (!rpcUrl) {
-			throw new Error('No RPC URL configured for chain');
-		}
 		transport = createInterceptingTransport({ url: rpcUrl });
 	}
 
@@ -480,7 +535,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			});
 		},
 
-		async executeSync(
+		async executeAndWait(
 			contract: ContractInstance,
 			signer: RadiusSigner,
 			method: string,
@@ -490,6 +545,16 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			return this.waitForReceipt(hash);
 		},
 
+		/** @deprecated Use executeAndWait instead */
+		async executeSync(
+			contract: ContractInstance,
+			signer: RadiusSigner,
+			method: string,
+			...args: unknown[]
+		): Promise<RadiusReceipt> {
+			return this.executeAndWait(contract, signer, method, ...args);
+		},
+
 		async send(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<Hash> {
 			return signAndSendTransaction(signer, {
 				to,
@@ -497,9 +562,14 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			});
 		},
 
-		async sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
+		async sendAndWait(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
 			const hash = await this.send(signer, to, value);
 			return this.waitForReceipt(hash);
+		},
+
+		/** @deprecated Use sendAndWait instead */
+		async sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
+			return this.sendAndWait(signer, to, value);
 		},
 
 		async deployContract(
@@ -559,7 +629,14 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			const receipt = await publicClient.waitForTransactionReceipt({ hash });
 			return toRadiusReceipt(receipt);
 		},
-	};
+
+		extend<TExtension extends Record<string, unknown>>(
+			extender: (client: RadiusClient) => TExtension,
+		): RadiusClient & TExtension {
+			const extension = extender(this as RadiusClient);
+			return Object.assign(Object.create(this), extension) as RadiusClient & TExtension;
+		},
+	} as RadiusClient;
 }
 
 // Re-export commonly used viem types for convenience

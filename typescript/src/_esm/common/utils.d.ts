@@ -1,10 +1,9 @@
 import { type Log, type TransactionReceipt } from 'viem';
 import { ABI } from './abi';
-import { Address } from './address';
+import { type Address } from './address';
 import { Event } from './event';
 import { Hash } from './hash';
-import { Receipt } from './receipt';
-import type { BigNumberish } from './transaction';
+import { type Receipt } from './receipt';
 /**
  * Creates a new ABI (Application Binary Interface) from a JSON string
  * @param json ABI definition in JSON string format
@@ -12,10 +11,18 @@ import type { BigNumberish } from './transaction';
  */
 export declare function abiFromJSON(json: string): ABI | undefined;
 /**
- * Creates an Address from a hex string
- * @param hex Hex string with or without 0x prefix
- * @returns Address instance
+ * Normalizes and validates an address string.
+ * Returns a checksummed viem Address type.
+ *
+ * @param hex - Hex string with or without 0x prefix
+ * @returns Checksummed address
  * @throws Error if the hex string is invalid
+ *
+ * @example
+ * ```typescript
+ * const address = addressFromHex('742d35cc6634c0532925a3b844bc9e7595f7e9f1');
+ * // Returns: '0x742d35Cc6634C0532925a3b844Bc9e7595f7E9F1'
+ * ```
  */
 export declare function addressFromHex(hex: string): Address;
 /**
@@ -25,37 +32,37 @@ export declare function addressFromHex(hex: string): Address;
  */
 export declare function bytecodeFromHex(s: string): Uint8Array | undefined;
 /**
- * Converts a Radius Address to an Ethereum Address
- * @param address Radius Address
- * @returns Ethereum Address, or undefined if the input is undefined
- */
-export declare function ethAddressFromRadiusAddress(address?: Address): string | undefined;
-/**
  * Converts Ethereum logs to Radius events
  * @param logs Ethereum logs
  * @returns Array of Radius events
  */
 export declare function eventsFromEthLogs(logs: Log[]): Event[];
 /**
- * Creates a Hash from a hexadecimal string
- * @param hex The hexadecimal string (with or without 0x prefix)
- * @returns A new Hash instance
+ * Normalizes a hash string to proper hex format.
+ *
+ * @param hex - The hexadecimal string (with or without 0x prefix)
+ * @returns Normalized hash with 0x prefix
  * @throws Error if the hex string is invalid
  */
 export declare function hashFromHex(hex: string): Hash;
 /**
- * Creates a new Radius receipt from an Ethereum receipt
- * @param receipt Ethereum receipt
- * @param from Sender address
- * @param to Recipient address
- * @param value Transaction value
- * @returns Radius receipt
+ * Creates a new Radius receipt from an Ethereum/viem receipt.
+ *
+ * @param receipt - viem TransactionReceipt
+ * @param from - Sender address (optional, uses receipt.from)
+ * @param to - Recipient address (optional, uses receipt.to)
+ * @param value - Transaction value (optional)
+ * @returns Radius Receipt
+ *
+ * @deprecated Use RadiusReceipt from client directly instead
  */
-export declare function receiptFromEthReceipt(receipt: TransactionReceipt, from: Address, to?: Address, value?: BigNumberish): Receipt;
+export declare function receiptFromEthReceipt(receipt: TransactionReceipt, from?: Address, to?: Address, value?: bigint): Receipt;
 /**
- * Creates a zero address (0x0000000000000000000000000000000000000000)
- * Used as a default value or to represent the zero address in the Ethereum ecosystem
- * @returns An Address instance representing the zero address
+ * Returns the zero address constant.
+ *
+ * @returns The zero address (0x0000000000000000000000000000000000000000)
+ *
+ * @deprecated Import ZERO_ADDRESS constant directly instead
  */
 export declare function zeroAddress(): Address;
 //# sourceMappingURL=utils.d.ts.map

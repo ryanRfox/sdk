@@ -1,41 +1,22 @@
 /**
- * Transaction represents an unsigned Radius EVM transaction
- * Contains all the data needed to execute a Radius transaction
+ * Transaction represents an unsigned Radius EVM transaction.
+ * Contains all the data needed to execute a Radius transaction.
+ *
+ * @deprecated Use TransactionParams interface instead for cleaner types.
  */
 export class Transaction {
-    /**
-     * The call data for the transaction (bytecode for contract creation, or method call data)
-     */
+    /** The call data for the transaction */
     data;
-    /**
-     * Maximum amount of gas units the transaction can consume
-     */
+    /** Maximum amount of gas units */
     gas;
-    /**
-     * Price per gas unit in wei
-     */
+    /** Price per gas unit in wei */
     gasPrice;
-    /**
-     * Sequential transaction number for the sending account
-     */
+    /** Sequential transaction number */
     nonce;
-    /**
-     * Destination address (undefined for contract creation)
-     */
+    /** Destination address */
     to;
-    /**
-     * Amount of native currency to send in wei
-     */
+    /** Amount of native currency in wei */
     value;
-    /**
-     * Creates a new unsigned transaction
-     * @param data The calldata for the transaction
-     * @param gas Maximum amount of gas units the transaction can consume
-     * @param gasPrice Price per gas unit in wei
-     * @param nonce Sequential transaction number for the sending account
-     * @param to Destination address (undefined for contract creation)
-     * @param value Amount of native currency to send in wei
-     */
     constructor(data, gas, gasPrice, nonce, to, value) {
         this.data = data;
         this.gas = gas;

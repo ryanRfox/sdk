@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.abiFromJSON = abiFromJSON;
 exports.addressFromHex = addressFromHex;
 exports.bytecodeFromHex = bytecodeFromHex;
-exports.ethAddressFromRadiusAddress = ethAddressFromRadiusAddress;
 exports.eventsFromEthLogs = eventsFromEthLogs;
 exports.hashFromHex = hashFromHex;
 exports.receiptFromEthReceipt = receiptFromEthReceipt;
@@ -24,7 +23,7 @@ function abiFromJSON(json) {
 }
 function addressFromHex(hex) {
     const cleanHex = hex.startsWith('0x') ? hex : `0x${hex}`;
-    return new address_1.Address((0, viem_1.hexToBytes)(cleanHex));
+    return (0, viem_1.getAddress)(cleanHex);
 }
 function bytecodeFromHex(s) {
     try {
@@ -35,12 +34,6 @@ function bytecodeFromHex(s) {
         return undefined;
     }
 }
-function ethAddressFromRadiusAddress(address) {
-    if (!address) {
-        return undefined;
-    }
-    return address.ethAddress();
-}
 function eventsFromEthLogs(logs) {
     return logs.map((log) => new event_1.Event(log.topics[0] ?? '', {}, log.data ?? '0x'));
 }
@@ -48,10 +41,11 @@ function hashFromHex(hex) {
     const cleanHex = hex.startsWith('0x') ? hex : `0x${hex}`;
     return new hash_1.Hash((0, viem_1.hexToBytes)(cleanHex));
 }
-function receiptFromEthReceipt(receipt, from, to = new address_1.Address(zeroAddress()), value) {
-    return new receipt_1.Receipt(from, to, new address_1.Address(receipt.contractAddress ?? zeroAddress()), new hash_1.Hash(receipt.transactionHash), receipt.gasUsed, receipt.status === 'success' ? 1 : 0, eventsFromEthLogs(receipt.logs ?? []), value);
+function receiptFromEthReceipt(receipt, from, to, value) {
+    const status = receipt.status;
+    return (0, receipt_1.createReceipt)(from ?? receipt.from, to ?? receipt.to ?? null, receipt.contractAddress ?? null, receipt.transactionHash, receipt.gasUsed, status, eventsFromEthLogs(receipt.logs ?? []), value);
 }
 function zeroAddress() {
-    return new address_1.Address('0x0000000000000000000000000000000000000000');
+    return address_1.ZERO_ADDRESS;
 }
 //# sourceMappingURL=utils.js.map

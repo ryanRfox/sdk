@@ -15,7 +15,7 @@ class Account {
         return new Account(options.signer);
     }
     address() {
-        return this.signer ? new common_1.Address(this.signer.address) : (0, common_1.zeroAddress)();
+        return this.signer?.address ?? common_1.ZERO_ADDRESS;
     }
     async balance(client) {
         return client.balanceAt(this.address());
@@ -52,7 +52,7 @@ class Account {
             return typeof value === 'bigint' ? value : BigInt(value);
         };
         const signedTx = await this.signer.signTransaction({
-            to: transaction.to?.hex(),
+            to: transaction.to,
             value: toBigInt(transaction.value) ?? 0n,
             data: transaction.data,
             nonce: transaction.nonce,

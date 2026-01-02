@@ -1,43 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Address = void 0;
+exports.ZERO_ADDRESS = void 0;
+exports.addressToBytes = addressToBytes;
+exports.isAddressEqual = isAddressEqual;
+exports.toChecksumAddress = toChecksumAddress;
 const viem_1 = require("viem");
-class Address {
-    data;
-    constructor(data) {
-        if (data instanceof Address) {
-            this.data = data.bytes();
-        }
-        else if (typeof data === 'string') {
-            const cleanHex = data.startsWith('0x') ? data : `0x${data}`;
-            this.data = (0, viem_1.hexToBytes)(cleanHex);
-        }
-        else if (data instanceof Uint8Array) {
-            if (data.length !== 20) {
-                throw new Error('Address must be 20 bytes');
-            }
-            this.data = data;
-        }
-        else {
-            const bytes = (0, viem_1.hexToBytes)(data);
-            if (bytes.length !== 20) {
-                throw new Error('Address must be 20 bytes');
-            }
-            this.data = bytes;
-        }
-    }
-    bytes() {
-        return this.data;
-    }
-    ethAddress() {
-        return (0, viem_1.getAddress)(this.hex());
-    }
-    hex() {
-        return (0, viem_1.bytesToHex)(this.data);
-    }
-    equals(other) {
-        return this.hex().toLowerCase() === other.hex().toLowerCase();
-    }
+function addressToBytes(address) {
+    return (0, viem_1.hexToBytes)(address);
 }
-exports.Address = Address;
+function isAddressEqual(a, b) {
+    return (0, viem_1.isAddressEqual)(a, b);
+}
+function toChecksumAddress(address) {
+    return (0, viem_1.getAddress)(address);
+}
+exports.ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 //# sourceMappingURL=address.js.map

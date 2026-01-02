@@ -1,32 +1,40 @@
 import type { Address } from './address';
 import type { Event } from './event';
-import type { Hash } from './hash';
-import type { BigNumberish } from './transaction';
+import type { Hash } from 'viem';
 /**
- * Receipt represents the result of a successfully mined transaction
- * Contains information about the transaction execution including gas usage,
- * emitted events, and contract creation if applicable
+ * Transaction status as returned by viem
  */
-export declare class Receipt {
+export type TransactionStatus = 'success' | 'reverted';
+/**
+ * Receipt represents the result of a successfully mined transaction.
+ * Contains information about the transaction execution including gas usage,
+ * emitted events, and contract creation if applicable.
+ *
+ * @deprecated Use RadiusReceipt from '@radiustechsystems/sdk/client' instead.
+ * This type is kept for backwards compatibility but will be removed in v3.
+ */
+export interface Receipt {
+    /** The sender address */
     from: Address;
-    to: Address;
-    contractAddress: Address;
+    /** The recipient address (or null for contract creation) */
+    to: Address | null;
+    /** The created contract address (if any) */
+    contractAddress: Address | null;
+    /** The transaction hash */
     txHash: Hash;
-    gasUsed: BigNumberish;
-    status: number;
+    /** The amount of gas used */
+    gasUsed: bigint;
+    /** The transaction status - 'success' or 'reverted' */
+    status: TransactionStatus;
+    /** The transaction logs/events */
     logs: Event[];
-    value?: BigNumberish | undefined;
-    /**
-     * Creates a new receipt
-     * @param from The sender address
-     * @param to The recipient address
-     * @param contractAddress The created contract address (if any)
-     * @param txHash The transaction hash
-     * @param gasUsed The amount of gas used
-     * @param status The transaction status (1 for success, 0 for failure)
-     * @param logs The transaction logs/events
-     * @param value The amount of native currency (USD) transferred
-     */
-    constructor(from: Address, to: Address, contractAddress: Address, txHash: Hash, gasUsed: BigNumberish, status: number, logs?: Event[], value?: BigNumberish | undefined);
+    /** The amount of native currency (USD) transferred */
+    value?: bigint;
 }
+/**
+ * Creates a Receipt object.
+ *
+ * @deprecated Use RadiusReceipt from '@radiustechsystems/sdk/client' instead.
+ */
+export declare function createReceipt(from: Address, to: Address | null, contractAddress: Address | null, txHash: Hash, gasUsed: bigint, status: TransactionStatus, logs?: Event[], value?: bigint): Receipt;
 //# sourceMappingURL=receipt.d.ts.map

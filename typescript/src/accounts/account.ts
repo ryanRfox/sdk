@@ -1,11 +1,11 @@
 import type { RadiusSigner } from '../auth';
 import {
-	Address,
+	type Address,
 	type BytesLike,
 	type Receipt,
 	SignedTransaction,
 	type Transaction,
-	zeroAddress,
+	ZERO_ADDRESS,
 } from '../common';
 import type { AccountOption, AccountOptions } from './options';
 import type { AccountClient } from './types';
@@ -47,7 +47,7 @@ export class Account {
 	 * @returns The account address, or zero address if no signer is available
 	 */
 	address(): Address {
-		return this.signer ? new Address(this.signer.address) : zeroAddress();
+		return this.signer?.address ?? ZERO_ADDRESS;
 	}
 
 	/**
@@ -126,8 +126,9 @@ export class Account {
 			return typeof value === 'bigint' ? value : BigInt(value);
 		};
 		// Convert to viem transaction format
+		// transaction.to is already a viem Address type (`0x${string}`)
 		const signedTx = await this.signer.signTransaction({
-			to: transaction.to?.hex() as `0x${string}`,
+			to: transaction.to,
 			value: toBigInt(transaction.value) ?? 0n,
 			data: transaction.data as `0x${string}`,
 			nonce: transaction.nonce,

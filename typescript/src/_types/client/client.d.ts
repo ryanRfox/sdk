@@ -81,9 +81,9 @@ export interface ContractInstance {
  * // Get balance
  * const balance = await client.getBalance('0x...');
  *
- * // Send transaction
+ * // Send transaction and wait for receipt
  * const signer = createPrivateKeySigner('0x...privateKey', radiusTestnet.id);
- * const receipt = await client.sendSync(signer, '0x...recipient', 1000000000000000000n);
+ * const receipt = await client.sendAndWait(signer, '0x...recipient', 1000000000000000000n);
  * ```
  */
 export interface RadiusClient {
@@ -147,6 +147,10 @@ export interface RadiusClient {
      * @param args - Arguments to pass to the method
      * @returns The transaction receipt
      */
+    executeAndWait(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
+    /**
+     * @deprecated Use executeAndWait instead
+     */
     executeSync(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
     /**
      * Send native currency to an address.
@@ -163,6 +167,10 @@ export interface RadiusClient {
      * @param to - The recipient address
      * @param value - The amount to send in wei
      * @returns The transaction receipt
+     */
+    sendAndWait(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
+    /**
+     * @deprecated Use sendAndWait instead
      */
     sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
     /**
@@ -190,41 +198,26 @@ export interface RadiusClient {
      * @returns The transaction receipt
      */
     waitForReceipt(hash: Hash): Promise<RadiusReceipt>;
+    /**
+     * Extend the client with custom actions.
+     *
+     * @param extender - A function that receives the base client and returns custom actions
+     * @returns A new client with the custom actions added
+     *
+     * @example
+     * ```typescript
+     * const client = createRadiusClient({ chain: radiusTestnet }).extend((base) => ({
+     *   async getBalanceFormatted(address: Address) {
+     *     const balance = await base.getBalance(address);
+     *     return formatEther(balance);
+     *   },
+     * }));
+     *
+     * const formatted = await client.getBalanceFormatted('0x...');
+     * ```
+     */
+    extend<TExtension extends Record<string, unknown>>(extender: (client: RadiusClient) => TExtension): RadiusClient & TExtension;
 }
-/**
- * Creates a new RadiusClient instance.
- *
- * @param config - Configuration options for the client
- * @returns A RadiusClient instance
- *
- * @example
- * ```typescript
- * import { createRadiusClient } from '@radiustechsystems/sdk';
- * import { radiusTestnet } from '@radiustechsystems/sdk/chains';
- * import { http } from 'viem';
- *
- * // Basic usage
- * const client = createRadiusClient({
- *   chain: radiusTestnet,
- *   transport: http(),
- * });
- *
- * // With logging
- * const clientWithLogging = createRadiusClient({
- *   chain: radiusTestnet,
- *   logger: console.log,
- * });
- *
- * // With custom interceptor
- * const clientWithInterceptor = createRadiusClient({
- *   chain: radiusTestnet,
- *   interceptor: async (reqBody, response) => {
- *     // Custom response handling
- *     return response;
- *   },
- * });
- * ```
- */
 export declare function createRadiusClient(config: RadiusClientConfig): RadiusClient;
 export type { Chain, Transport, Abi, Hash, Hex, TransactionReceipt };
 export type { ViemAddress as Address };

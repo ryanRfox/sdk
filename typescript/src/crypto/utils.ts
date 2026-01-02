@@ -1,6 +1,6 @@
-import { bytesToHex, type Hex, hexToBytes, keccak256 as viemKeccak256 } from 'viem';
+import { bytesToHex, getAddress, type Hex, hexToBytes, keccak256 as viemKeccak256 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { Address, type BytesLike } from '../common';
+import type { Address, BytesLike } from '../common';
 import type { SigningKey } from './types';
 
 /**
@@ -65,16 +65,16 @@ export function keccak256(data: BytesLike | BytesLike[]): Uint8Array {
  * The address is derived by taking the Keccak256 hash of the public key
  * (without the prefix byte) and keeping the last 20 bytes.
  * @param publicKey Public key as BytesLike
- * @returns Account address as an Address object
+ * @returns Account address as a checksummed viem Address
  */
 export function pubkeyToAddress(publicKey: BytesLike): Address {
 	const bytes = toBytes(publicKey);
 	// Remove the prefix byte (0x04 for uncompressed public keys)
 	const keyWithoutPrefix = bytes.slice(1);
 	const hash = viemKeccak256(bytesToHex(keyWithoutPrefix));
-	// Take the last 20 bytes (40 hex chars)
-	const addressHex = `0x${hash.slice(-40)}` as Hex;
-	return new Address(addressHex);
+	// Take the last 20 bytes (40 hex chars) and return checksummed address
+	const addressHex = `0x${hash.slice(-40)}` as Address;
+	return getAddress(addressHex);
 }
 
 /**

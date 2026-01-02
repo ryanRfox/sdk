@@ -1,3 +1,6 @@
+export declare const RADIUS_TESTNET_CONTRACTS: {
+    readonly sbc: "0xF966020a30946A64B39E2e243049036367590858";
+};
 export declare const radiusTestnet: {
     blockExplorers: {
         readonly default: {
@@ -6,15 +9,11 @@ export declare const radiusTestnet: {
         };
     };
     blockTime?: number | undefined | undefined;
-    contracts?: {
-        [x: string]: import("viem").ChainContract | {
-            [sourceId: number]: import("viem").ChainContract | undefined;
-        } | undefined;
-        ensRegistry?: import("viem").ChainContract | undefined;
-        ensUniversalResolver?: import("viem").ChainContract | undefined;
-        multicall3?: import("viem").ChainContract | undefined;
-        erc6492Verifier?: import("viem").ChainContract | undefined;
-    } | undefined;
+    contracts: {
+        readonly sbc: {
+            readonly address: "0xF966020a30946A64B39E2e243049036367590858";
+        };
+    };
     ensTlds?: readonly string[] | undefined;
     id: 1223953;
     name: "Radius Testnet";
@@ -45,6 +44,9 @@ export declare const radiusTestnet: {
     serializers?: import("viem").ChainSerializers<undefined, import("viem").TransactionSerializable> | undefined;
     verifyHash?: ((client: import("viem").Client, parameters: import("viem").VerifyHashActionParameters) => Promise<import("viem").VerifyHashActionReturnType>) | undefined;
 };
+export declare const RADIUS_MAINNET_CONTRACTS: {
+    readonly sbc: "0x0000000000000000000000000000000000000000";
+};
 export declare const radiusMainnet: {
     blockExplorers: {
         readonly default: {
@@ -53,15 +55,11 @@ export declare const radiusMainnet: {
         };
     };
     blockTime?: number | undefined | undefined;
-    contracts?: {
-        [x: string]: import("viem").ChainContract | {
-            [sourceId: number]: import("viem").ChainContract | undefined;
-        } | undefined;
-        ensRegistry?: import("viem").ChainContract | undefined;
-        ensUniversalResolver?: import("viem").ChainContract | undefined;
-        multicall3?: import("viem").ChainContract | undefined;
-        erc6492Verifier?: import("viem").ChainContract | undefined;
-    } | undefined;
+    contracts: {
+        readonly sbc: {
+            readonly address: "0x0000000000000000000000000000000000000000";
+        };
+    };
     ensTlds?: readonly string[] | undefined;
     id: 1223954;
     name: "Radius";

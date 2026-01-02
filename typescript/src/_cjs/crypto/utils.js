@@ -6,7 +6,6 @@ exports.pubkeyToAddress = pubkeyToAddress;
 exports.sign = sign;
 const viem_1 = require("viem");
 const accounts_1 = require("viem/accounts");
-const common_1 = require("../common");
 function toBytes(data) {
     if (data instanceof Uint8Array) {
         return data;
@@ -47,7 +46,7 @@ function pubkeyToAddress(publicKey) {
     const keyWithoutPrefix = bytes.slice(1);
     const hash = (0, viem_1.keccak256)((0, viem_1.bytesToHex)(keyWithoutPrefix));
     const addressHex = `0x${hash.slice(-40)}`;
-    return new common_1.Address(addressHex);
+    return (0, viem_1.getAddress)(addressHex);
 }
 async function sign(digestHash, key) {
     const privateKeyHex = (0, viem_1.bytesToHex)(key.privateKey);

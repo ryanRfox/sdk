@@ -1,54 +1,53 @@
 import type { Address, BytesLike } from './address';
+import type { Hex } from 'viem';
 
 /**
  * BigNumberish represents values that can be converted to bigint
+ * @deprecated Prefer using `bigint` directly for cleaner types
  */
 export type BigNumberish = bigint | number | string;
 
 /**
- * Transaction represents an unsigned Radius EVM transaction
- * Contains all the data needed to execute a Radius transaction
+ * Transaction parameters for building unsigned transactions.
+ * This interface represents the data needed to construct a Radius transaction.
+ */
+export interface TransactionParams {
+	/** The call data for the transaction (bytecode for contract creation, or method call data) */
+	data?: Hex;
+	/** Maximum amount of gas units the transaction can consume */
+	gas?: bigint;
+	/** Price per gas unit in wei (typically 0n on Radius) */
+	gasPrice?: bigint;
+	/** Sequential transaction number for the sending account */
+	nonce?: number;
+	/** Destination address (undefined for contract creation) */
+	to?: Address;
+	/** Amount of native currency to send in wei */
+	value?: bigint;
+	/** Chain ID for EIP-155 replay protection */
+	chainId?: number;
+}
+
+/**
+ * Transaction represents an unsigned Radius EVM transaction.
+ * Contains all the data needed to execute a Radius transaction.
+ *
+ * @deprecated Use TransactionParams interface instead for cleaner types.
  */
 export class Transaction {
-	/**
-	 * The call data for the transaction (bytecode for contract creation, or method call data)
-	 */
+	/** The call data for the transaction */
 	data: BytesLike;
-
-	/**
-	 * Maximum amount of gas units the transaction can consume
-	 */
+	/** Maximum amount of gas units */
 	gas: BigNumberish;
-
-	/**
-	 * Price per gas unit in wei
-	 */
+	/** Price per gas unit in wei */
 	gasPrice: BigNumberish;
-
-	/**
-	 * Sequential transaction number for the sending account
-	 */
+	/** Sequential transaction number */
 	nonce?: number | undefined;
-
-	/**
-	 * Destination address (undefined for contract creation)
-	 */
+	/** Destination address */
 	to?: Address;
-
-	/**
-	 * Amount of native currency to send in wei
-	 */
+	/** Amount of native currency in wei */
 	value?: BigNumberish;
 
-	/**
-	 * Creates a new unsigned transaction
-	 * @param data The calldata for the transaction
-	 * @param gas Maximum amount of gas units the transaction can consume
-	 * @param gasPrice Price per gas unit in wei
-	 * @param nonce Sequential transaction number for the sending account
-	 * @param to Destination address (undefined for contract creation)
-	 * @param value Amount of native currency to send in wei
-	 */
 	constructor(
 		data: BytesLike,
 		gas: BigNumberish,

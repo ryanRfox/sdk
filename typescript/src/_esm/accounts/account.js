@@ -1,4 +1,4 @@
-import { Address, SignedTransaction, zeroAddress, } from '../common';
+import { SignedTransaction, ZERO_ADDRESS, } from '../common';
 /**
  * Account represents a Radius account that can be used to sign transactions.
  * This class provides methods for checking balance, retrieving nonce, and
@@ -33,7 +33,7 @@ export class Account {
      * @returns The account address, or zero address if no signer is available
      */
     address() {
-        return this.signer ? new Address(this.signer.address) : zeroAddress();
+        return this.signer?.address ?? ZERO_ADDRESS;
     }
     /**
      * Returns the balance of the account in wei
@@ -108,8 +108,9 @@ export class Account {
             return typeof value === 'bigint' ? value : BigInt(value);
         };
         // Convert to viem transaction format
+        // transaction.to is already a viem Address type (`0x${string}`)
         const signedTx = await this.signer.signTransaction({
-            to: transaction.to?.hex(),
+            to: transaction.to,
             value: toBigInt(transaction.value) ?? 0n,
             data: transaction.data,
             nonce: transaction.nonce,
