@@ -19,7 +19,8 @@
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"test": "vitest --run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"generate:docs": "npx tsx scripts/generate-docs.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.2",

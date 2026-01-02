@@ -1,990 +1,440 @@
 ---
 title: Radius SDK React Hooks
-description: Comprehensive API reference for React hooks in @radiustechsystems/sdk/react
+description: React hooks and components for the Radius TypeScript SDK
 ---
 
 # Radius SDK React Hooks
 
-The Radius SDK provides a comprehensive set of React hooks for interacting with the Radius blockchain and ERC20 tokens. Built on top of wagmi v3, these hooks offer a seamless developer experience with TypeScript support and React best practices.
+The React module provides hooks and components for integrating Radius into React applications.
 
 ## Installation
 
-Install the Radius SDK along with its required peer dependencies:
-
 ```bash
-pnpm add @radiustechsystems/sdk wagmi viem @tanstack/react-query
-```
-
-Or using npm:
-
-```bash
-npm install @radiustechsystems/sdk wagmi viem @tanstack/react-query
-```
-
-Or using yarn:
-
-```bash
-yarn add @radiustechsystems/sdk wagmi viem @tanstack/react-query
+pnpm add @radiustechsystems/sdk @tanstack/react-query viem wagmi
 ```
 
 ## Setup
 
-### RadiusProvider
+### Provider Setup
 
-The `RadiusProvider` component is the entry point for using Radius SDK hooks. It sets up the necessary providers (wagmi, React Query) and Radius context for your application.
+Wrap your application with the necessary providers:
 
-Wrap your application or a section of it with the `RadiusProvider`:
+```typescript
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { WagmiProvider, createConfig, http } from 'wagmi';
+import { radiusTestnet } from '@radiustechsystems/sdk';
 
-```tsx
-import { RadiusProvider } from '@radiustechsystems/sdk/react';
-import { radiusTestnet } from '@radiustechsystems/sdk/react';
+const queryClient = new QueryClient();
 
-export function App() {
-  return (
-    <RadiusProvider chain={radiusTestnet}>
-      <YourApp />
-    </RadiusProvider>
-  );
-}
-```
-
-#### RadiusProvider Props
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| chain | `Chain` | `radiusTestnet` | The blockchain chain configuration |
-| children | `ReactNode` | Required | Child components that will have access to Radius hooks |
-| queryClient | `QueryClient` | `undefined` | Optional custom React Query client instance. If not provided, a new instance is created |
-
-#### Example with Custom QueryClient
-
-```tsx
-import { RadiusProvider } from '@radiustechsystems/sdk/react';
-import { radiusTestnet } from '@radiustechsystems/sdk/react';
-import { QueryClient } from '@tanstack/react-query';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-    },
+const config = createConfig({
+  chains: [radiusTestnet],
+  transports: {
+    [radiusTestnet.id]: http(),
   },
 });
 
-export function App() {
+function App() {
   return (
-    <RadiusProvider chain={radiusTestnet} queryClient={queryClient}>
-      <YourApp />
-    </RadiusProvider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <YourApp />
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
 ```
 
-## Hooks Reference
+## Hooks
 
-### useRadiusContext
+### useRadiusClient()
 
-Access the Radius context to retrieve the configured chain and other context values.
+Get a configured RadiusClient instance.
 
-**Must be used within a RadiusProvider component.**
+```typescript
+import { useRadiusClient } from '@radiustechsystems/sdk/react';
 
-#### Returns
+function MyComponent() {
+  const client = useRadiusClient();
 
-| Property | Type | Description |
-|----------|------|-------------|
-| chain | `Chain` | The currently configured Viem Chain object |
+  const checkBalance = async () => {
+    const balance = await client.getBalance(address);
+    console.log('Balance:', balance);
+  };
 
-#### Example
-
-```tsx
-import { useRadiusContext } from '@radiustechsystems/sdk/react';
-
-function ChainInfo() {
-  const { chain } = useRadiusContext();
-
-  return (
-    <div>
-      <p>Chain: {chain.name}</p>
-      <p>Chain ID: {chain.id}</p>
-      <p>RPC URL: {chain.rpcUrls.default.http[0]}</p>
-    </div>
-  );
+  return <button onClick={checkBalance}>Check Balance</button>;
 }
 ```
 
----
+### useBalance()
 
-### useRadiusBalance
+Get the balance of an address with automatic updates.
 
-Fetches the native token (USD) balance for an address on the Radius blockchain. Uses wagmi's `useBalance` hook under the hood.
-
-#### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| address | `Address \| undefined` | No | The blockchain address to check the balance for. If not provided, uses the connected wallet address |
-
-#### Returns
-
-| Property | Type | Description |
-|----------|------|-------------|
-| data | `BalanceResult \| undefined` | The balance result containing `value` (in wei) and `decimals` |
-| data.value | `bigint` | The balance amount in wei |
-| data.decimals | `number` | Number of decimals for the token (always 18 for native token) |
-| data.symbol | `string` | The token symbol (e.g., "USD") |
-| data.formatted | `string` | The formatted balance as a decimal string |
-| isLoading | `boolean` | Whether the balance is currently being fetched |
-| isError | `boolean` | Whether an error occurred while fetching the balance |
-| error | `Error \| null` | The error object if an error occurred |
-| refetch | `() => Promise<void>` | Function to manually refetch the balance |
-
-#### Example - Fetch Connected Account Balance
-
-```tsx
-import { useRadiusBalance } from '@radiustechsystems/sdk/react';
-
-function BalanceDisplay() {
-  const { data, isLoading, isError } = useRadiusBalance();
-
-  if (isLoading) return <div>Loading balance...</div>;
-  if (isError) return <div>Error loading balance</div>;
-
-  return (
-    <div>
-      <p>Balance: {data?.formatted} {data?.symbol}</p>
-    </div>
-  );
-}
-```
-
-#### Example - Fetch Specific Address Balance
-
-```tsx
-import { useRadiusBalance } from '@radiustechsystems/sdk/react';
-
-function AddressBalance({ address }: { address: string }) {
-  const { data, isLoading } = useRadiusBalance({ address });
-
-  if (isLoading) return <div>Loading...</div>;
-
-  return <div>Balance: {data?.formatted} {data?.symbol}</div>;
-}
-```
-
----
-
-### useRadiusSend
-
-Sends native tokens (USD) to a recipient address. Handles transaction submission, confirmation waiting, and provides state management.
-
-#### Parameters
-
-None. Call the `send` function with the transaction parameters.
-
-#### Returns
-
-| Property | Type | Description |
-|----------|------|-------------|
-| hash | `Hash \| undefined` | The transaction hash once the transaction is submitted |
-| receipt | `TransactionReceipt \| undefined` | The transaction receipt once the transaction is confirmed |
-| error | `Error \| null` | Any error that occurred during the transaction |
-| isPending | `boolean` | Whether the transaction is pending submission/confirmation |
-| isConfirming | `boolean` | Whether the transaction is being confirmed on the blockchain |
-| isConfirmed | `boolean` | Whether the transaction has been confirmed |
-| send | `(params: UseRadiusSendParams) => void` | Function to initiate the transaction |
-| reset | `() => void` | Function to reset the transaction state |
-
-#### Send Parameters
-
-The `send` function accepts an object with:
+**Parameters:**
 
 | Name | Type | Description |
 |------|------|-------------|
-| to | `Address` | The recipient address |
-| value | `string \| bigint` | The amount to send. Can be a decimal string (e.g., "1.5") which will be parsed as ether, or a bigint in wei |
+| address | `Address` | The address to check |
+| options | `UseBalanceOptions` | Optional configuration |
 
-#### Example - Send with String Amount
+**Returns:**
 
-```tsx
-import { useRadiusSend } from '@radiustechsystems/sdk/react';
-import { useState } from 'react';
+| Property | Type | Description |
+|----------|------|-------------|
+| data | `bigint \| undefined` | The balance in wei |
+| isLoading | `boolean` | Loading state |
+| error | `Error \| null` | Error if any |
+| refetch | `() => void` | Refetch balance |
 
-function SendTransaction() {
-  const { send, isPending, isConfirmed, hash, error } = useRadiusSend();
-  const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState('');
+**Example:**
 
-  const handleSend = () => {
-    send({
-      to: recipient,
-      value: amount, // Can be "1.5" for 1.5 USD
-    });
-  };
+```typescript
+import { useBalance } from '@radiustechsystems/sdk/react';
 
-  return (
-    <div>
-      <input
-        placeholder="Recipient address"
-        value={recipient}
-        onChange={(e) => setRecipient(e.target.value)}
-      />
-      <input
-        placeholder="Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
-      <button onClick={handleSend} disabled={isPending}>
-        {isPending ? 'Sending...' : 'Send'}
-      </button>
+function BalanceDisplay({ address }: { address: Address }) {
+  const { data: balance, isLoading, error } = useBalance(address);
 
-      {error && <div>Error: {error.message}</div>}
-      {hash && <div>Transaction: {hash}</div>}
-      {isConfirmed && <div>Transaction confirmed!</div>}
-    </div>
-  );
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return <div>Balance: {balance?.toString()} wei</div>;
 }
 ```
 
-#### Example - Send with BigInt Amount
+### useSendTransaction()
 
-```tsx
-import { useRadiusSend } from '@radiustechsystems/sdk/react';
+Send a transaction with React state management.
+
+**Returns:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| sendTransaction | `(params) => void` | Send transaction function |
+| sendTransactionAsync | `(params) => Promise<Hash>` | Async version |
+| data | `Hash \| undefined` | Transaction hash |
+| isLoading | `boolean` | Loading state |
+| isSuccess | `boolean` | Success state |
+| error | `Error \| null` | Error if any |
+
+**Example:**
+
+```typescript
+import { useSendTransaction } from '@radiustechsystems/sdk/react';
 import { parseEther } from 'viem';
 
-function SendBigIntExample() {
-  const { send, isPending } = useRadiusSend();
+function SendForm() {
+  const { sendTransaction, isLoading, isSuccess, error } = useSendTransaction();
 
   const handleSend = () => {
-    send({
-      to: '0x1234...5678',
-      value: parseEther('2.5'), // 2.5 USD in wei
+    sendTransaction({
+      to: '0x...',
+      value: parseEther('1'),
     });
   };
 
-  return <button onClick={handleSend} disabled={isPending}>Send 2.5 USD</button>;
+  return (
+    <div>
+      <button onClick={handleSend} disabled={isLoading}>
+        {isLoading ? 'Sending...' : 'Send 1 USD'}
+      </button>
+      {isSuccess && <p>Transaction sent!</p>}
+      {error && <p>Error: {error.message}</p>}
+    </div>
+  );
 }
 ```
 
----
+### useWaitForReceipt()
 
-### useERC20Balance
+Wait for a transaction receipt.
 
-Reads the balance of an ERC20 token for an address.
+**Parameters:**
 
-#### Parameters
+| Name | Type | Description |
+|------|------|-------------|
+| hash | `Hash \| undefined` | Transaction hash to wait for |
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| token | `Address` | Yes | The ERC20 token contract address |
-| address | `Address \| undefined` | No | The address to check the balance for. If not provided, uses the connected wallet address |
-
-#### Returns
+**Returns:**
 
 | Property | Type | Description |
 |----------|------|-------------|
-| data | `bigint \| undefined` | The token balance in the token's smallest unit (usually wei) |
-| isLoading | `boolean` | Whether the balance is currently being fetched |
-| isError | `boolean` | Whether an error occurred |
-| error | `Error \| null` | The error object if an error occurred |
-| refetch | `() => Promise<void>` | Function to manually refetch the balance |
+| data | `RadiusReceipt \| undefined` | The receipt |
+| isLoading | `boolean` | Waiting for confirmation |
+| isSuccess | `boolean` | Transaction confirmed |
+| error | `Error \| null` | Error if any |
 
-#### Example - Get Connected Account Token Balance
+**Example:**
 
-```tsx
-import { useERC20Balance } from '@radiustechsystems/sdk/react';
-import { useERC20Metadata } from '@radiustechsystems/sdk/react';
-import { formatUnits } from 'viem';
+```typescript
+import { useSendTransaction, useWaitForReceipt } from '@radiustechsystems/sdk/react';
 
-function TokenBalance({ tokenAddress }: { tokenAddress: string }) {
-  const { data: balance, isLoading } = useERC20Balance({
-    token: tokenAddress,
-  });
-
-  const { decimals } = useERC20Metadata({
-    token: tokenAddress,
-  });
-
-  if (isLoading) return <div>Loading...</div>;
-
-  const formatted = balance && decimals
-    ? formatUnits(balance, decimals)
-    : '0';
-
-  return <div>Token Balance: {formatted}</div>;
-}
-```
-
-#### Example - Get Specific Address Token Balance
-
-```tsx
-import { useERC20Balance } from '@radiustechsystems/sdk/react';
-
-function SpecificAddressBalance({
-  tokenAddress,
-  userAddress,
-}: {
-  tokenAddress: string;
-  userAddress: string;
-}) {
-  const { data: balance } = useERC20Balance({
-    token: tokenAddress,
-    address: userAddress,
-  });
-
-  return <div>Balance: {balance?.toString() || '0'}</div>;
-}
-```
-
----
-
-### useERC20Transfer
-
-Transfers ERC20 tokens to a recipient address. Handles token transfer transactions with state management.
-
-#### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| token | `Address` | Yes | The ERC20 token contract address |
-
-#### Returns
-
-| Property | Type | Description |
-|----------|------|-------------|
-| hash | `Hash \| undefined` | The transaction hash once submitted |
-| receipt | `TransactionReceipt \| undefined` | The transaction receipt once confirmed |
-| error | `Error \| null` | Any error that occurred |
-| isPending | `boolean` | Whether the transaction is pending |
-| isConfirming | `boolean` | Whether the transaction is being confirmed |
-| isConfirmed | `boolean` | Whether the transaction has been confirmed |
-| transfer | `(to: Address, amount: bigint) => void` | Function to initiate a transfer |
-| reset | `() => void` | Function to reset the state |
-
-#### Example - Transfer Tokens
-
-```tsx
-import { useERC20Transfer } from '@radiustechsystems/sdk/react';
-import { parseUnits } from 'viem';
-import { useState } from 'react';
-
-function TransferToken() {
-  const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState('');
-  const tokenAddress = '0x...'; // ERC20 token address
-  const decimals = 18;
-
-  const { transfer, isPending, isConfirmed, error } = useERC20Transfer({
-    token: tokenAddress,
-  });
-
-  const handleTransfer = () => {
-    const amountInWei = parseUnits(amount, decimals);
-    transfer(recipient, amountInWei);
-  };
+function TransactionFlow() {
+  const { sendTransaction, data: hash } = useSendTransaction();
+  const { data: receipt, isLoading: isConfirming } = useWaitForReceipt(hash);
 
   return (
     <div>
-      <input
-        placeholder="Recipient"
-        value={recipient}
-        onChange={(e) => setRecipient(e.target.value)}
-      />
-      <input
-        placeholder="Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
-      <button onClick={handleTransfer} disabled={isPending}>
-        {isPending ? 'Transferring...' : 'Transfer'}
+      <button onClick={() => sendTransaction({ to: '0x...', value: 1n })}>
+        Send
       </button>
 
-      {error && <div>Error: {error.message}</div>}
-      {isConfirmed && <div>Transfer successful!</div>}
-    </div>
-  );
-}
-```
-
----
-
-### useERC20Approve
-
-Approves an ERC20 token for spending by a spender address. Commonly used to authorize contracts to transfer tokens on your behalf.
-
-#### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| token | `Address` | Yes | The ERC20 token contract address |
-
-#### Returns
-
-| Property | Type | Description |
-|----------|------|-------------|
-| hash | `Hash \| undefined` | The transaction hash once submitted |
-| receipt | `TransactionReceipt \| undefined` | The transaction receipt once confirmed |
-| error | `Error \| null` | Any error that occurred |
-| isPending | `boolean` | Whether the transaction is pending |
-| isConfirming | `boolean` | Whether the transaction is being confirmed |
-| isConfirmed | `boolean` | Whether the transaction has been confirmed |
-| approve | `(spender: Address, amount: bigint) => void` | Function to approve spending |
-| reset | `() => void` | Function to reset the state |
-
-#### Example - Approve Token for Contract
-
-```tsx
-import { useERC20Approve } from '@radiustechsystems/sdk/react';
-import { parseUnits } from 'viem';
-import { useState } from 'react';
-
-function ApproveToken() {
-  const [amount, setAmount] = useState('');
-  const tokenAddress = '0x...'; // ERC20 token address
-  const contractAddress = '0x...'; // Contract to approve
-  const decimals = 18;
-
-  const { approve, isPending, isConfirmed, error } = useERC20Approve({
-    token: tokenAddress,
-  });
-
-  const handleApprove = () => {
-    const amountInWei = parseUnits(amount, decimals);
-    approve(contractAddress, amountInWei);
-  };
-
-  return (
-    <div>
-      <input
-        placeholder="Amount to approve"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
-      <button onClick={handleApprove} disabled={isPending}>
-        {isPending ? 'Approving...' : 'Approve'}
-      </button>
-
-      {error && <div>Error: {error.message}</div>}
-      {isConfirmed && <div>Approval successful!</div>}
-    </div>
-  );
-}
-```
-
-#### Example - Approve Unlimited Amount
-
-```tsx
-import { useERC20Approve } from '@radiustechsystems/sdk/react';
-import { maxUint256 } from 'viem';
-
-function ApproveUnlimited() {
-  const { approve } = useERC20Approve({
-    token: '0x...',
-  });
-
-  const handleApproveUnlimited = () => {
-    approve('0x...', maxUint256); // Approve unlimited amount
-  };
-
-  return <button onClick={handleApproveUnlimited}>Approve Unlimited</button>;
-}
-```
-
----
-
-### useERC20Allowance
-
-Reads the allowance of an ERC20 token - how much a spender is allowed to transfer on behalf of an owner.
-
-#### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| token | `Address` | Yes | The ERC20 token contract address |
-| owner | `Address \| undefined` | No | The token owner address. If not provided, uses the connected wallet address |
-| spender | `Address` | Yes | The address allowed to spend the tokens |
-
-#### Returns
-
-| Property | Type | Description |
-|----------|------|-------------|
-| data | `bigint \| undefined` | The allowance amount in the token's smallest unit |
-| isLoading | `boolean` | Whether the allowance is being fetched |
-| isError | `boolean` | Whether an error occurred |
-| error | `Error \| null` | The error object if an error occurred |
-| refetch | `() => Promise<void>` | Function to manually refetch the allowance |
-
-#### Example - Check Allowance
-
-```tsx
-import { useERC20Allowance } from '@radiustechsystems/sdk/react';
-import { formatUnits } from 'viem';
-
-function AllowanceDisplay() {
-  const tokenAddress = '0x...';
-  const contractAddress = '0x...';
-
-  const { data: allowance, isLoading } = useERC20Allowance({
-    token: tokenAddress,
-    spender: contractAddress,
-  });
-
-  if (isLoading) return <div>Loading allowance...</div>;
-
-  return (
-    <div>
-      Allowance: {allowance ? formatUnits(allowance, 18) : '0'}
-    </div>
-  );
-}
-```
-
-#### Example - Check If Approval Needed
-
-```tsx
-import { useERC20Allowance } from '@radiustechsystems/sdk/react';
-import { useERC20Balance } from '@radiustechsystems/sdk/react';
-import { parseUnits } from 'viem';
-
-function ApprovalCheck({
-  tokenAddress,
-  contractAddress,
-  requiredAmount,
-  decimals,
-}: {
-  tokenAddress: string;
-  contractAddress: string;
-  requiredAmount: string;
-  decimals: number;
-}) {
-  const { data: balance } = useERC20Balance({ token: tokenAddress });
-  const { data: allowance } = useERC20Allowance({
-    token: tokenAddress,
-    spender: contractAddress,
-  });
-
-  const requiredWei = parseUnits(requiredAmount, decimals);
-  const needsApproval = allowance === undefined || allowance < requiredWei;
-  const hasSufficientBalance = balance !== undefined && balance >= requiredWei;
-
-  return (
-    <div>
-      {!hasSufficientBalance && <div>Insufficient balance</div>}
-      {hasSufficientBalance && needsApproval && <div>Approval required</div>}
-      {hasSufficientBalance && !needsApproval && <div>Ready to proceed</div>}
-    </div>
-  );
-}
-```
-
----
-
-### useERC20Metadata
-
-Fetches metadata for an ERC20 token including name, symbol, decimals, and total supply.
-
-#### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| token | `Address` | Yes | The ERC20 token contract address |
-
-#### Returns
-
-| Property | Type | Description |
-|----------|------|-------------|
-| name | `string \| undefined` | The token name (e.g., "Wrapped Ether") |
-| symbol | `string \| undefined` | The token symbol (e.g., "WUSD") |
-| decimals | `number \| undefined` | The number of decimals for the token (usually 18) |
-| totalSupply | `bigint \| undefined` | The total supply of the token |
-| isLoading | `boolean` | Whether any metadata is currently being fetched |
-| isError | `boolean` | Whether an error occurred |
-| refetch | `() => Promise<void>` | Function to manually refetch all metadata |
-
-#### Example - Display Token Metadata
-
-```tsx
-import { useERC20Metadata } from '@radiustechsystems/sdk/react';
-import { formatUnits } from 'viem';
-
-function TokenInfo({ tokenAddress }: { tokenAddress: string }) {
-  const { name, symbol, decimals, totalSupply, isLoading } = useERC20Metadata({
-    token: tokenAddress,
-  });
-
-  if (isLoading) return <div>Loading token info...</div>;
-
-  const formattedSupply = totalSupply && decimals
-    ? formatUnits(totalSupply, decimals)
-    : '0';
-
-  return (
-    <div>
-      <h3>{name}</h3>
-      <p>Symbol: {symbol}</p>
-      <p>Decimals: {decimals}</p>
-      <p>Total Supply: {formattedSupply}</p>
-    </div>
-  );
-}
-```
-
-#### Example - Format Token Amount Using Metadata
-
-```tsx
-import { useERC20Metadata } from '@radiustechsystems/sdk/react';
-import { useERC20Balance } from '@radiustechsystems/sdk/react';
-import { formatUnits } from 'viem';
-
-function TokenAmount({ tokenAddress }: { tokenAddress: string }) {
-  const { decimals } = useERC20Metadata({ token: tokenAddress });
-  const { data: balance } = useERC20Balance({ token: tokenAddress });
-
-  if (!decimals || !balance) return <div>Loading...</div>;
-
-  const formatted = formatUnits(balance, decimals);
-  return <div>{formatted} tokens</div>;
-}
-```
-
----
-
-## Complete Example: Token Swap Interface
-
-Here's a complete example showing how to use multiple hooks together to create a token transfer interface with approval handling:
-
-```tsx
-import {
-  useERC20Balance,
-  useERC20Allowance,
-  useERC20Approve,
-  useERC20Transfer,
-  useERC20Metadata,
-} from '@radiustechsystems/sdk/react';
-import { parseUnits, formatUnits } from 'viem';
-import { useState } from 'react';
-
-function TokenTransferWidget({
-  tokenAddress,
-  recipientAddress,
-}: {
-  tokenAddress: string;
-  recipientAddress: string;
-}) {
-  const [amount, setAmount] = useState('');
-  const [step, setStep] = useState<'input' | 'approving' | 'transferring'>('input');
-
-  // Fetch token metadata
-  const { name, symbol, decimals, isLoading: metadataLoading } = useERC20Metadata({
-    token: tokenAddress,
-  });
-
-  // Check balance
-  const { data: balance, refetch: refetchBalance } = useERC20Balance({
-    token: tokenAddress,
-  });
-
-  // Check allowance
-  const { data: allowance, refetch: refetchAllowance } = useERC20Allowance({
-    token: tokenAddress,
-    spender: recipientAddress,
-  });
-
-  // Approval hook
-  const { approve, isPending: approvePending, isConfirmed: approveConfirmed } = useERC20Approve({
-    token: tokenAddress,
-  });
-
-  // Transfer hook
-  const { transfer, isPending: transferPending, isConfirmed: transferConfirmed } = useERC20Transfer({
-    token: tokenAddress,
-  });
-
-  const decimalsNum = decimals ?? 18;
-  const amountWei = parseUnits(amount || '0', decimalsNum);
-  const hasAllowance = allowance !== undefined && allowance >= amountWei;
-  const hasBalance = balance !== undefined && balance >= amountWei;
-
-  const handleApproveAndTransfer = async () => {
-    if (!hasAllowance && !approvePending) {
-      setStep('approving');
-      approve(recipientAddress, amountWei);
-    } else if (hasAllowance && !transferPending) {
-      setStep('transferring');
-      transfer(recipientAddress, amountWei);
-    }
-  };
-
-  if (metadataLoading) return <div>Loading token info...</div>;
-
-  return (
-    <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '8px' }}>
-      <h3>Transfer {symbol}</h3>
-
-      <div>
-        <label>Amount:</label>
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="0.0"
-          disabled={step !== 'input'}
-        />
+      {hash && <p>Hash: {hash}</p>}
+      {isConfirming && <p>Confirming...</p>}
+      {receipt && (
         <p>
-          Balance: {balance ? formatUnits(balance, decimalsNum) : '0'} {symbol}
+          Confirmed! Status: {receipt.status}
+          Gas used: {receipt.gasUsed.toString()}
         </p>
-      </div>
-
-      <button
-        onClick={handleApproveAndTransfer}
-        disabled={!hasBalance || approvePending || transferPending || step === 'transferring'}
-      >
-        {step === 'approving' && approvePending && 'Approving...'}
-        {step === 'approving' && approveConfirmed && 'Approval confirmed! Now transferring...'}
-        {step === 'input' && !hasAllowance && 'Approve'}
-        {step === 'input' && hasAllowance && 'Transfer'}
-        {step === 'transferring' && 'Transferring...'}
-        {transferConfirmed && 'Transfer complete!'}
-      </button>
-
-      {!hasBalance && <p style={{ color: 'red' }}>Insufficient balance</p>}
+      )}
     </div>
   );
 }
 ```
 
----
+### useContractRead()
 
-## Wagmi Integration
+Read data from a contract.
 
-All Radius SDK hooks are built on top of wagmi v3 hooks and follow the same patterns. This means you can combine them with other wagmi hooks:
+**Parameters:**
 
-```tsx
-import { useRadiusBalance, useRadiusContext } from '@radiustechsystems/sdk/react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+| Name | Type | Description |
+|------|------|-------------|
+| address | `Address` | Contract address |
+| abi | `Abi` | Contract ABI |
+| functionName | `string` | Function to call |
+| args | `unknown[]` | Function arguments |
 
-function WalletStatus() {
-  const { chain } = useRadiusContext();
-  const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { data: balance } = useRadiusBalance();
+**Example:**
 
-  if (!isConnected) {
-    return (
-      <button onClick={() => connect({ connector: connectors[0] })}>
-        Connect Wallet
-      </button>
-    );
-  }
+```typescript
+import { useContractRead } from '@radiustechsystems/sdk/react';
+
+const ERC20_ABI = [...] as const;
+
+function TokenName({ address }: { address: Address }) {
+  const { data: name, isLoading } = useContractRead({
+    address,
+    abi: ERC20_ABI,
+    functionName: 'name',
+  });
+
+  if (isLoading) return <span>Loading...</span>;
+  return <span>{name}</span>;
+}
+```
+
+### useContractWrite()
+
+Write to a contract.
+
+**Example:**
+
+```typescript
+import { useContractWrite, useWaitForReceipt } from '@radiustechsystems/sdk/react';
+
+function ApproveButton({ tokenAddress, spender, amount }) {
+  const { write, data: hash, isLoading } = useContractWrite({
+    address: tokenAddress,
+    abi: ERC20_ABI,
+    functionName: 'approve',
+  });
+
+  const { isLoading: isConfirming, isSuccess } = useWaitForReceipt(hash);
+
+  return (
+    <button
+      onClick={() => write({ args: [spender, amount] })}
+      disabled={isLoading || isConfirming}
+    >
+      {isLoading ? 'Signing...' : isConfirming ? 'Confirming...' : 'Approve'}
+    </button>
+  );
+}
+```
+
+### useAccount()
+
+Get the connected account information.
+
+**Example:**
+
+```typescript
+import { useAccount } from '@radiustechsystems/sdk/react';
+
+function AccountInfo() {
+  const { address, isConnected, isConnecting } = useAccount();
+
+  if (isConnecting) return <div>Connecting...</div>;
+  if (!isConnected) return <div>Not connected</div>;
+
+  return <div>Connected: {address}</div>;
+}
+```
+
+### useConnect()
+
+Connect to a wallet.
+
+**Example:**
+
+```typescript
+import { useConnect } from '@radiustechsystems/sdk/react';
+
+function ConnectButton() {
+  const { connect, connectors, isLoading, error } = useConnect();
 
   return (
     <div>
-      <p>Connected to {chain.name}</p>
-      <p>Address: {address}</p>
-      <p>Balance: {balance?.formatted} {balance?.symbol}</p>
-      <button onClick={() => disconnect()}>Disconnect</button>
+      {connectors.map((connector) => (
+        <button
+          key={connector.id}
+          onClick={() => connect({ connector })}
+          disabled={isLoading}
+        >
+          {connector.name}
+        </button>
+      ))}
+      {error && <p>{error.message}</p>}
     </div>
   );
 }
 ```
 
----
+### useDisconnect()
 
-## Error Handling
+Disconnect the current wallet.
 
-All hooks provide error states that you should handle:
+**Example:**
 
-```tsx
-import { useRadiusBalance } from '@radiustechsystems/sdk/react';
+```typescript
+import { useDisconnect } from '@radiustechsystems/sdk/react';
 
-function BalanceWithErrorHandling() {
-  const { data, isLoading, isError, error } = useRadiusBalance();
+function DisconnectButton() {
+  const { disconnect } = useDisconnect();
 
-  if (isLoading) return <div>Loading...</div>;
-
-  if (isError) {
-    return (
-      <div>
-        <p>Error loading balance</p>
-        <p>{error?.message}</p>
-      </div>
-    );
-  }
-
-  return <div>Balance: {data?.formatted}</div>;
+  return <button onClick={() => disconnect()}>Disconnect</button>;
 }
 ```
 
----
+## wagmi Connector
 
-## Type Definitions
+### radiusConnector
 
-All hooks export TypeScript types for their parameters and return values. Import and use them for better type safety:
+Custom wagmi connector for Radius wallets.
 
-```tsx
-import type {
-  UseRadiusBalanceParams,
-  UseERC20TransferParams,
-  UseERC20TransferReturn,
-} from '@radiustechsystems/sdk/react';
+```typescript
+import { createConfig } from 'wagmi';
+import { radiusConnector } from '@radiustechsystems/sdk/wagmi';
+import { radiusTestnet } from '@radiustechsystems/sdk';
 
-function MyComponent() {
-  const balanceParams: UseRadiusBalanceParams = {
-    address: '0x...',
-  };
+const config = createConfig({
+  chains: [radiusTestnet],
+  connectors: [
+    radiusConnector({
+      // Connector options
+    }),
+  ],
+  transports: {
+    [radiusTestnet.id]: http(),
+  },
+});
+```
 
-  const transferReturn: UseERC20TransferReturn = useERC20Transfer({
-    token: '0x...',
-  });
+## Error Handling in React
+
+### Using Error Boundaries
+
+```typescript
+import { RadiusError } from '@radiustechsystems/sdk';
+
+class RadiusErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const error = this.state.error;
+      if (error instanceof RadiusError) {
+        return (
+          <div className="error">
+            <h2>SDK Error</h2>
+            <p>{error.shortMessage}</p>
+            {error.details && <p>{error.details}</p>}
+          </div>
+        );
+      }
+      return <div>Something went wrong</div>;
+    }
+    return this.props.children;
+  }
+}
+```
+
+### Hook-level Error Handling
+
+```typescript
+function TransferForm() {
+  const { sendTransaction, error } = useSendTransaction();
+
+  useEffect(() => {
+    if (error instanceof InsufficientBalanceError) {
+      toast.error(`Insufficient funds. Have: ${error.balance}, Need: ${error.required}`);
+    } else if (error instanceof TransactionRevertedError) {
+      toast.error(`Transaction reverted: ${error.revertReason}`);
+    } else if (error) {
+      toast.error(error.message);
+    }
+  }, [error]);
 
   // ...
 }
 ```
-
----
 
 ## Best Practices
 
-### 1. Always Wrap with RadiusProvider
+### Query Key Management
 
-```tsx
-// Good
-export function App() {
-  return (
-    <RadiusProvider>
-      <YourComponent />
-    </RadiusProvider>
-  );
-}
+```typescript
+// Use consistent query keys for caching
+const balanceQueryKey = ['balance', address] as const;
 
-// Bad - hooks won't work outside provider
-function BadComponent() {
-  const balance = useRadiusBalance(); // Error!
-}
+const { data } = useQuery({
+  queryKey: balanceQueryKey,
+  queryFn: () => client.getBalance(address),
+});
 ```
 
-### 2. Handle Loading and Error States
+### Optimistic Updates
 
-```tsx
-function GoodComponent() {
-  const { data, isLoading, isError } = useRadiusBalance();
+```typescript
+function TransferButton({ amount }) {
+  const queryClient = useQueryClient();
+  const { sendTransactionAsync } = useSendTransaction();
 
-  if (isLoading) return <LoadingSpinner />;
-  if (isError) return <ErrorMessage />;
-  return <BalanceDisplay data={data} />;
-}
-```
+  const handleTransfer = async () => {
+    // Optimistically update balance
+    queryClient.setQueryData(['balance', address], (old) => old - amount);
 
-### 3. Use Type Safety
-
-```tsx
-// Good - define function parameters with types
-function TransferWidget({ token, amount }: { token: Address; amount: string }) {
-  const { transfer } = useERC20Transfer({ token });
-  // ...
-}
-
-// Bad - no type safety
-function TransferWidget(props: any) {
-  // ...
-}
-```
-
-### 4. Manage Approval Flow Properly
-
-```tsx
-function SmartTransfer() {
-  const { data: allowance } = useERC20Allowance({
-    token: tokenAddress,
-    spender: contractAddress,
-  });
-
-  const { approve, isConfirmed: approveConfirmed } = useERC20Approve({
-    token: tokenAddress,
-  });
-
-  const { transfer } = useERC20Transfer({ token: tokenAddress });
-
-  const handleTransfer = () => {
-    if (!allowance || allowance < amountNeeded) {
-      approve(contractAddress, amountNeeded);
-    } else {
-      transfer(recipient, amountNeeded);
+    try {
+      await sendTransactionAsync({ to, value: amount });
+    } catch (error) {
+      // Revert on error
+      queryClient.invalidateQueries({ queryKey: ['balance', address] });
+      throw error;
     }
   };
 }
 ```
 
-### 5. Use Custom QueryClient for Advanced Caching
+### Polling Configuration
 
-```tsx
-import { QueryClient } from '@tanstack/react-query';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 10 * 1000, // 10 seconds
-      gcTime: 1000 * 60 * 5, // 5 minutes
-    },
-  },
+```typescript
+const { data: balance } = useBalance(address, {
+  // Poll every 10 seconds
+  refetchInterval: 10000,
+  // Only poll when window is focused
+  refetchIntervalInBackground: false,
 });
-
-export function App() {
-  return (
-    <RadiusProvider queryClient={queryClient}>
-      <YourApp />
-    </RadiusProvider>
-  );
-}
-```
-
----
-
-## Troubleshooting
-
-### "useRadiusContext must be used within a RadiusProvider"
-
-Make sure your component is wrapped with `RadiusProvider`:
-
-```tsx
-<RadiusProvider>
-  <ComponentThatUsesRadiusHooks />
-</RadiusProvider>
-```
-
-### Balance returns undefined
-
-This usually means:
-- The address parameter is undefined and no wallet is connected
-- The data hasn't loaded yet (check `isLoading`)
-- An error occurred (check `isError` and `error`)
-
-```tsx
-const { address } = useAccount();
-const { data } = useRadiusBalance({
-  address: address, // Make sure address is defined
-});
-```
-
-### Transactions failing silently
-
-Check the `error` property returned by transaction hooks:
-
-```tsx
-const { transfer, error } = useERC20Transfer({ token });
-
-if (error) {
-  console.error('Transfer failed:', error.message);
-}
-```
-
-### Stale data being displayed
-
-Manually refetch when needed:
-
-```tsx
-const { data, refetch } = useRadiusBalance();
-
-// After balance changes
-await refetch();
 ```

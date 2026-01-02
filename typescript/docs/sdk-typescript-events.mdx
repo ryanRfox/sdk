@@ -1,1023 +1,300 @@
 ---
-title: Radius SDK Events
-description: Event subscription and log querying reference for @radiustechsystems/sdk
+title: Radius SDK Events API
+description: Event handling and subscription API for the Radius TypeScript SDK
 ---
 
-# Radius SDK Events
+# Radius SDK Events API
 
-The Radius SDK provides comprehensive utilities for subscribing to blockchain events in real-time and querying historical logs. This module includes WebSocket-based event subscriptions and historical log queries with Radius-specific optimizations.
+The Events API provides utilities for subscribing to and handling blockchain events in the Radius network.
 
-## Overview
+## Installation
 
-The events system in Radius SDK offers two main capabilities:
+The events module is included in the main SDK package:
 
-1. **Real-time Event Watching**: Subscribe to contract events (Transfer, Approval, etc.) and blockchain events (new blocks, pending transactions) using WebSocket subscriptions
-2. **Historical Log Queries**: Fetch historical logs with automatic pagination to handle Radius's block range restrictions
+```bash
+pnpm add @radiustechsystems/sdk
+```
 
-All event watching functions return an unwatch function to stop the subscription and clean up resources.
-
-## WebSocket Transport
-
-Before watching events, you need to set up a WebSocket client:
+## Import
 
 ```typescript
-import { createPublicClient } from 'viem';
-import { createWebSocketTransport } from '@radiustechsystems/sdk/events';
-import { radiusTestnet } from '@radiustechsystems/sdk';
-
-const client = createPublicClient({
-  chain: radiusTestnet,
-  transport: createWebSocketTransport(radiusTestnet),
-});
+import { createEventWatcher, parseEventLogs } from '@radiustechsystems/sdk/events';
 ```
 
 ## Event Watching
 
-### watchTransfer
+### createEventWatcher()
 
-Subscribe to ERC-20 Transfer events in real-time with automatic decoding and optional filtering.
-
-**Signature:**
-```typescript
-function watchTransfer(
-  client: PublicClient,
-  params: WatchTransferParameters
-): WatchContractEventReturnType
-```
+Create an event watcher to subscribe to contract events.
 
 **Parameters:**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `client` | `PublicClient` | Viem public client configured with WebSocket transport |
-| `params` | `WatchTransferParameters` | Configuration object for watching transfers |
+| client | `RadiusClient` | The Radius client instance |
+| contract | `ContractInstance` | Contract with ABI and address |
+| eventName | `string` | Name of the event to watch |
+| callback | `(log: EventLog) => void` | Callback for each event |
+| options | `WatchOptions` | Optional configuration |
 
-**WatchTransferParameters:**
+**WatchOptions:**
 
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `address` | `Address` | Yes | - | ERC-20 token contract address to monitor |
-| `from` | `Address` | No | - | Filter by sender address (optional) |
-| `to` | `Address` | No | - | Filter by recipient address (optional) |
-| `onTransfer` | `(events: TransferEvent[]) => void` | Yes | - | Callback invoked when transfer events are received |
-| `onError` | `(error: Error) => void` | No | - | Callback invoked when an error occurs |
-| `sync` | `boolean` | No | - | Emit logs from latest block on subscription start |
-| `pollingInterval` | `number` | No | - | Polling interval in milliseconds for HTTP fallback |
-
-**Returns:** `() => void` - Unwatch function to stop the subscription
-
-**TransferEvent:**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `from` | `Address` | The address that sent the tokens |
-| `to` | `Address` | The address that received the tokens |
-| `value` | `bigint` | Amount of tokens transferred (in smallest unit) |
-| `log` | `Log` | Raw log data from the blockchain |
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| fromBlock | `bigint` | latest | Starting block number |
+| pollingInterval | `number` | 4000 | Polling interval in ms |
 
 **Example:**
 
 ```typescript
-import { createPublicClient } from 'viem';
-import { createWebSocketTransport, watchTransfer } from '@radiustechsystems/sdk/events';
-import { radiusTestnet } from '@radiustechsystems/sdk';
+import { createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
+import { createEventWatcher } from '@radiustechsystems/sdk/events';
 
-const client = createPublicClient({
-  chain: radiusTestnet,
-  transport: createWebSocketTransport(radiusTestnet),
-});
+const client = createRadiusClient({ chain: radiusTestnet });
 
-// Watch all transfers for a token
-const unwatch = watchTransfer(client, {
-  address: '0x1234567890123456789012345678901234567890',
-  onTransfer: (events) => {
-    events.forEach(event => {
-      console.log(`Transfer: ${event.value} tokens`);
-      console.log(`  From: ${event.from}`);
-      console.log(`  To: ${event.to}`);
-    });
+const ERC20_ABI = [
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false },
+    ],
   },
-  onError: (error) => {
-    console.error('Subscription error:', error);
-  },
-});
+] as const;
 
-// Watch transfers to a specific address
-const unwatchInbound = watchTransfer(client, {
-  address: '0x1234567890123456789012345678901234567890',
-  to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-  onTransfer: (events) => {
-    console.log(`Received ${events.length} transfers`);
+const unwatch = createEventWatcher(
+  client,
+  { address: tokenAddress, abi: ERC20_ABI },
+  'Transfer',
+  (log) => {
+    console.log('Transfer event:');
+    console.log('  From:', log.args.from);
+    console.log('  To:', log.args.to);
+    console.log('  Value:', log.args.value);
   },
-});
+  { pollingInterval: 2000 }
+);
 
 // Stop watching when done
 unwatch();
-unwatchInbound();
 ```
 
-**Remarks:**
-- Requires WebSocket transport for real-time subscriptions
-- Automatically decodes Transfer events using ERC-20 ABI
-- Filters by from/to addresses if provided
-- Event signature: `Transfer(address indexed from, address indexed to, uint256 value)`
-- Subscriptions consume 10 GAS/sec from your RPC key on Radius
+### parseEventLogs()
 
----
-
-### watchTransferForAddress
-
-Convenience wrapper for monitoring Transfer events involving a specific address (as sender or receiver).
-
-**Signature:**
-```typescript
-function watchTransferForAddress(
-  client: PublicClient,
-  params: WatchTransferForAddressParameters
-): WatchContractEventReturnType
-```
+Parse raw logs into typed event objects.
 
 **Parameters:**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `client` | `PublicClient` | Viem public client configured with WebSocket transport |
-| `params` | `WatchTransferForAddressParameters` | Configuration object |
+| logs | `Log[]` | Raw transaction logs |
+| abi | `Abi` | Contract ABI for decoding |
 
-**WatchTransferForAddressParameters:**
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `tokenAddress` | `Address` | Yes | - | ERC-20 token contract address |
-| `watchAddress` | `Address` | Yes | - | Address to monitor (as sender or receiver) |
-| `senderOnly` | `boolean` | No | `false` | Watch only transfers sent from this address |
-| `receiverOnly` | `boolean` | No | `false` | Watch only transfers received by this address |
-| `onTransfer` | `(events: TransferEvent[]) => void` | Yes | - | Callback for transfer events |
-| `onError` | `(error: Error) => void` | No | - | Error callback |
-| `sync` | `boolean` | No | - | Emit logs from latest block on subscription start |
-| `pollingInterval` | `number` | No | - | Polling interval in milliseconds |
+**Returns:** `ParsedLog[]` - Decoded event logs
 
 **Example:**
 
 ```typescript
-import { watchTransferForAddress } from '@radiustechsystems/sdk/events';
+import { parseEventLogs } from '@radiustechsystems/sdk/events';
 
-const myAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
-const tokenAddress = '0x1234567890123456789012345678901234567890';
+const receipt = await client.sendAndWait(signer, to, value);
+const parsedLogs = parseEventLogs(receipt.logs, ERC20_ABI);
 
-// Watch all transfers involving an address (sent or received)
-const unwatch = watchTransferForAddress(client, {
-  tokenAddress,
-  watchAddress: myAddress,
-  onTransfer: (events) => {
-    events.forEach(event => {
-      if (event.from === myAddress) {
-        console.log(`Sent ${event.value} to ${event.to}`);
-      } else {
-        console.log(`Received ${event.value} from ${event.from}`);
-      }
-    });
-  },
-});
-
-// Watch only transfers sent from an address
-const unwatchSent = watchTransferForAddress(client, {
-  tokenAddress,
-  watchAddress: myAddress,
-  senderOnly: true,
-  onTransfer: (events) => {
-    console.log(`Sent ${events.length} transfers`);
-  },
-});
-
-// Watch only transfers received by an address
-const unwatchReceived = watchTransferForAddress(client, {
-  tokenAddress,
-  watchAddress: myAddress,
-  receiverOnly: true,
-  onTransfer: (events) => {
-    console.log(`Received ${events.length} transfers`);
-  },
-});
-```
-
-**Remarks:**
-- If neither `senderOnly` nor `receiverOnly` is set, watches both directions
-- Cannot set both `senderOnly` and `receiverOnly` to true (throws error)
-- More efficient than watching all transfers and filtering client-side
-- Server-side filtering reduces network traffic and processing
-
----
-
-### watchApproval
-
-Subscribe to ERC-20 Approval events in real-time with automatic decoding and optional filtering.
-
-**Signature:**
-```typescript
-function watchApproval(
-  client: PublicClient,
-  params: WatchApprovalParameters
-): WatchContractEventReturnType
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `client` | `PublicClient` | Viem public client configured with WebSocket transport |
-| `params` | `WatchApprovalParameters` | Configuration object for watching approvals |
-
-**WatchApprovalParameters:**
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `address` | `Address` | Yes | - | ERC-20 token contract address to monitor |
-| `owner` | `Address` | No | - | Filter by owner address (optional) |
-| `spender` | `Address` | No | - | Filter by spender address (optional) |
-| `onApproval` | `(events: ApprovalEvent[]) => void` | Yes | - | Callback invoked when approval events are received |
-| `onError` | `(error: Error) => void` | No | - | Error callback |
-| `sync` | `boolean` | No | - | Emit logs from latest block on subscription start |
-| `pollingInterval` | `number` | No | - | Polling interval in milliseconds |
-
-**Returns:** `() => void` - Unwatch function to stop the subscription
-
-**ApprovalEvent:**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `owner` | `Address` | Address that owns the tokens |
-| `spender` | `Address` | Address approved to spend the tokens |
-| `value` | `bigint` | Amount of tokens approved (in smallest unit) |
-| `log` | `Log` | Raw log data from the blockchain |
-
-**Example:**
-
-```typescript
-import { watchApproval } from '@radiustechsystems/sdk/events';
-
-// Watch all approvals for a token
-const unwatch = watchApproval(client, {
-  address: '0x1234567890123456789012345678901234567890',
-  onApproval: (events) => {
-    events.forEach(event => {
-      console.log(`Approval: ${event.owner} approved ${event.spender}`);
-      console.log(`  Amount: ${event.value}`);
-    });
-  },
-});
-
-// Watch approvals from a specific owner
-const unwatchOwner = watchApproval(client, {
-  address: '0x1234567890123456789012345678901234567890',
-  owner: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
-  onApproval: (events) => {
-    console.log(`Owner granted ${events.length} approvals`);
-  },
-});
-
-// Watch approvals for a specific spender (e.g., DEX contract)
-const unwatchSpender = watchApproval(client, {
-  address: '0x1234567890123456789012345678901234567890',
-  spender: '0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead',
-  onApproval: (events) => {
-    console.log(`Spender received ${events.length} new approvals`);
-  },
-});
-```
-
-**Remarks:**
-- Requires WebSocket transport for real-time subscriptions
-- Automatically decodes Approval events using ERC-20 ABI
-- Filters by owner/spender addresses if provided
-- Event signature: `Approval(address indexed owner, address indexed spender, uint256 value)`
-- Subscriptions consume 10 GAS/sec from your RPC key on Radius
-- An approval value of 0 revokes the approval
-
----
-
-### watchApprovalForAddress
-
-Convenience wrapper for monitoring Approval events involving a specific address (as owner or spender).
-
-**Signature:**
-```typescript
-function watchApprovalForAddress(
-  client: PublicClient,
-  params: WatchApprovalForAddressParameters
-): WatchContractEventReturnType
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `client` | `PublicClient` | Viem public client configured with WebSocket transport |
-| `params` | `WatchApprovalForAddressParameters` | Configuration object |
-
-**WatchApprovalForAddressParameters:**
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `tokenAddress` | `Address` | Yes | - | ERC-20 token contract address |
-| `watchAddress` | `Address` | Yes | - | Address to monitor (as owner or spender) |
-| `ownerOnly` | `boolean` | No | `false` | Watch only approvals granted by this address |
-| `spenderOnly` | `boolean` | No | `false` | Watch only approvals received by this address |
-| `onApproval` | `(events: ApprovalEvent[]) => void` | Yes | - | Callback for approval events |
-| `onError` | `(error: Error) => void` | No | - | Error callback |
-| `sync` | `boolean` | No | - | Emit logs from latest block on subscription start |
-| `pollingInterval` | `number` | No | - | Polling interval in milliseconds |
-
-**Example:**
-
-```typescript
-import { watchApprovalForAddress } from '@radiustechsystems/sdk/events';
-
-const myAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
-const tokenAddress = '0x1234567890123456789012345678901234567890';
-
-// Watch all approvals involving an address (as owner or spender)
-const unwatch = watchApprovalForAddress(client, {
-  tokenAddress,
-  watchAddress: myAddress,
-  onApproval: (events) => {
-    events.forEach(event => {
-      if (event.owner === myAddress) {
-        console.log(`Approved ${event.spender} for ${event.value}`);
-      } else {
-        console.log(`${event.owner} approved me for ${event.value}`);
-      }
-    });
-  },
-});
-
-// Watch only approvals granted by an address (as owner)
-const unwatchAsOwner = watchApprovalForAddress(client, {
-  tokenAddress,
-  watchAddress: myAddress,
-  ownerOnly: true,
-  onApproval: (events) => {
-    console.log(`Granted ${events.length} approvals`);
-  },
-});
-
-// Watch only approvals received by an address (as spender)
-const unwatchAsSpender = watchApprovalForAddress(client, {
-  tokenAddress,
-  watchAddress: myAddress,
-  spenderOnly: true,
-  onApproval: (events) => {
-    console.log(`Received ${events.length} approvals`);
-  },
-});
-```
-
-**Remarks:**
-- If neither `ownerOnly` nor `spenderOnly` is set, watches both roles
-- Cannot set both `ownerOnly` and `spenderOnly` to true (throws error)
-- More efficient than watching all approvals and filtering client-side
-- Server-side filtering reduces network traffic and processing
-
----
-
-### watchLogs
-
-Subscribe to contract events in real-time using decoded events.
-
-**Signature:**
-```typescript
-function watchLogs(
-  client: PublicClient,
-  params: Parameters<typeof watchContractEvent>[1]
-): WatchContractEventReturnType
-```
-
-**Parameters:**
-
-The parameters follow viem's `watchContractEvent` signature, including:
-- `address`: Contract address(es) to watch
-- `abi`: Contract ABI for decoding
-- `eventName`: Event name to watch
-- `onLogs`: Callback function for decoded logs
-- `onError`: Error callback (optional)
-
-**Remarks:**
-- Requires WebSocket transport for real-time subscriptions
-- Automatically decodes events using the provided ABI
-- Address parameter is mandatory on Radius
-- Subscriptions consume 10 GAS/sec from your RPC key
-- For HTTP transport, consider using `getLogs` with polling instead
-
----
-
-### watchRawLogs
-
-Subscribe to raw logs without ABI decoding, useful for watching multiple event types.
-
-**Signature:**
-```typescript
-function watchRawLogs(
-  client: PublicClient,
-  params: WatchRawLogsParameters
-): WatchContractEventReturnType
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `client` | `PublicClient` | Viem public client configured with WebSocket transport |
-| `params` | `WatchRawLogsParameters` | Configuration object |
-
-**WatchRawLogsParameters:**
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `address` | `Address \| Address[]` | Yes | - | Contract address(es) to watch |
-| `topics` | `Hash[][]` | No | - | Event signature hashes to filter by |
-| `onLogs` | `(logs: Log[]) => void` | Yes | - | Callback for raw logs |
-| `onError` | `(error: Error) => void` | No | - | Error callback |
-| `sync` | `boolean` | No | - | Emit logs from latest block on subscription start |
-| `pollingInterval` | `number` | No | - | Polling interval in milliseconds |
-
-**Example:**
-
-```typescript
-import { watchRawLogs } from '@radiustechsystems/sdk/events';
-
-// Watch for all events from a contract
-const unwatch = watchRawLogs(client, {
-  address: '0x1234567890123456789012345678901234567890',
-  onLogs: (logs) => {
-    logs.forEach(log => {
-      console.log('Event topics:', log.topics);
-      console.log('Event data:', log.data);
-      console.log('Block number:', log.blockNumber);
-    });
-  },
-  onError: (error) => {
-    console.error('Subscription error:', error);
-  },
-});
-
-// Watch specific event types by topic
-const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-const unwatchTransfers = watchRawLogs(client, {
-  address: '0x1234567890123456789012345678901234567890',
-  topics: [[transferTopic]],
-  onLogs: (logs) => {
-    console.log(`Received ${logs.length} transfer events`);
-  },
-});
-```
-
-**Remarks:**
-- Does not decode log data; returns raw topics and data
-- Useful for monitoring multiple event types from same contract
-- Requires address parameter (mandatory on Radius)
-- WebSocket transport provides real-time updates
-- HTTP transport falls back to polling (less efficient)
-
----
-
-## Block Watching
-
-### watchBlockNumber
-
-Watch for new block numbers in real-time.
-
-**Signature:**
-```typescript
-function watchBlockNumber(
-  client: PublicClient,
-  params: WatchBlockNumberParams
-): () => void
-```
-
-**Parameters:**
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `onBlockNumber` | `(blockNumber: bigint) => void` | Yes | - | Callback invoked when a new block is detected |
-| `onError` | `(error: Error) => void` | No | - | Error callback |
-| `emitOnBegin` | `boolean` | No | - | Emit current block number on subscription start |
-| `pollingInterval` | `number` | No | `1000` | Polling interval in milliseconds (for HTTP fallback) |
-
-**Returns:** `() => void` - Unwatch function
-
-**Example:**
-
-```typescript
-import { watchBlockNumber } from '@radiustechsystems/sdk/events';
-
-const unwatch = watchBlockNumber(client, {
-  onBlockNumber: (blockNumber) => {
-    console.log('New block:', blockNumber);
-  },
-  onError: (error) => {
-    console.error('Error:', error);
-  },
-  emitOnBegin: true,
-});
-
-// Stop watching
-unwatch();
-```
-
-**Remarks:**
-- WebSocket transport provides real-time block notifications
-- HTTP transport falls back to polling (default 1s interval)
-- Radius does not support `eth_newBlockFilter` (traditional filter API)
-- WebSocket subscriptions are more efficient than polling
-- For HTTP clients, consider increasing `pollingInterval` to reduce load
-
----
-
-### watchBlocks
-
-Watch for new blocks with full block data.
-
-**Signature:**
-```typescript
-function watchBlocks(
-  client: PublicClient,
-  params: WatchBlocksParams
-): () => void
-```
-
-**Parameters:**
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `onBlock` | `(block: Block) => void` | Yes | - | Callback invoked when a new block is detected |
-| `onError` | `(error: Error) => void` | No | - | Error callback |
-| `emitOnBegin` | `boolean` | No | - | Emit current block on subscription start |
-| `includeTransactions` | `boolean` | No | `false` | Include full transaction data in block |
-| `pollingInterval` | `number` | No | `1000` | Polling interval in milliseconds |
-
-**Returns:** `() => void` - Unwatch function
-
-**Example:**
-
-```typescript
-import { watchBlocks } from '@radiustechsystems/sdk/events';
-
-// Watch for new blocks
-const unwatch = watchBlocks(client, {
-  onBlock: (block) => {
-    console.log('New block:', block.number);
-    console.log('Timestamp:', block.timestamp);
-    console.log('Transactions:', block.transactions.length);
-  },
-});
-
-// Watch blocks with full transaction data
-const unwatchWithTxs = watchBlocks(client, {
-  includeTransactions: true,
-  onBlock: (block) => {
-    console.log(`Block ${block.number} has ${block.transactions.length} transactions`);
-    // block.transactions contains full transaction objects
-  },
-});
-```
-
-**Remarks:**
-- WebSocket transport provides real-time block notifications
-- HTTP transport falls back to polling (default 1s interval)
-- `includeTransactions=true` fetches full transaction data (slower)
-- `includeTransactions=false` only includes transaction hashes (faster, default)
-- WebSocket is recommended for real-time block monitoring
-- Polling with `includeTransactions=true` can be expensive
-
----
-
-### watchPendingTransactions
-
-Watch for pending transactions in the mempool.
-
-**Signature:**
-```typescript
-function watchPendingTransactions(
-  client: PublicClient,
-  params: WatchPendingTransactionsParams
-): () => void
-```
-
-**Parameters:**
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `onTransactions` | `(hashes: 0x${string}[]) => void` | Yes | - | Callback for pending transaction hashes |
-| `onError` | `(error: Error) => void` | No | - | Error callback |
-| `pollingInterval` | `number` | No | - | Polling interval in milliseconds |
-
-**Returns:** `() => void` - Unwatch function
-
-**Example:**
-
-```typescript
-import { watchPendingTransactions } from '@radiustechsystems/sdk/events';
-
-const unwatch = watchPendingTransactions(client, {
-  onTransactions: (hashes) => {
-    console.log('New pending transactions:', hashes);
-  },
-});
-```
-
-**Remarks:**
-- **LIMITATION:** Radius does not support `eth_newPendingTransactionFilter`
-- This function may not work as expected on Radius
-- WebSocket transport with "pendingTransactions" subscription is not supported
-- Consider using block watching and filtering confirmed transactions instead
-- Provided for API completeness but may have limited functionality
-
----
-
-## Historical Log Queries
-
-### getLogs
-
-Fetch historical logs with automatic pagination to handle block range restrictions.
-
-**Signature:**
-```typescript
-async function getLogs(
-  client: PublicClient,
-  params: GetLogsParams
-): Promise<Log[]>
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `client` | `PublicClient` | Viem public client |
-| `params` | `GetLogsParams` | Log query parameters |
-
-**GetLogsParams:**
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `address` | `Address \| Address[]` | Yes | - | Contract address(es) to query (required on Radius) |
-| `fromBlock` | `bigint` | Yes | - | Starting block number (inclusive) |
-| `toBlock` | `bigint` | Yes | - | Ending block number (inclusive) |
-| `chunkSize` | `number` | No | `1000` | Maximum blocks to query per request |
-| `onProgress` | `(progress) => void` | No | - | Callback for progress tracking |
-
-**Progress Callback Parameters:**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `currentBlock` | `bigint` | Current block being processed |
-| `totalBlocks` | `bigint` | Total blocks to process |
-| `chunksProcessed` | `number` | Number of chunks processed so far |
-| `logsFetched` | `number` | Logs fetched so far |
-
-**Returns:** `Promise<Log[]>` - Array of all logs matching the query
-
-**Throws:** Error if any chunk request fails or parameters are invalid
-
-**Example:**
-
-```typescript
-import { createPublicClient, http } from 'viem';
-import { getLogs } from '@radiustechsystems/sdk/events';
-import { radiusTestnet } from '@radiustechsystems/sdk';
-
-const client = createPublicClient({
-  chain: radiusTestnet,
-  transport: http(),
-});
-
-// Fetch logs for a large block range
-const logs = await getLogs(client, {
-  address: '0x1234567890123456789012345678901234567890',
-  fromBlock: 1000000n,
-  toBlock: 1010000n, // 10,000 blocks
-  chunkSize: 1000, // Query 1000 blocks at a time
-  onProgress: ({ currentBlock, totalBlocks, logsFetched }) => {
-    const percent = (Number(currentBlock) / Number(totalBlocks) * 100).toFixed(1);
-    console.log(`Progress: ${percent}% (${logsFetched} logs)`);
-  },
-});
-
-console.log(`Found ${logs.length} total logs`);
-
-// Handle the logs
-logs.forEach(log => {
-  console.log('Log:', log);
-});
-```
-
-**Remarks:**
-- Radius requires the `address` parameter (cannot query all contracts)
-- Radius restricts `eth_getLogs` to narrow block ranges
-- This function automatically splits large queries into smaller chunks
-- Default chunk size is 1000 blocks (adjust based on your needs)
-- If you get "block range is too wide" errors, reduce `chunkSize`
-- Progress callback is optional but useful for long-running queries
-- All requests are sequential to avoid rate limiting
-- Consider using WebSocket subscriptions for real-time monitoring instead
-
----
-
-### getLogsAdaptive
-
-Fetch historical logs with automatic chunk size detection and adjustment.
-
-**Signature:**
-```typescript
-async function getLogsAdaptive(
-  client: PublicClient,
-  params: GetLogsAdaptiveParams
-): Promise<Log[]>
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `client` | `PublicClient` | Viem public client |
-| `params` | `GetLogsAdaptiveParams` | Log query parameters with adaptive sizing |
-
-**GetLogsAdaptiveParams:**
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `address` | `Address \| Address[]` | Yes | - | Contract address(es) to query |
-| `fromBlock` | `bigint` | Yes | - | Starting block number (inclusive) |
-| `toBlock` | `bigint` | Yes | - | Ending block number (inclusive) |
-| `initialChunkSize` | `number` | No | `1000` | Initial chunk size to try |
-| `minChunkSize` | `number` | No | `10` | Minimum chunk size before giving up |
-| `onProgress` | `(progress) => void` | No | - | Callback for progress tracking |
-
-**Progress Callback Parameters:**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `currentBlock` | `bigint` | Current block being processed |
-| `totalBlocks` | `bigint` | Total blocks to process |
-| `chunksProcessed` | `number` | Number of chunks processed |
-| `logsFetched` | `number` | Logs fetched so far |
-| `currentChunkSize` | `number` | Current chunk size being used |
-
-**Returns:** `Promise<Log[]>` - Array of all logs matching the query
-
-**Throws:** Error if minimum chunk size is reached without success
-
-**Example:**
-
-```typescript
-import { getLogsAdaptive } from '@radiustechsystems/sdk/events';
-
-// Fetch logs with automatic chunk size adjustment
-const logs = await getLogsAdaptive(client, {
-  address: '0x1234567890123456789012345678901234567890',
-  fromBlock: 1000000n,
-  toBlock: 1010000n,
-  onProgress: ({ currentBlock, totalBlocks, currentChunkSize }) => {
-    console.log(`Block ${currentBlock}/${totalBlocks} (chunk: ${currentChunkSize})`);
-  },
-});
-
-console.log(`Found ${logs.length} logs`);
-```
-
-**Real-world Example: Syncing Historical Transfers**
-
-```typescript
-import { getLogsAdaptive } from '@radiustechsystems/sdk/events';
-
-async function syncTransfers(tokenAddress: string, fromBlock: bigint, toBlock: bigint) {
-  try {
-    const logs = await getLogsAdaptive(client, {
-      address: tokenAddress as Address,
-      fromBlock,
-      toBlock,
-      initialChunkSize: 1000,
-      onProgress: ({ currentBlock, totalBlocks, logsFetched, currentChunkSize }) => {
-        const percent = (Number(currentBlock) / Number(totalBlocks) * 100).toFixed(1);
-        console.log(`[${percent}%] Chunk size: ${currentChunkSize}, Logs found: ${logsFetched}`);
-      },
-    });
-
-    // Process the historical logs
-    console.log(`Synced ${logs.length} total transfer events`);
-    return logs;
-  } catch (error) {
-    console.error('Failed to sync transfers:', error);
-    throw error;
+for (const log of parsedLogs) {
+  if (log.eventName === 'Transfer') {
+    console.log('Transfer:', log.args);
   }
 }
-
-// Use it
-const historicalLogs = await syncTransfers(
-  '0x1234567890123456789012345678901234567890',
-  1000000n,
-  1100000n
-);
 ```
 
-**Remarks:**
-- Starts with a large chunk size and reduces it if "block range is too wide" errors occur
-- Useful when you don't know the optimal chunk size for a network
-- Slower than `getLogs` with a known good chunk size
-- Use `getLogs` directly if you already know a reliable chunk size
-- Automatically handles network-specific block range limitations
+## Event Types
 
----
+### EventLog
 
-## Constants
-
-### DEFAULT_POLLING_INTERVAL_MS
-
-Default polling interval for block watching in milliseconds.
+Decoded event log with typed arguments.
 
 ```typescript
-export const DEFAULT_POLLING_INTERVAL_MS = 1000; // 1 second
+interface EventLog<TArgs = unknown> {
+  eventName: string;
+  args: TArgs;
+  address: Address;
+  blockNumber: bigint;
+  transactionHash: Hash;
+  logIndex: number;
+}
 ```
 
-Used when polling is required (e.g., HTTP transport fallback). Can be overridden per watch call via `pollingInterval` parameter.
-
----
-
-## Type Definitions
-
 ### TransferEvent
+
+Standard ERC20 Transfer event.
 
 ```typescript
 interface TransferEvent {
   from: Address;
   to: Address;
   value: bigint;
-  log: Log;
 }
 ```
 
-Decoded ERC-20 Transfer event data.
-
----
-
 ### ApprovalEvent
+
+Standard ERC20 Approval event.
 
 ```typescript
 interface ApprovalEvent {
   owner: Address;
   spender: Address;
   value: bigint;
-  log: Log;
 }
 ```
 
-Decoded ERC-20 Approval event data.
+## Filtering Events
 
----
+### By Block Range
+
+```typescript
+const logs = await client.publicClient.getLogs({
+  address: tokenAddress,
+  event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
+  fromBlock: 1000000n,
+  toBlock: 1001000n,
+});
+```
+
+### By Topics
+
+```typescript
+import { encodeEventTopics } from 'viem';
+
+const topics = encodeEventTopics({
+  abi: ERC20_ABI,
+  eventName: 'Transfer',
+  args: {
+    from: senderAddress, // Filter by sender
+  },
+});
+
+const logs = await client.publicClient.getLogs({
+  address: tokenAddress,
+  topics,
+  fromBlock: 1000000n,
+  toBlock: 'latest',
+});
+```
+
+## WebSocket Subscriptions
+
+For real-time event subscriptions, use a WebSocket transport:
+
+```typescript
+import { createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
+import { webSocket } from 'viem';
+
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  transport: webSocket('wss://rpc.testnet.radiustech.xyz'),
+});
+
+// Watch for new blocks
+const unwatch = client.publicClient.watchBlocks({
+  onBlock: (block) => {
+    console.log('New block:', block.number);
+  },
+});
+
+// Watch for pending transactions
+const unwatchPending = client.publicClient.watchPendingTransactions({
+  onTransactions: (hashes) => {
+    console.log('Pending transactions:', hashes);
+  },
+});
+```
+
+## Event Decoding
+
+### Using viem's decodeEventLog
+
+```typescript
+import { decodeEventLog } from 'viem';
+
+const decoded = decodeEventLog({
+  abi: ERC20_ABI,
+  data: log.data,
+  topics: log.topics,
+});
+
+console.log('Event:', decoded.eventName);
+console.log('Args:', decoded.args);
+```
+
+### Handling Unknown Events
+
+```typescript
+try {
+  const decoded = decodeEventLog({
+    abi: contractAbi,
+    data: log.data,
+    topics: log.topics,
+  });
+  handleKnownEvent(decoded);
+} catch (error) {
+  // Unknown event - log topics for debugging
+  console.log('Unknown event, topics:', log.topics);
+}
+```
 
 ## Best Practices
 
-### 1. Event Watching Best Practices
+### Memory Management
 
-**Use WebSocket for Real-time Events:**
+Always clean up event watchers when they're no longer needed:
+
 ```typescript
-// Good: WebSocket for real-time
-const client = createPublicClient({
-  chain: radiusTestnet,
-  transport: createWebSocketTransport(radiusTestnet),
-});
-```
+// Store unwatch function
+const unwatch = createEventWatcher(client, contract, 'Transfer', callback);
 
-**Clean Up Subscriptions:**
-```typescript
-const unwatch = watchTransfer(client, { /* ... */ });
-
-// Later, when done or on cleanup
+// Clean up on component unmount or when done
 unwatch();
 ```
 
-### 2. Historical Log Query Best Practices
+### Error Handling
 
-**Use Progress Callbacks for Long Queries:**
 ```typescript
-const logs = await getLogs(client, {
-  address: tokenAddress,
-  fromBlock: 1000000n,
-  toBlock: 2000000n,
-  onProgress: ({ currentBlock, totalBlocks, logsFetched }) => {
-    const percent = Math.round((Number(currentBlock) / Number(totalBlocks)) * 100);
-    console.log(`${percent}% complete - ${logsFetched} logs found`);
-  },
-});
-```
-
-**Use getLogsAdaptive When Chunk Size Is Unknown:**
-```typescript
-// Prefer this when you're unsure about network limits
-const logs = await getLogsAdaptive(client, {
-  address: tokenAddress,
-  fromBlock,
-  toBlock,
-  // Automatically adjusts chunk size if needed
-});
-```
-
-### 3. Error Handling
-
-**Handle Subscription Errors:**
-```typescript
-watchTransfer(client, {
-  address: tokenAddress,
-  onTransfer: (events) => { /* ... */ },
-  onError: (error) => {
-    console.error('Subscription error:', error);
-    // Attempt reconnection or fallback to polling
-  },
-});
-```
-
-**Handle Large Log Queries:**
-```typescript
-try {
-  const logs = await getLogs(client, {
-    address: tokenAddress,
-    fromBlock: 1000000n,
-    toBlock: 2000000n,
-    chunkSize: 1000,
-  });
-} catch (error) {
-  if (error.message.includes('block range is too wide')) {
-    // Retry with smaller chunk size
-    const logs = await getLogs(client, {
-      address: tokenAddress,
-      fromBlock: 1000000n,
-      toBlock: 2000000n,
-      chunkSize: 500, // Reduced from 1000
-    });
+const unwatch = createEventWatcher(
+  client,
+  contract,
+  'Transfer',
+  (log) => {
+    try {
+      processTransfer(log);
+    } catch (error) {
+      console.error('Error processing event:', error);
+    }
   }
-}
+);
 ```
 
----
+### Rate Limiting
 
-## Radius-Specific Limitations
+For high-frequency events, consider batching:
 
-### WebSocket Support
-- WebSocket is NOT currently enabled on Radius testnet
-- `eth_subscribe` only supports "logs" type (not "newHeads", not "newPendingTransactions")
-- Block watching falls back to HTTP polling
-
-### Block Range Restrictions
-- `eth_getLogs` is restricted to narrow block ranges
-- The `getLogs` and `getLogsAdaptive` functions handle this automatically
-- Address parameter is mandatory (cannot query all contracts at once)
-
-### RPC Costs
-- Event subscriptions consume 10 GAS/sec from your RPC key on Radius
-- Plan subscription duration accordingly
-- Consider monitoring subscription health
-
----
-
-## Migration Guide
-
-### From Direct viem to Radius SDK Events
-
-**Before:**
 ```typescript
-import { createPublicClient, http } from 'viem';
+let pendingLogs: EventLog[] = [];
+let flushTimeout: NodeJS.Timeout;
 
-const client = createPublicClient({
-  transport: http('https://testnet.radius.technology/http'),
-});
-
-const unwatch = client.watchContractEvent({
-  address: tokenAddress,
-  abi: ERC20_ABI,
-  eventName: 'Transfer',
-  onLogs: (logs) => { /* ... */ },
-});
+const unwatch = createEventWatcher(
+  client,
+  contract,
+  'Transfer',
+  (log) => {
+    pendingLogs.push(log);
+    clearTimeout(flushTimeout);
+    flushTimeout = setTimeout(() => {
+      processBatch(pendingLogs);
+      pendingLogs = [];
+    }, 1000);
+  }
+);
 ```
-
-**After:**
-```typescript
-import { createPublicClient } from 'viem';
-import { createWebSocketTransport, watchTransfer } from '@radiustechsystems/sdk/events';
-import { radiusTestnet } from '@radiustechsystems/sdk';
-
-const client = createPublicClient({
-  chain: radiusTestnet,
-  transport: createWebSocketTransport(radiusTestnet),
-});
-
-const unwatch = watchTransfer(client, {
-  address: tokenAddress,
-  onTransfer: (events) => { /* ... */ },
-});
-```
-
-**Benefits:**
-- Type-safe event data through `TransferEvent` and `ApprovalEvent` interfaces
-- Automatic decoding of events
-- Convenient address-specific watching functions
-- Progress tracking for historical queries
-- Automatic pagination for large log queries

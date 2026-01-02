@@ -1,18 +1,20 @@
 # Radius TypeScript SDK
 
-The official TypeScript client library for interacting with the [Radius platform](https://radiustech.xyz/), providing
-a simple and idiomatic way to interact with Radius services.
+The official TypeScript SDK for interacting with the [Radius platform](https://radiustech.xyz/). Built on viem for maximum compatibility with the Ethereum ecosystem.
 
 ## Features
 
-- Account management and transaction signing
+- viem-based client for seamless EVM compatibility
+- Account management with PrivateKeySigner and ClefSigner
 - Smart contract deployment and interaction
+- Rich error hierarchy for better debugging
+- React hooks for frontend integration
+- wagmi connector support
 - Optional request logging and interceptors
-- EVM compatibility with high performance & low latency
 
 ## Requirements
 
-- Node.js >= 20.12
+- Node.js >= 22
 - Radius JSON-RPC endpoint: https://docs.radiustech.xyz/radius-testnet-access
 - Ethereum private key: https://ethereum.org/en/developers/docs/accounts/#account-creation
 
@@ -29,132 +31,170 @@ pnpm add @radiustechsystems/sdk
 yarn add @radiustechsystems/sdk
 ```
 
-## Quickstart Examples
+## Quick Start
 
 ### Connect to Radius
 
-Be sure to use your own `RADIUS_ENDPOINT` and `PRIVATE_KEY` values, as mentioned in the [Requirements](#requirements).
-
 ```typescript
-import { Account, Client, NewClient, NewAccount, withPrivateKey } from '@radiustechsystems/sdk';
+import { createRadiusClient, createPrivateKeySigner, radiusTestnet } from '@radiustechsystems/sdk';
 
-const RADIUS_ENDPOINT = "https://rpc.testnet.tryradi.us/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-const PRIVATE_KEY = "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036415f";
+// Create client - uses RADIUS_RPC_URL env var if set
+const client = createRadiusClient({ chain: radiusTestnet });
 
-const client: Client = await NewClient(RADIUS_ENDPOINT);
-const account: Account = await NewAccount(withPrivateKey(PRIVATE_KEY, client));
+// Create signer from private key
+const signer = createPrivateKeySigner(
+  process.env.RADIUS_PRIVATE_KEY as `0x${string}`,
+  radiusTestnet.id
+);
+
+// Check balance
+const balance = await client.getBalance(signer.address);
+console.log('Balance:', balance, 'wei');
 ```
 
-Alternatively, using plain JavaScript and CommonJS `require` syntax:
-
-```javascript
-const { Account, Client, NewClient, NewAccount, withPrivateKey } = require('@radiustechsystems/sdk');
-```
-
-### Transfer Value Between Accounts
-
-Here, we send 100 tokens to another account. Be sure to replace the recipient's address with one of your own.
+### Transfer Value
 
 ```typescript
-import { Address, AddressFromHex, Receipt } from '@radiustechsystems/sdk';
+import type { Address } from '@radiustechsystems/sdk';
 
-const recipient: Address = AddressFromHex('0x5e97870f263700f46aa00d967821199b9bc5a120'); // Recipient's address
-const amount: bigint = BigInt(100);
-const receipt: Receipt = await account.send(client, recipient, amount);
+const recipient: Address = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
+const amount = 1000000000000000000n; // 1 USD in wei
 
-console.log('Transaction hash:', receipt.txHash.hex());
+// Send and wait for receipt
+const receipt = await client.sendAndWait(signer, recipient, amount);
+
+console.log('Transaction hash:', receipt.transactionHash);
+console.log('Status:', receipt.status); // 'success' or 'reverted'
+console.log('Gas used:', receipt.gasUsed);
 ```
 
 ### Deploy a Smart Contract
 
-Here, we deploy the [SimpleStorage.sol](https://github.com/radiustechsystems/sdk/tree/main/contracts/solidity)
-example contract included in this SDK, with the application binary interface (ABI) and bytecode that were generated
-using the Solidity compiler [solcjs](https://docs.soliditylang.org/en/latest/installing-solidity.html#npm-node-js).
-
 ```typescript
-import { ABI, ABIFromJSON, BytecodeFromHex } from '@radiustechsystems/sdk';
+import { parseAbi } from 'viem';
 
-// Parse ABI and bytecode of the SimpleStorage contract
-const abi: ABI = ABIFromJSON(`[{"inputs":[],"name":"get","outputs":[{"type":"uint256"}],"type":"function"},{"inputs":[{"type":"uint256"}],"name":"set","type":"function"}]`);
-const bytecode: Uint8Array = BytecodeFromHex('6080604052348015600e575f5ffd5b5060a580601a5f395ff3fe6080604052348015600e575f5ffd5b50600436106030575f3560e01c806360fe47b11460345780636d4ce63c146045575b5f5ffd5b6043603f3660046059565b5f55565b005b5f5460405190815260200160405180910390f35b5f602082840312156068575f5ffd5b503591905056fea26469706673582212207655d86666fa8aa75666db8416e0f5db680914358a57e84aa369d9250218247f64736f6c634300081c0033');
+const abi = parseAbi([
+  'constructor(string name, string symbol)',
+  'function name() view returns (string)',
+  'function symbol() view returns (string)',
+]);
 
-// Deploy the contract
-const contract = await client.deployContract(account.signer, bytecode, abi);
+const bytecode = '0x608060405234801561001057600080fd5b50...';
+
+const { address, receipt } = await client.deployContract(
+  signer,
+  bytecode,
+  abi,
+  'My Token',
+  'MTK'
+);
+
+console.log('Contract deployed at:', address);
 ```
 
 ### Interact with a Smart Contract
 
-Assuming the contract was previously deployed (which is typically the case), we can interact with it using the contract
-address and ABI. Be sure to replace the contract address with that of your own deployed contract.
-
 ```typescript
-import { ABI, Address, AddressFromHex, ABIFromJSON, Contract, NewContract, Receipt } from '@radiustechsystems/sdk';
+// Read from contract
+const name = await client.call<string>(
+  { address: contractAddress, abi },
+  'name'
+);
 
-// Reference a previously deployed contract
-const address: Address = AddressFromHex('0x5e97870f263700f46aa00d967821199b9bc5a120'); // Contract address
-const abi: ABI = ABIFromJSON(`[{"inputs":[],"name":"get","outputs":[{"type":"uint256"}],"type":"function"},{"inputs":[{"type":"uint256"}],"name":"set","type":"function"}]`);
-const contract: Contract = NewContract(address, abi);
-
-// Write to the contract
-const value: bigint = BigInt(42);
-const receipt: Receipt = await contract.execute(client, account.signer, 'set', value);
-
-// Read from the contract
-const result: unknown[] = await contract.call(client, 'get');
-console.log('Stored value:', result[0]);
+// Write to contract
+const receipt = await client.executeAndWait(
+  { address: contractAddress, abi },
+  signer,
+  'transfer',
+  recipientAddress,
+  amount
+);
 ```
 
-## Advanced Features
+## Error Handling
 
-### Custom Transaction Signing
+The SDK provides a rich error hierarchy for better debugging:
 
 ```typescript
-import { Address, BigNumberish, BytesLike, Hash, SignedTransaction, Signer, Transaction } from '@radiustechsystems/sdk';
+import {
+  RadiusError,
+  InsufficientBalanceError,
+  TransactionRevertedError,
+} from '@radiustechsystems/sdk';
 
-class MyCustomSigner implements Signer {
-    address(): Address { /* ... */ }
-    chainID(): BigNumberish { /* ... */ }
-    hash(transaction: Transaction): Hash { /* ... */ }
-    signMessage(message: BytesLike): Promise<Uint8Array> { /* ... */ }
-    signTransaction(transaction: Transaction): Promise<SignedTransaction> { /* ... */ }
-    constructor(...args) { /* ... */ }
+try {
+  await client.sendAndWait(signer, to, amount);
+} catch (error) {
+  if (error instanceof InsufficientBalanceError) {
+    console.error('Need:', error.required, 'Have:', error.balance);
+  } else if (error instanceof TransactionRevertedError) {
+    console.error('Reverted:', error.revertReason);
+  } else if (error instanceof RadiusError) {
+    console.error('Error:', error.shortMessage);
+    console.error('Details:', error.details);
+  }
 }
-const signer = new MyCustomSigner(...args);
-const account = NewAccount(withSigner(signer));
 ```
 
-### Logging and Request Interceptors
+## Client Extension
+
+Extend the client with custom actions:
 
 ```typescript
-import { NewClient, withLogger, withInterceptor } from '@radiustechsystems/sdk';
+import { formatEther } from 'viem';
 
-const client = await NewClient('https://your-radius-endpoint',
-    withLogger((message, data) => {
-        console.log(message, data);
-    }),
-    withInterceptor(async (reqBody, response) => {
-        // Examine request body, modify response, etc.
-        return response;
-    })
-);
+const client = createRadiusClient({ chain: radiusTestnet }).extend((base) => ({
+  async getBalanceFormatted(address: Address) {
+    const balance = await base.getBalance(address);
+    return formatEther(balance);
+  },
+}));
+
+const formatted = await client.getBalanceFormatted(signer.address);
 ```
 
-### Custom HTTP Client
+## Chain Contracts
+
+Access well-known contract addresses:
 
 ```typescript
-import { NewClient, withHttpClient } from '@radiustechsystems/sdk';
+import { radiusTestnet, RADIUS_TESTNET_CONTRACTS } from '@radiustechsystems/sdk';
 
-const client = await NewClient('https://your-radius-endpoint',
-    withHttpClient(async (url: string | URL | Request, init?: RequestInit | undefined): Promise<Response> => {
-        // Make a custom HTTP request, or use a library like axios
-    })
-);
+// Via chain definition
+const sbcAddress = radiusTestnet.contracts?.sbc?.address;
+
+// Or constant
+const sbcAddress2 = RADIUS_TESTNET_CONTRACTS.sbc;
 ```
+
+## Environment Variables
+
+The client reads RPC URL from environment:
+
+| Variable | Description |
+|----------|-------------|
+| `RADIUS_RPC_URL` | Primary RPC endpoint |
+| `RADIUS_ENDPOINT` | Fallback RPC endpoint |
+
+## Documentation
+
+To regenerate the API documentation:
+
+```bash
+pnpm generate:docs
+```
+
+See [`docs/GENERATION.md`](docs/GENERATION.md) for details.
+
+Generated documentation files:
+- `docs/sdk-typescript.mdx` - Main API reference
+- `docs/sdk-typescript-events.mdx` - Events API
+- `docs/sdk-typescript-react.mdx` - React hooks
 
 ## Resources
 
 - [Website](https://radiustech.xyz/)
-- [Testnet Access](https://docs.radiustech.xyz/radius-testnet-access) 
+- [Testnet Access](https://docs.radiustech.xyz/radius-testnet-access)
 - [GitHub Issues](https://github.com/radiustechsystems/sdks/issues)
 - [Changelog](CHANGELOG.md)
 
