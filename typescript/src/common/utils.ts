@@ -1,4 +1,4 @@
-import { type Hex, hexToBytes } from 'viem';
+import { type Hex, hexToBytes, type Log, type TransactionReceipt } from 'viem';
 import { ABI } from './abi';
 import { Address } from './address';
 import { Event } from './event';
@@ -61,9 +61,8 @@ export function ethAddressFromRadiusAddress(address?: Address): string | undefin
  * @param logs Ethereum logs
  * @returns Array of Radius events
  */
-// biome-ignore lint/suspicious/noExplicitAny: Viem does not export a single Log type that works for all cases
-export function eventsFromEthLogs(logs: any[]): Event[] {
-	return logs.map((log) => new Event(log.topics[0], {}, log.data));
+export function eventsFromEthLogs(logs: Log[]): Event[] {
+	return logs.map((log) => new Event(log.topics[0] ?? '', {}, log.data ?? '0x'));
 }
 
 /**
@@ -86,8 +85,7 @@ export function hashFromHex(hex: string): Hash {
  * @returns Radius receipt
  */
 export function receiptFromEthReceipt(
-	// biome-ignore lint/suspicious/noExplicitAny: Viem receipt types vary by context
-	receipt: any,
+	receipt: TransactionReceipt,
 	from: Address,
 	to: Address = new Address(zeroAddress()),
 	value?: BigNumberish,
@@ -96,9 +94,9 @@ export function receiptFromEthReceipt(
 		from,
 		to,
 		new Address(receipt.contractAddress ?? zeroAddress()),
-		new Hash(receipt.transactionHash ?? receipt.hash),
+		new Hash(receipt.transactionHash),
 		receipt.gasUsed,
-		receipt.status === 'success' ? 1 : (receipt.status ?? 0),
+		receipt.status === 'success' ? 1 : 0,
 		eventsFromEthLogs(receipt.logs ?? []),
 		value,
 	);

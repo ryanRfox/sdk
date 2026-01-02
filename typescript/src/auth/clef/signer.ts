@@ -39,7 +39,7 @@ interface ClefSignTransactionResponse {
  *
  * @example
  * ```typescript
- * import { ClefSigner, createClefSigner } from '@aspect/radius-sdk';
+ * import { ClefSigner, createClefSigner } from '@radiustechsystems/sdk';
  *
  * // Using the class directly
  * const signer = new ClefSigner(
@@ -328,7 +328,7 @@ export class ClefSigner implements RadiusSigner {
  *
  * @example
  * ```typescript
- * import { createClefSigner } from '@aspect/radius-sdk';
+ * import { createClefSigner } from '@radiustechsystems/sdk';
  *
  * const signer = createClefSigner(
  *   '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',

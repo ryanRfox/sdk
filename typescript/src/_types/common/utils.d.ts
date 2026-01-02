@@ -1,3 +1,4 @@
+import { type Log, type TransactionReceipt } from 'viem';
 import { ABI } from './abi';
 import { Address } from './address';
 import { Event } from './event';
@@ -34,7 +35,7 @@ export declare function ethAddressFromRadiusAddress(address?: Address): string |
  * @param logs Ethereum logs
  * @returns Array of Radius events
  */
-export declare function eventsFromEthLogs(logs: any[]): Event[];
+export declare function eventsFromEthLogs(logs: Log[]): Event[];
 /**
  * Creates a Hash from a hexadecimal string
  * @param hex The hexadecimal string (with or without 0x prefix)
@@ -50,7 +51,7 @@ export declare function hashFromHex(hex: string): Hash;
  * @param value Transaction value
  * @returns Radius receipt
  */
-export declare function receiptFromEthReceipt(receipt: any, from: Address, to?: Address, value?: BigNumberish): Receipt;
+export declare function receiptFromEthReceipt(receipt: TransactionReceipt, from: Address, to?: Address, value?: BigNumberish): Receipt;
 /**
  * Creates a zero address (0x0000000000000000000000000000000000000000)
  * Used as a default value or to represent the zero address in the Ethereum ecosystem

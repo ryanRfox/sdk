@@ -57,9 +57,8 @@ export function ethAddressFromRadiusAddress(address) {
  * @param logs Ethereum logs
  * @returns Array of Radius events
  */
-// biome-ignore lint/suspicious/noExplicitAny: Viem does not export a single Log type that works for all cases
 export function eventsFromEthLogs(logs) {
-    return logs.map((log) => new Event(log.topics[0], {}, log.data));
+    return logs.map((log) => new Event(log.topics[0] ?? '', {}, log.data ?? '0x'));
 }
 /**
  * Creates a Hash from a hexadecimal string
@@ -79,10 +78,8 @@ export function hashFromHex(hex) {
  * @param value Transaction value
  * @returns Radius receipt
  */
-export function receiptFromEthReceipt(
-// biome-ignore lint/suspicious/noExplicitAny: Viem receipt types vary by context
-receipt, from, to = new Address(zeroAddress()), value) {
-    return new Receipt(from, to, new Address(receipt.contractAddress ?? zeroAddress()), new Hash(receipt.transactionHash ?? receipt.hash), receipt.gasUsed, receipt.status === 'success' ? 1 : (receipt.status ?? 0), eventsFromEthLogs(receipt.logs ?? []), value);
+export function receiptFromEthReceipt(receipt, from, to = new Address(zeroAddress()), value) {
+    return new Receipt(from, to, new Address(receipt.contractAddress ?? zeroAddress()), new Hash(receipt.transactionHash), receipt.gasUsed, receipt.status === 'success' ? 1 : 0, eventsFromEthLogs(receipt.logs ?? []), value);
 }
 /**
  * Creates a zero address (0x0000000000000000000000000000000000000000)

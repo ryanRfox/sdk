@@ -18,7 +18,7 @@ import type { RadiusSigner } from '../types';
  *
  * @example
  * ```typescript
- * import { PrivateKeySigner, createPrivateKeySigner } from '@aspect/radius-sdk';
+ * import { PrivateKeySigner, createPrivateKeySigner } from '@radiustechsystems/sdk';
  *
  * // Using the class directly
  * const signer = new PrivateKeySigner('0x...privateKey', 1);
@@ -130,7 +130,7 @@ export class PrivateKeySigner implements RadiusSigner {
  *
  * @example
  * ```typescript
- * import { createPrivateKeySigner } from '@aspect/radius-sdk';
+ * import { createPrivateKeySigner } from '@radiustechsystems/sdk';
  *
  * const signer = createPrivateKeySigner(
  *   '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',

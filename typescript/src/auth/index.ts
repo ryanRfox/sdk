@@ -10,7 +10,7 @@
  *   ClefSigner,
  *   createPrivateKeySigner,
  *   createClefSigner,
- * } from '@aspect/radius-sdk';
+ * } from '@radiustechsystems/sdk';
  *
  * // Create a private key signer
  * const privateKeySigner = createPrivateKeySigner(
