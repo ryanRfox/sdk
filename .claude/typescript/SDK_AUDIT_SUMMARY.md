@@ -1,4 +1,10 @@
-# Radius v2 TypeScript SDK - Executive Summary
+# Radius TypeScript SDK v2 - Audit Executive Summary
+
+**Audit Date**: January 2, 2026
+**SDK Version**: 2.0.0-alpha.0
+**Status**: Production Alpha Ready
+
+---
 
 ## Quick Facts
 
@@ -6,347 +12,225 @@
 |--------|---------|
 | **Version** | 2.0.0-alpha.0 |
 | **Language** | TypeScript (strict mode) |
-| **Target** | ES2022 |
-| **Module Type** | ESM (with CJS fallback) |
-| **Node Version** | >=22 |
-| **Main Dependency** | viem ^2.0.0 |
-| **No Dependencies** | ethers.js, web3.js (only viem) |
-| **Package** | @radiustechsystems/sdk |
-| **Total Source Files** | 49 TypeScript files |
+| **Core Dependency** | viem ^2.43.3 |
+| **Package Name** | @radiustechsystems/sdk |
 | **Build Outputs** | ESM, CJS, Type declarations |
+| **Node.js Required** | >=22 |
+| **License** | MIT |
 
 ## Core API at a Glance
 
-### Creating a Client
+### Initialization
 ```typescript
-import { createRadiusClient } from '@radiustechsystems/sdk';
-import { radiusTestnet } from '@radiustechsystems/sdk/chains';
+import { createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
 
-const client = createRadiusClient({ chain: radiusTestnet });
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  transport: http(), // optional, auto-configured
+});
 ```
 
-### Creating a Signer
+### Signer Creation
 ```typescript
-// Private key (development)
-import { createPrivateKeySigner } from '@radiustechsystems/sdk';
+import {
+  createPrivateKeySigner,
+  createClefSigner,
+  type RadiusSigner,
+} from '@radiustechsystems/sdk';
+
+// Private key signer (development only)
 const signer = createPrivateKeySigner(privateKeyHex, chainId);
 
-// Or Clef (production-ready)
-import { createClefSigner } from '@radiustechsystems/sdk';
-const signer = createClefSigner(address, chainId, clefUrl);
+// Clef signer (production-recommended)
+const clefSigner = createClefSigner(address, chainId, 'http://localhost:8550');
 ```
 
-### Sending Transactions
+### Essential Operations
 ```typescript
-// Fire-and-forget
-const hash = await client.send(signer, recipientAddress, amount);
+// Send native tokens with confirmation
+await client.sendAndWait(signer, recipientAddress, amountInWei);
 
-// Wait for receipt
-const receipt = await client.sendSync(signer, recipientAddress, amount);
+// Execute contract method with confirmation
+await client.executeAndWait(
+  { address: contractAddress, abi: contractABI },
+  signer,
+  'transfer',
+  recipientAddress,
+  amount
+);
+
+// Extend client with custom functionality
+const enhancedClient = client.extend((base) => ({
+  async getBalanceFormatted(address: Address) {
+    const balance = await base.getBalance(address);
+    return formatEther(balance);
+  },
+}));
 ```
 
-### Calling Contracts
+### Error Handling
 ```typescript
-// Read (no signer needed)
-const balance = await client.call(contract, 'balanceOf', address);
+import {
+  RadiusError,
+  InsufficientBalanceError,
+  TransactionFailedError,
+  TransactionRevertedError,
+  type SendTransactionErrorType,
+} from '@radiustechsystems/sdk';
 
-// Write (requires signer)
-const hash = await client.execute(contract, signer, 'transfer', to, amount);
-const receipt = await client.executeSync(contract, signer, 'transfer', to, amount);
-```
-
-### ERC-20 Tokens
-```typescript
-import { createERC20 } from '@radiustechsystems/sdk';
-
-const token = createERC20(tokenAddress, publicClient);
-const balance = await token.balanceOf(ownerAddress);
-const receipt = await token.transferSync(signer, recipient, amount);
-```
-
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    RadiusClient (Main Entry)             │
-│  - createRadiusClient(config) -> RadiusClient interface  │
-└─────────────────────────────────────────────────────────┘
-         ↓                                    ↓
-    ┌────────────────────┐         ┌──────────────────────┐
-    │   Signers          │         │  viem PublicClient   │
-    │ - PrivateKeySigner │         │  - getBalance()      │
-    │ - ClefSigner       │         │  - call()            │
-    │ - RadiusSigner     │         │  - getCode()         │
-    └────────────────────┘         └──────────────────────┘
-         ↓                                    ↓
-    ┌────────────────────┐         ┌──────────────────────┐
-    │ Sign & Send Cycle  │         │ Read Operations      │
-    │ 1. Get nonce       │         │ - Read contracts     │
-    │ 2. Estimate gas    │         │ - Get balances       │
-    │ 3. Sign tx         │         │ - Get nonces         │
-    │ 4. Send raw tx     │         │ - Get code           │
-    │ 5. Wait receipt    │         └──────────────────────┘
-    └────────────────────┘
-```
-
-## Module Breakdown
-
-| Module | Purpose | Key Exports |
-|--------|---------|-------------|
-| **client/** | Main client implementation | `RadiusClient`, `createRadiusClient` |
-| **auth/** | Signing implementations | `PrivateKeySigner`, `ClefSigner` |
-| **chains/** | Chain configurations | `radiusTestnet`, `radiusMainnet` |
-| **common/** | Core data types | `Address`, `Transaction`, `Receipt` |
-| **contracts/** | Contract utilities | `Contract`, `ERC20`, `ERC20_ABI` |
-| **crypto/** | Cryptographic functions | `keccak256`, `sign`, `pubkeyToAddress` |
-| **accounts/** | Account abstraction | `Account` class |
-| **transport/** | Custom viem transport | `createInterceptingTransport` |
-| **events/** | Log/event querying | `getLogs`, `getLogsAdaptive`, watch functions |
-| **react/** | React integration | `RadiusProvider`, hooks |
-| **wagmi/** | Wagmi connector | `privateKeyConnector` |
-
-## Type System Summary
-
-**Custom Types:**
-- `Address` - Typed wrapper for 20-byte addresses
-- `Transaction` - Unsigned transaction representation
-- `SignedTransaction` - RLP-encoded signed transaction
-- `Receipt` - Transaction receipt with gas/logs
-- `RadiusReceipt` - Alternative receipt format
-- `RadiusSigner` - Signer interface
-
-**viem Types (Re-exported):**
-- `Hex`, `Hash`, `Abi`, `Chain`, `Transport`, `TransactionReceipt`
-
-**Branded Types:**
-- `0x${string}` for hex values
-- Ensures type safety at compile time
-
-## Transaction Flow
-
-```
-┌──────────────────────────────────────────────┐
-│ 1. User calls: client.send(signer, to, val) │
-└──────────────────────────────────────────────┘
-              ↓
-┌──────────────────────────────────────────────┐
-│ 2. Get pending nonce from blockchain         │
-└──────────────────────────────────────────────┘
-              ↓
-┌──────────────────────────────────────────────┐
-│ 3. Estimate gas (apply 20% margin, cap)      │
-└──────────────────────────────────────────────┘
-              ↓
-┌──────────────────────────────────────────────┐
-│ 4. Sign transaction with signer              │
-│    (includes chainId for EIP-155)            │
-└──────────────────────────────────────────────┘
-              ↓
-┌──────────────────────────────────────────────┐
-│ 5. Send raw transaction to RPC               │
-│    → Returns immediately with hash           │
-└──────────────────────────────────────────────┘
-              ↓ (only for Sync variants)
-┌──────────────────────────────────────────────┐
-│ 6. Poll for receipt (waitForTransactionReceipt)
-│    → Returns when included in block          │
-└──────────────────────────────────────────────┘
-```
-
-## Error Handling
-
-- **Explicit errors** - All methods can throw with clear messages
-- **Type safety** - Wrong types caught at compile time
-- **Validation** - ABI, address, and parameter validation
-- **Context** - Error messages include helpful details
-
-Example:
-```typescript
 try {
-  const receipt = await client.sendSync(signer, to, value);
+  await client.sendAndWait(signer, to, value);
 } catch (error) {
-  if (error instanceof Error) {
-    console.error(`Transaction failed: ${error.message}`);
+  if (error instanceof InsufficientBalanceError) {
+    console.log(`Balance: ${error.balance}, Required: ${error.required}`);
+  } else if (error instanceof TransactionRevertedError) {
+    console.log(`Reverted: ${error.revertReason}`);
+  } else if (error instanceof RadiusError) {
+    console.log(error.shortMessage); // Human-readable message
+    error.walk((cause) => console.log(cause)); // Traverse error chain
   }
 }
 ```
 
-## Code Quality Metrics
+## Architecture Diagram
 
-| Metric | Status |
-|--------|--------|
-| TypeScript Strict Mode | ✓ Enabled |
-| No implicit any | ✓ Forbidden |
-| All functions documented | ✓ JSDoc present |
-| Examples in docs | ✓ Present |
-| Error handling | ✓ Explicit |
-| Test coverage | ✓ Integration tests |
-| No external crypto | ✓ Uses viem |
-| Tree-shakeable | ✓ ESM exports |
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Application Code                     │
+└────────────────────┬────────────────────────────────────┘
+                     │
+         ┌───────────┴──────────────┐
+         │                          │
+    ┌────v─────────┐        ┌──────v──────────┐
+    │ RadiusClient │        │  RadiusSigner   │
+    │  (Exported)  │        │   (Interface)   │
+    └────┬─────────┘        └──┬───────┬──────┘
+         │                     │       │
+    ┌────v─────────────┐   ┌───v──┐   │
+    │ viem PublicClient│   │PKSig │   │
+    │ (Underlying)     │   │      │   │
+    └────┬─────────────┘   └──────┘   │
+         │                            │
+    ┌────v────────────────────────────v──────────┐
+    │          viem HTTP/WS Transport            │
+    └─────────────────────────────────────────────┘
+         │
+    ┌────v─────────────────────────────┐
+    │  Radius JSON-RPC Endpoint         │
+    └──────────────────────────────────┘
 
-## Key Design Decisions
-
-1. **viem-based** - Modern, lightweight, TypeScript-first
-2. **Zero gas price** - Radius-specific (encoded in client)
-3. **Pluggable signers** - PrivateKey or Clef
-4. **Automatic gas estimation** - 20% margin + MAX_GAS cap
-5. **Pagination helpers** - For Radius's block range limits
-6. **React hooks available** - Via optional `/react` export
-7. **No breaking changes from v1** (mostly) - Account class still available
-8. **Interceptable transport** - For debugging/monitoring
-
-## Export Patterns
-
-```typescript
-// Main export
-import { createRadiusClient } from '@radiustechsystems/sdk';
-
-// Chain definitions
-import { radiusTestnet } from '@radiustechsystems/sdk/chains';
-
-// Events/logs
-import { getLogs } from '@radiustechsystems/sdk/events';
-
-// React
-import { RadiusProvider, useRadiusBalance } from '@radiustechsystems/sdk/react';
-
-// Wagmi
-import { privateKeyConnector } from '@radiustechsystems/sdk/wagmi';
+Legend:
+  PKSig = PrivateKeySigner
+  Also supports ClefSigner for production key management
 ```
 
-## Common Usage Patterns
+## Key v2 Changes from v1
 
-### Read-Only
-```typescript
-const client = createRadiusClient({ chain: radiusTestnet });
-const balance = await client.getBalance(address);
-const code = await client.getCode(contractAddress);
-```
+| Change | Description | Migration |
+|--------|-------------|-----------|
+| **Address as TYPE ALIAS** | No longer a class, now `type Address = 0x${string}` | Treat as immutable type, no methods |
+| **Receipt.status** | Changed from numeric (0/1) to string enum | Check for `'success' \| 'reverted'` |
+| **sendSync → sendAndWait** | Renamed for clarity, old name still works (deprecated) | Update call sites for v3 compatibility |
+| **executeSync → executeAndWait** | Renamed for clarity, old name still works (deprecated) | Update call sites for v3 compatibility |
+| **Error Hierarchy** | New typed error classes for each failure mode | Use `instanceof` checks instead of codes |
+| **client.extend()** | New method to customize client behavior | Chain multiple configurations |
+| **Chain Contracts** | RADIUS_TESTNET_CONTRACTS and RADIUS_MAINNET_CONTRACTS exported | Use for contract interactions |
+| **Environment Variables** | New support for config via env vars | RADIUS_RPC_URL, RADIUS_CHAIN_ID, etc. |
 
-### Send Native Currency
-```typescript
-const signer = createPrivateKeySigner(key, chainId);
-const receipt = await client.sendSync(signer, recipient, 1000000000000000000n);
-```
+## Module Breakdown
 
-### Contract Interaction
-```typescript
-const receipt = await client.executeSync(
-  contract,
-  signer,
-  'transfer',
-  recipient,
-  amount
-);
-```
-
-### Token Operations
-```typescript
-const token = createERC20(tokenAddress, client.publicClient);
-const balance = await token.balanceOf(owner);
-await token.transferSync(signer, recipient, amount);
-```
-
-### React Integration
-```typescript
-function MyApp() {
-  return (
-    <RadiusProvider>
-      <MyComponent />
-    </RadiusProvider>
-  );
-}
-
-function MyComponent() {
-  const { data: balance } = useRadiusBalance(address);
-  return <div>Balance: {balance}</div>;
-}
-```
+| Module | Purpose | Key Exports |
+|--------|---------|------------|
+| **client** | Main client interface and transaction methods | `createRadiusClient`, `RadiusClient`, `RadiusReceipt` |
+| **auth** | Signing strategies for transactions | `PrivateKeySigner`, `ClefSigner`, `createPrivateKeySigner`, `createClefSigner` |
+| **chains** | Chain configurations and contracts | `radiusTestnet`, `radiusMainnet`, `RADIUS_*_CONTRACTS` |
+| **common** | Data types, utilities, and helpers | `Address`, `Hash`, `Receipt` (deprecated), `isAddressEqual`, `toChecksumAddress` |
+| **crypto** | Cryptographic utilities | Keccak256 hashing, key derivation |
+| **contracts** | Contract interaction helpers | `createContract`, `erc20()` factory, contract types |
+| **errors** | Typed error classes and unions | `RadiusError`, `TransactionFailedError`, error type unions |
+| **events** | Event subscription and log querying | `watchTransfer`, `watchApproval`, `getLogs`, `getLogsAdaptive` |
+| **react** | React hooks and context | `useRadiusSend`, `useERC20Balance`, `RadiusProvider` |
+| **wagmi** | wagmi integration for wallet connections | `privateKeyConnector` |
+| **transport** | Low-level HTTP/WebSocket transport | `createInterceptingTransport`, `createWebSocketTransport` |
 
 ## Security Considerations
 
-| Aspect | Approach |
-|--------|----------|
-| Private Keys | PrivateKeySigner keeps in memory (dev only) |
-| Production Keys | Use ClefSigner for secure key management |
-| Signing | Delegates to viem's account utilities |
-| Cryptography | Uses viem's implementations (no custom crypto) |
-| Gas Limits | Capped at MAX_GAS to prevent runaway costs |
-| Chain ID | Included in signed transactions (EIP-155) |
+### Private Key Management
+- **PrivateKeySigner**: Stores keys in memory; suitable only for development/testing
+- **ClefSigner**: Integrates with Clef key management server for production deployments
+- **Never commit keys**: Use environment variables for configuration
 
-## Performance Characteristics
+### EIP-155 Chain ID Protection
+- All signers require explicit `chainId` parameter during creation
+- Prevents transaction signing for unintended chains
+- Validates chain ID during transaction construction
 
-- **Gas estimation:** Adds ~20ms per transaction (1 RPC call)
-- **Receipt polling:** ~200-500ms per transaction on Radius
-- **Contract calls:** ~100-300ms (1 RPC call)
-- **ERC-20 metadata:** Cached (name, symbol, decimals)
-- **Log pagination:** ~1s per 1000-block chunk
+### Transport Security
+- Default HTTP transport uses chain's configured RPC URL
+- WebSocket transport available for event subscriptions
+- Optional interceptor for request/response inspection and modification
+
+### Error Message Security
+- RadiusError instances include human-readable `shortMessage`
+- Detailed information available via `message` property
+- Error cause chain traversable via `.walk()` method for debugging
 
 ## Dependencies Summary
 
-**Required:**
-- viem ^2.0.0 (included as peerDependency)
-- typescript ^5.0.0
+### Required
+- **viem** (^2.0.0): Core blockchain interaction library with full EVM support
 
-**Optional:**
-- wagmi ^3.0.0 (for React features)
-- @tanstack/react-query ^5.0.0 (for async state)
-- react ^18.0.0 (for React integration)
+### Optional (Peer Dependencies)
+- **wagmi** (^3.0.0): React hooks for wallet integration and account management
+- **react** (>=18.0.0): Required only when using React hooks from `/react` export
+- **@tanstack/react-query** (>=5.0.0): Required only when using React hooks from `/react` export
 
-**No direct dependency on:**
-- ethers.js
-- web3.js
-- Any custom crypto library
+### Development Only
+- TypeScript 5.9+, Biome for linting/formatting, Vitest for testing
 
-## File Locations
+## Quick Start Example
 
-**Main Source:**
-```
-src/
-├── index.ts                  # Main entry point
-├── client/client.ts          # RadiusClient implementation
-├── auth/                     # Signer implementations
-├── chains/radius.ts          # Chain definitions
-├── contracts/erc20.ts        # ERC-20 support
-├── common/                   # Core types
-├── crypto/utils.ts           # Crypto utilities
-├── events/getLogs.ts         # Event pagination
-├── react/provider.tsx        # React provider
-└── wagmi/connector.ts        # Wagmi integration
-```
+```typescript
+import {
+  createRadiusClient,
+  createPrivateKeySigner,
+  radiusTestnet,
+} from '@radiustechsystems/sdk';
 
-**Configuration:**
-```
-tsconfig.json               # TypeScript config
-biome.json                  # Code quality config
-package.json                # Dependencies
-vitest.config.ts            # Test runner
-```
+// 1. Create client
+const client = createRadiusClient({
+  chain: radiusTestnet,
+});
 
-**Tests:**
-```
-test/
-├── integration/             # Integration tests
-└── unit/                    # Unit tests
+// 2. Create signer
+const signer = createPrivateKeySigner(
+  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+  radiusTestnet.id
+);
+
+// 3. Send transaction
+const receipt = await client.sendAndWait(
+  signer,
+  '0x742d35Cc6634C0532925a3b844Bc9e7595f7E9F1',
+  1000000000000000n // 0.001 native currency
+);
+
+console.log('Success:', receipt.status === 'success');
+console.log('Gas used:', receipt.gasUsed);
 ```
 
-## Key Constants
+## Production Readiness
 
-| Constant | Value | Purpose |
-|----------|-------|---------|
-| `MAX_GAS` | 1319413953330n | Maximum gas per transaction |
-| Radius Testnet ID | 1223953 | Chain identifier |
-| Radius Mainnet ID | 1223954 (TBD) | Placeholder |
-| Gas Price | 0n | Radius uses zero gas price |
+- Comprehensive TypeScript strict mode support with full type safety
+- Multi-format build outputs (ESM, CJS, .d.ts declarations)
+- Rich error types with cause chain traversal for debugging
+- Environment variable configuration support
+- Tested with modern Node.js (>=22)
+- MIT licensed, open-source
 
-## Next Steps for Users
+## Next Steps
 
-1. **Install:** `npm install @radiustechsystems/sdk viem`
-2. **Create client:** `const client = createRadiusClient({chain})`
-3. **Create signer:** `const signer = createPrivateKeySigner(key, chainId)`
-4. **Send transactions:** `await client.sendSync(signer, to, value)`
-5. **Read state:** `const balance = await client.getBalance(address)`
-
----
-
-**Full detailed audit available in:** `SDK_AUDIT.md`
+- Review [Module Breakdown](#module-breakdown) for your use case
+- Check [Security Considerations](#security-considerations) for production deployments
+- Use React hooks from `/react` export if building React frontends
+- Reference error type unions for proper error handling patterns
