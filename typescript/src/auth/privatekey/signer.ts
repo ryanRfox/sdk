@@ -1,152 +1,145 @@
+import type { Hex, PrivateKeyAccount, SignableMessage, TransactionSerializable } from 'viem';
 /**
- * The privatekey package provides a Signer implementation using ECDSA private keys.
+ * The privatekey package provides a RadiusSigner implementation using ECDSA private keys.
  * This is the simplest approach for signing but requires careful key management.
  */
-import { Address, Hash, SignedTransaction, Transaction } from '../../common';
-import { keccak256 } from '../../crypto';
-import { BigNumberish, BytesLike, Wallet, eth } from '../../providers/eth';
-import { Signer, SignerClient } from '../types';
+import { privateKeyToAccount } from 'viem/accounts';
+import type { RadiusSigner } from '../types';
 
 /**
- * A Signer implementation that uses a private key to sign messages and transactions
- * This is the simplest way to sign messages and transactions, but it requires keeping the private key in memory.
- * For production systems with high security requirements, consider using a hardware security module or key management service.
- * @implements {Signer}
+ * A RadiusSigner implementation that uses a private key to sign messages and transactions.
+ * This is the simplest way to sign messages and transactions, but it requires keeping
+ * the private key in memory.
+ *
+ * For production systems with high security requirements, consider using a hardware
+ * security module, key management service, or the ClefSigner.
+ *
+ * @implements {RadiusSigner}
+ *
+ * @example
+ * ```typescript
+ * import { PrivateKeySigner, createPrivateKeySigner } from '@aspect/radius-sdk';
+ *
+ * // Using the class directly
+ * const signer = new PrivateKeySigner('0x...privateKey', 1);
+ *
+ * // Using the factory function
+ * const signer = createPrivateKeySigner('0x...privateKey', 1);
+ *
+ * // Sign a message
+ * const signature = await signer.signMessage('Hello, World!');
+ *
+ * // Sign a transaction
+ * const signedTx = await signer.signTransaction({
+ *   to: '0x...',
+ *   value: 1000000000000000000n,
+ *   nonce: 0,
+ * });
+ * ```
  */
-export class PrivateKeySigner implements Signer {
-  /**
-   * The ethers.js wallet used for signing operations
-   * @private
-   */
-  private readonly wallet: Wallet;
+export class PrivateKeySigner implements RadiusSigner {
+	/**
+	 * The viem PrivateKeyAccount used for signing operations.
+	 * @private
+	 */
+	private readonly account: PrivateKeyAccount;
 
-  /**
-   * The address associated with this signer
-   * @private
-   */
-  private readonly _address: Address;
+	/**
+	 * The chain ID used for EIP-155 transaction signing.
+	 */
+	readonly chainId: number;
 
-  /**
-   * The chain ID used for EIP-155 transaction signing
-   * @private
-   */
-  private _chainID: BigNumberish = 0;
+	/**
+	 * Creates a new PrivateKeySigner instance.
+	 *
+	 * @param privateKey - The private key as a hex string (must include 0x prefix)
+	 * @param chainId - The chain ID used for transaction signing
+	 * @throws Error if the private key is invalid
+	 *
+	 * @example
+	 * ```typescript
+	 * const signer = new PrivateKeySigner(
+	 *   '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+	 *   1 // mainnet
+	 * );
+	 * ```
+	 */
+	constructor(privateKey: Hex, chainId: number) {
+		this.account = privateKeyToAccount(privateKey);
+		this.chainId = chainId;
+	}
 
-  /**
-   * Creates a new PrivateKeySigner instance
-   * @param key The private key as a hex string (with or without 0x prefix)
-   * @param client The Radius client used to retrieve the chain ID
-   * @throws Error if the private key is invalid
-   */
-  constructor(key: string, client: SignerClient) {
-    const formattedKey = key.startsWith('0x') ? key : `0x${key}`;
+	/**
+	 * Get the account address of the signer.
+	 * @returns The checksummed Ethereum address
+	 */
+	get address(): `0x${string}` {
+		return this.account.address;
+	}
 
-    this.wallet = new eth.Wallet(formattedKey);
-    this._address = new Address(this.wallet.address);
+	/**
+	 * Sign a message using the EIP-191 standard.
+	 *
+	 * @param message - The message to sign. Can be a string, hex bytes, or raw bytes.
+	 * @returns The signature as a hex string
+	 *
+	 * @example
+	 * ```typescript
+	 * // Sign a string message
+	 * const sig1 = await signer.signMessage('Hello, World!');
+	 *
+	 * // Sign hex data
+	 * const sig2 = await signer.signMessage({ raw: '0x1234' });
+	 * ```
+	 */
+	async signMessage(message: SignableMessage): Promise<Hex> {
+		return this.account.signMessage({ message });
+	}
 
-    client
-      .chainID()
-      .then((id) => {
-        this._chainID = id;
-      })
-      .catch(() => {
-        // Default to 0 if we can't get chain ID
-      });
-  }
+	/**
+	 * Sign a transaction using the EIP-155 standard.
+	 *
+	 * The chainId from the signer will be included in the transaction
+	 * to prevent replay attacks across different chains.
+	 *
+	 * @param tx - The transaction to sign
+	 * @returns The signed transaction as a hex string (RLP encoded)
+	 *
+	 * @example
+	 * ```typescript
+	 * const signedTx = await signer.signTransaction({
+	 *   to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+	 *   value: 1000000000000000000n, // 1 USD
+	 *   nonce: 0,
+	 *   gasPrice: 20000000000n,
+	 *   gas: 21000n,
+	 * });
+	 * ```
+	 */
+	async signTransaction(tx: TransactionSerializable): Promise<Hex> {
+		return this.account.signTransaction({ ...tx, chainId: this.chainId });
+	}
+}
 
-  /**
-   * Get the account address of the signer
-   * @returns The account address
-   */
-  address(): Address {
-    return this._address;
-  }
-
-  /**
-   * Get the chain ID used by the signer
-   * @returns The chain ID
-   */
-  chainID(): BigNumberish {
-    return this._chainID;
-  }
-
-  /**
-   * Compute the hash of a transaction
-   * @param transaction The transaction to hash
-   * @returns The transaction hash
-   */
-  hash(transaction: Transaction): Hash {
-    const tx = this.prepareTransaction(transaction);
-    const unsignedTx = eth.Transaction.from(tx);
-    return new Hash(unsignedTx.hash || '0x');
-  }
-
-  /**
-   * Sign a message using the EIP-191 standard
-   * @param message The message to sign
-   * @returns The signature
-   */
-  async signMessage(message: BytesLike): Promise<Uint8Array> {
-    const messageHash = keccak256([
-      eth.toUtf8Bytes('\x19Ethereum Signed Message:\n'),
-      eth.toUtf8Bytes(String(eth.getBytes(message).length)),
-      message,
-    ]);
-
-    const signature = await this.wallet.signMessage(eth.getBytes(messageHash));
-    return eth.getBytes(signature);
-  }
-
-  /**
-   * Sign a transaction using the EIP-155 standard
-   * @param transaction The transaction to sign
-   * @returns The signed transaction
-   */
-  async signTransaction(transaction: Transaction): Promise<SignedTransaction> {
-    const tx = {
-      to: transaction.to?.ethAddress(),
-      data: transaction.data ? eth.hexlify(transaction.data) : undefined,
-      value: transaction.value,
-      nonce: transaction.nonce,
-      gasLimit: transaction.gas,
-      gasPrice: transaction.gasPrice,
-      chainId: this._chainID,
-    };
-
-    try {
-      const unsignedTx = eth.Transaction.from(tx);
-      const signature = await this.wallet.signTransaction(unsignedTx);
-      const signedTx = eth.Transaction.from(signature);
-      return {
-        ...transaction,
-        r: BigInt(signedTx.signature?.r || 0),
-        s: BigInt(signedTx.signature?.s || 0),
-        v: signedTx.signature?.v || 0,
-        serialized: signedTx.serialized,
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to sign transaction: ${errorMessage}`);
-    }
-  }
-
-  /**
-   * Prepare a transaction for processing by converting it to the format expected by ethers.js
-   * This handles the conversion between Radius SDK transaction format and the ethers.js format
-   *
-   * @param transaction The Radius transaction to prepare
-   * @returns The prepared transaction in ethers.js format
-   * @private
-   */
-  private prepareTransaction(transaction: Transaction): Record<string, unknown> {
-    return {
-      to: transaction.to ? transaction.to.ethAddress() : undefined,
-      data: transaction.data ? eth.hexlify(transaction.data) : undefined,
-      value: transaction.value,
-      nonce: transaction.nonce || 0,
-      gasLimit: transaction.gas,
-      gasPrice: transaction.gasPrice,
-      chainId: this._chainID,
-    };
-  }
+/**
+ * Factory function to create a PrivateKeySigner instance.
+ *
+ * @param privateKey - The private key as a hex string (must include 0x prefix)
+ * @param chainId - The chain ID used for transaction signing
+ * @returns A new PrivateKeySigner instance
+ *
+ * @example
+ * ```typescript
+ * import { createPrivateKeySigner } from '@aspect/radius-sdk';
+ *
+ * const signer = createPrivateKeySigner(
+ *   '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+ *   1 // mainnet
+ * );
+ *
+ * console.log(signer.address); // '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+ * ```
+ */
+export function createPrivateKeySigner(privateKey: Hex, chainId: number): PrivateKeySigner {
+	return new PrivateKeySigner(privateKey, chainId);
 }

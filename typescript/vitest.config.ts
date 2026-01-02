@@ -5,12 +5,18 @@ import { defineConfig } from 'vitest/config';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
-  test: {
-    disableConsoleIntercept: true,
-    environment: 'node',
-    globals: true,
-    hookTimeout: 30000,
-    testTimeout: 30000,
-    setupFiles: [resolve(__dirname, './packages/core/test/setup.ts')],
-  },
+	resolve: {
+		alias: {
+			'@radiustechsystems/sdk': resolve(__dirname, './src'),
+		},
+	},
+	test: {
+		disableConsoleIntercept: true,
+		environment: 'node',
+		globals: true,
+		hookTimeout: 30000,
+		testTimeout: 30000,
+		setupFiles: [resolve(__dirname, './test/setup.ts')],
+		include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'test/**/*.test.ts', 'test/**/*.test.tsx'],
+	},
 });

@@ -1,66 +1,78 @@
 /**
  * The auth types module defines interfaces for signing transactions and messages.
- * It provides the foundation for different signer implementations.
+ * It provides the foundation for different signer implementations using viem.
  */
-import { Address, Hash, HttpClient, SignedTransaction, Transaction } from '../common';
-import { BigNumberish, BytesLike } from '../providers/eth';
+import type { Hex, SignableMessage, TransactionSerializable } from 'viem';
 
 /**
- * Signer interface for cryptographically signing messages and transactions
- * Different implementations provide different mechanisms for accessing private keys
+ * RadiusSigner interface for cryptographically signing messages and transactions.
+ * Different implementations provide different mechanisms for accessing private keys.
+ * This interface is compatible with viem's account utilities.
  */
-export interface Signer {
-  /**
-   * Returns the Radius account address associated with the Signer
-   * @returns The address of the signer
-   */
-  address(): Address;
+export interface RadiusSigner {
+	/**
+	 * The Radius account address associated with the Signer.
+	 * Returns a checksummed Ethereum address.
+	 */
+	readonly address: `0x${string}`;
 
-  /**
-   * Returns the Chain ID associated with the Signer
-   * @returns The chain ID used for transaction signing
-   */
-  chainID(): BigNumberish;
+	/**
+	 * The Chain ID associated with the Signer.
+	 * Used for EIP-155 transaction signing to prevent replay attacks.
+	 */
+	readonly chainId: number;
 
-  /**
-   * Computes the hash of a transaction
-   * @param transaction The transaction to hash
-   * @returns The transaction hash
-   */
-  hash(transaction: Transaction): Hash;
+	/**
+	 * Signs a message using the EIP-191 standard.
+	 * @param message - The message to sign (string, bytes, or structured data)
+	 * @returns The signature as a hex string
+	 * @throws Error if signing fails
+	 */
+	signMessage(message: SignableMessage): Promise<Hex>;
 
-  /**
-   * Signs a message using the EIP-191 standard
-   * @param message The message bytes to sign
-   * @returns The signature bytes
-   * @throws Error if signing fails
-   */
-  signMessage(message: BytesLike): Promise<Uint8Array>;
-
-  /**
-   * Signs a transaction using the EIP-155 standard
-   * @param transaction The transaction to sign
-   * @returns The signed transaction ready to be sent to the network
-   * @throws Error if signing fails
-   */
-  signTransaction(transaction: Transaction): Promise<SignedTransaction>;
+	/**
+	 * Signs a transaction using the EIP-155 standard.
+	 * @param tx - The transaction to sign
+	 * @returns The signed transaction as a hex string
+	 * @throws Error if signing fails
+	 */
+	signTransaction(tx: TransactionSerializable): Promise<Hex>;
 }
 
 /**
- * A client interface for the Radius Client methods that may be required by the Signer
- * This interface is implemented by the main Radius Client
+ * Configuration options for creating a ClefSigner.
  */
-export interface SignerClient {
-  /**
-   * Returns the Radius chain ID, which is used to sign transactions
-   * @returns The chain ID of the connected network
-   * @throws Error if the chain ID cannot be retrieved
-   */
-  chainID(): Promise<BigNumberish>;
+export interface ClefSignerConfig {
+	/**
+	 * The address to use for signing.
+	 * Must be an account managed by the Clef instance.
+	 */
+	address: `0x${string}`;
 
-  /**
-   * Returns the HTTP client used by the client to make requests
-   * @returns The HTTP client used for API requests
-   */
-  httpClient(): HttpClient;
+	/**
+	 * The chain ID for transaction signing.
+	 */
+	chainId: number;
+
+	/**
+	 * The URL of the Clef JSON-RPC server.
+	 * @example "http://localhost:8550"
+	 */
+	clefUrl: string;
+}
+
+/**
+ * Configuration options for creating a PrivateKeySigner.
+ */
+export interface PrivateKeySignerConfig {
+	/**
+	 * The private key as a hex string.
+	 * Should be 32 bytes (64 hex characters) with optional 0x prefix.
+	 */
+	privateKey: Hex;
+
+	/**
+	 * The chain ID for transaction signing.
+	 */
+	chainId: number;
 }

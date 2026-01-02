@@ -1,5 +1,5 @@
-import { PrivateKeySigner, Signer } from '../auth';
-import { AccountClient } from './types';
+import type { Hex } from 'viem';
+import { PrivateKeySigner, type RadiusSigner } from '../auth';
 
 /**
  * A function that configures a Radius account.
@@ -12,10 +12,10 @@ export type AccountOption = (options: AccountOptions) => Promise<void>;
  * Contains configuration values that can be set using functional options.
  */
 export interface AccountOptions {
-  /**
-   * The signer to use with this account
-   */
-  signer?: Signer;
+	/**
+	 * The signer to use with this account
+	 */
+	signer?: RadiusSigner;
 }
 
 /**
@@ -25,13 +25,13 @@ export interface AccountOptions {
  * or key management service.
  *
  * @param key Private key as a hex string
- * @param client AccountClient instance for network operations
+ * @param chainId The chain ID for signing transactions
  * @returns An AccountOption function that configures an Account with the provided private key
  */
-export function withPrivateKey(key: string, client: AccountClient): AccountOption {
-  return async (options: AccountOptions) => {
-    options.signer = new PrivateKeySigner(key, client);
-  };
+export function withPrivateKey(key: Hex, chainId: number): AccountOption {
+	return async (options: AccountOptions) => {
+		options.signer = new PrivateKeySigner(key, chainId);
+	};
 }
 
 /**
@@ -42,8 +42,8 @@ export function withPrivateKey(key: string, client: AccountClient): AccountOptio
  * @param signer Signer instance for signing transactions and messages
  * @returns An AccountOption function that configures an Account with the provided signer
  */
-export function withSigner(signer: Signer): AccountOption {
-  return async (options: AccountOptions) => {
-    options.signer = signer;
-  };
+export function withSigner(signer: RadiusSigner): AccountOption {
+	return async (options: AccountOptions) => {
+		options.signer = signer;
+	};
 }

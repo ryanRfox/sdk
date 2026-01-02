@@ -4,4 +4,5 @@
  * transactions on Radius contracts.
  */
 export * from './contract';
+export * from './erc20';
 export * from './types';

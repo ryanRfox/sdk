@@ -4,6 +4,6 @@
  * @property privateKey Private key
  */
 export interface SigningKey {
-  publicKey: Uint8Array;
-  privateKey: Uint8Array;
+	publicKey: Uint8Array;
+	privateKey: Uint8Array;
 }

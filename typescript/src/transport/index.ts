@@ -5,3 +5,4 @@
  */
 export * from './interceptor';
 export * from './types';
+export * from './websocket';

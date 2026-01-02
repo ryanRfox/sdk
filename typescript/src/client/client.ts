@@ -1,438 +1,567 @@
-import { TransactionReceipt, TransactionResponse } from 'ethers';
-import { Signer } from '../auth';
+/**
+ * Radius SDK Client - A viem-based client for interacting with the Radius platform.
+ *
+ * This module provides the primary interface for reading blockchain state,
+ * sending transactions, deploying contracts, and interacting with smart contracts.
+ */
 import {
-  ABI,
-  Address,
-  HttpClient,
-  MAX_GAS,
-  Receipt,
-  SignedTransaction,
-  Transaction,
-  receiptFromEthReceipt,
-  zeroAddress,
-} from '../common';
-import { Contract } from '../contracts';
-import { BigNumberish, Provider, eth } from '../providers/eth';
-import { InterceptingProvider, InterceptingRoundTripper } from '../transport';
-import { ClientOption, ClientOptions } from './options';
+	type Abi,
+	type AbiParameter,
+	type Chain,
+	createPublicClient,
+	decodeFunctionResult,
+	encodeAbiParameters,
+	encodeFunctionData,
+	type Hash,
+	type Hex,
+	type PublicClient,
+	type TransactionReceipt,
+	type TransactionRequest,
+	type Transport,
+	type Address as ViemAddress,
+} from 'viem';
 
 /**
- * Client used to interact with the Radius platform.
- * This is the main entry point for working with the Radius ecosystem.
- * It provides methods for account management, contract deployment and interaction,
- * transaction handling, and querying Radius state.
+ * ABI constructor type definition.
  */
-export class Client {
-  /**
-   * The Ethereum JSON-RPC provider used to communicate with Radius
-   * @private
-   */
-  private readonly ethClient: Provider;
+type AbiConstructor = {
+	type: 'constructor';
+	inputs: readonly AbiParameter[];
+	stateMutability: 'nonpayable' | 'payable';
+};
 
-  /**
-   * The HTTP client used for making API requests
-   * @private
-   */
-  private readonly _httpClient: HttpClient;
+import type { RadiusSigner } from '../auth';
+import { createInterceptingTransport, type Interceptor, type Logf } from '../transport';
 
-  /**
-   * Creates a new Radius Client instance
-   * @param provider The Ethereum provider to use for Radius communication
-   * @param httpClient Optional HTTP client to use for API requests
-   */
-  constructor(provider: Provider, httpClient?: HttpClient) {
-    this.ethClient = provider;
-    this._httpClient = httpClient ?? globalThis.fetch;
-  }
+/**
+ * Maximum gas limit for transactions.
+ * Used to cap gas estimates to prevent unexpectedly high costs.
+ */
+export const MAX_GAS = 1319413953330n;
 
-  /**
-   * Create a new Radius Client with the given URL and ClientOption(s).
-   * @param url URL of the Radius node
-   * @param opts ClientOption(s)
-   * @returns New Radius Client
-   * @throws Error if the client cannot be created
-   */
-  static async New(url: string, ...opts: ClientOption[]): Promise<Client> {
-    const options: ClientOptions = {
-      httpClient: globalThis.fetch,
-    };
-
-    for (const opt of opts) {
-      opt(options);
-    }
-
-    // Create a new provider with the given URL and an optional HTTP interceptor and logger
-    const provider =
-      options.logger || options.interceptor
-        ? new InterceptingProvider(
-            url,
-            new InterceptingRoundTripper(options.interceptor, options.logger, {
-              roundTrip: (req) => (options.httpClient ? options.httpClient(req) : fetch(req)),
-            })
-          )
-        : new eth.JsonRpcProvider(url);
-
-    // Ensure the provider is connected to the network
-    try {
-      await provider.getNetwork();
-    } catch (error) {
-      throw new Error(
-        `Failed to create Radius client: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-
-    return new Client(provider, options.httpClient);
-  }
-
-  /**
-   * Gets the balance of an account in wei
-   * @param address The address to check the balance for
-   * @returns The account balance in wei as a bigint
-   * @throws Error if the balance cannot be retrieved from the network
-   */
-  async balanceAt(address: Address): Promise<bigint> {
-    try {
-      return this.ethClient.getBalance(address.ethAddress());
-    } catch (error) {
-      throw new Error(
-        `Failed to get balance: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  }
-
-  /**
-   * Calls a read-only contract method without creating a transaction
-   * @param contract Contract instance to interact with
-   * @param method Name of the method to call on the contract
-   * @param args Arguments to pass to the contract method
-   * @returns Array of decoded return values from the contract method
-   * @throws Error if the contract ABI is missing
-   * @throws Error if the contract address is missing or zero
-   * @throws Error if the contract method call fails
-   */
-  async call(contract: Contract, method: string, ...args: unknown[]): Promise<unknown[]> {
-    if (!contract.abi) {
-      throw new Error('Contract ABI is required');
-    }
-    if (!contract.address() || contract.address().equals(zeroAddress())) {
-      throw new Error('Contract address is required');
-    }
-
-    const data = contract.abi.pack(method, ...args);
-    const params = new TxParams(data, undefined, contract.address()); // No signer needed here
-    const tx = await this.prepareTx(params);
-
-    let resultData: Uint8Array;
-    try {
-      const result = await this.ethClient.call({
-        to: tx.to?.ethAddress(),
-        data: tx.data ? eth.hexlify(tx.data) : undefined,
-        value: tx.value,
-      });
-      resultData = eth.getBytes(result);
-    } catch (error) {
-      throw new Error(
-        `Failed to call contract method: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-
-    return contract.abi.unpack(method, resultData);
-  }
-
-  /**
-   * Get the chain ID of the connected Radius network
-   * @returns Chain ID of the Radius network
-   * @throws Error if the chain ID cannot be retrieved
-   */
-  async chainID(): Promise<bigint> {
-    try {
-      const network = await this.ethClient.getNetwork();
-      return network.chainId;
-    } catch (error) {
-      throw new Error(
-        `Failed to get chain ID: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  }
-
-  /**
-   * Get the bytecode of a contract
-   * @param address Address of the contract
-   * @returns Bytecode of the contract
-   */
-  async codeAt(address: Address): Promise<Uint8Array> {
-    return eth.getBytes(await this.ethClient.getCode(address.ethAddress()));
-  }
-
-  /**
-   * Deploy a smart contract.
-   * @param signer The signer that should be used to sign the transaction
-   * @param bytecode Bytecode of the contract
-   * @param abi ABI of the contract
-   * @param args Arguments for the contract constructor
-   * @throws Error if the contract bytecode is not provided
-   * @throws Error if the contract deployment fails
-   */
-  async deployContract(
-    signer: Signer,
-    bytecode: Uint8Array,
-    abi: ABI,
-    ...args: unknown[]
-  ): Promise<Contract> {
-    if (signer === undefined) {
-      throw new Error('Signer is required for deploying contracts');
-    }
-
-    const data = bytecode;
-    if (args.length > 0) {
-      const encodedConstructorArgs = abi.pack('', ...args);
-      data.set(encodedConstructorArgs, bytecode.length);
-    }
-
-    let receipt: Receipt;
-    try {
-      const params = new TxParams(data, signer);
-      receipt = await this.prepareAndSendTx(params);
-    } catch (error) {
-      throw new Error(
-        `Failed to deploy contract: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-    if (!receipt) {
-      throw new Error('Contract deployment failed: no receipt returned');
-    }
-    if (receipt.status !== 1) {
-      throw new Error(
-        `Failed to deploy contract: status ${receipt.status}, transaction hash ${receipt.txHash}`
-      );
-    }
-
-    return new Contract(receipt.contractAddress, abi);
-  }
-
-  /**
-   * Estimate gas for a transaction.
-   * @param tx Transaction to estimate gas for
-   */
-  async estimateGas(tx: Transaction): Promise<bigint> {
-    const estimate = await this.ethClient.estimateGas({
-      to: tx.to?.ethAddress(),
-      data: tx.data ? eth.hexlify(tx.data) : undefined,
-      value: tx.value,
-    });
-
-    // Apply 20% safety margin
-    const margin = estimate / BigInt('5');
-    const gas = estimate + margin;
-
-    // Cap at MAX_GAS
-    return gas > MAX_GAS ? MAX_GAS : gas;
-  }
-
-  /**
-   * Execute a contract state-changing method.
-   * @param contract Contract to execute
-   * @param signer The signer that should be used to sign the transaction
-   * @param method Method to execute
-   * @param args Arguments for the method
-   * @returns Receipt of the transaction
-   * @throws Error if the transaction fails
-   * @throws Error if the transaction receipt is not returned
-   */
-  async execute(
-    contract: Contract,
-    signer: Signer,
-    method: string,
-    ...args: unknown[]
-  ): Promise<Receipt> {
-    if (!contract.abi) {
-      throw new Error('Contract ABI is required');
-    }
-    if (!contract.address() || contract.address().equals(zeroAddress())) {
-      throw new Error('Contract address is required');
-    }
-
-    const data = contract.abi.pack(method, ...args);
-
-    return this.prepareAndSendTx({
-      signer,
-      to: contract.address(),
-      data,
-      value: BigInt('0'),
-    });
-  }
-
-  /**
-   * Get the HTTP client used by the client.
-   * @returns HTTP client
-   */
-  httpClient(): HttpClient {
-    return this._httpClient;
-  }
-
-  /**
-   * Get the next nonce for an account.
-   * @param address Address of the account
-   * @returns Nonce of the account
-   */
-  async pendingNonceAt(address: Address): Promise<number> {
-    return this.ethClient.getTransactionCount(address.ethAddress(), 'pending');
-  }
-
-  /**
-   * Send value to an account.
-   * @param signer The signer that should be used to sign the transaction
-   * @param recipient Address of the recipient
-   * @param value Value to send
-   * @returns Receipt of the transaction
-   * @throws Error if the transaction fails
-   * @throws Error if the transaction receipt is not returned
-   */
-  async send(signer: Signer, recipient: Address, value: BigNumberish): Promise<Receipt> {
-    const data = new Uint8Array();
-    const params = new TxParams(data, signer, recipient, value); // Nonce gets set in prepareTx
-    const receipt = await this.prepareAndSendTx(params);
-
-    if (!receipt.status) {
-      throw new Error('Transaction failed');
-    }
-
-    return receipt;
-  }
-
-  /**
-   * Send a signed transaction to Radius.
-   * @param signer The signer that should be used to sign the transaction
-   * @param tx Signed transaction
-   * @returns Receipt of the transaction
-   * @throws Error if the transaction fails
-   * @throws Error if the transaction receipt is not returned
-   */
-  async transact(signer: Signer, tx: SignedTransaction): Promise<Receipt> {
-    let response: TransactionResponse;
-    try {
-      response = await this.ethClient.broadcastTransaction(eth.hexlify(tx.serialized));
-    } catch (error) {
-      throw new Error(
-        `Failed to send transaction: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-
-    let receipt: TransactionReceipt | null;
-    try {
-      receipt = await response.wait();
-    } catch (error) {
-      throw new Error(
-        `Failed to get transaction receipt: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    }
-
-    if (!receipt) {
-      throw new Error('Failed to get transaction receipt: no receipt returned');
-    }
-    if (receipt.status !== 1) {
-      throw new Error(
-        `Transaction failed: status ${receipt.status}, transaction hash ${receipt.hash}`
-      );
-    }
-
-    const from: Address = signer.address();
-    const to: Address = receipt.to ? new Address(receipt.to) : zeroAddress();
-    const value: BigNumberish | undefined = tx.value;
-
-    return receiptFromEthReceipt(receipt, from, to, value);
-  }
-
-  /**
-   * Prepare a transaction with correct nonce and gas.
-   * @private
-   * @param params Transaction parameters
-   * @returns Prepared transaction
-   */
-  private async prepareTx(params: TxParams): Promise<Transaction> {
-    const gas: bigint = BigInt('0');
-    const gasPrice = BigInt('0');
-
-    // Get the pending nonce for the signer address, if necessary
-    const nonce = params.signer ? await this.pendingNonceAt(params.signer.address()) : undefined;
-
-    // Must set Transaction.to value to undefined if it is the zero address
-    if (params.to === zeroAddress()) {
-      params.to = undefined;
-    }
-
-    // Create the initial transaction used to estimate gas
-    const tx = new Transaction(params.data, gas, gasPrice, nonce, params.to, params.value);
-
-    // Estimate gas cost for the transaction
-    tx.gas = await this.estimateGas(tx);
-
-    return tx;
-  }
-
-  /**
-   * Prepare and send a transaction.
-   * @private
-   * @param params Transaction parameters
-   * @returns Receipt of the transaction
-   * @throws Error if the account is not provided
-   * @throws Error if the transaction fails
-   * @throws Error if the transaction receipt is not returned
-   */
-  private async prepareAndSendTx(params: TxParams): Promise<Receipt> {
-    if (!params.signer) {
-      throw new Error('Signer is required for sending transactions');
-    }
-
-    const tx = await this.prepareTx(params);
-    const signedTx = await params.signer.signTransaction(tx);
-
-    return this.transact(params.signer, signedTx);
-  }
+/**
+ * Receipt returned from transaction execution.
+ * Contains information about the transaction result.
+ */
+export interface RadiusReceipt {
+	/** The transaction hash */
+	transactionHash: Hash;
+	/** The sender address */
+	from: ViemAddress;
+	/** The recipient address (or null for contract creation) */
+	to: ViemAddress | null;
+	/** The created contract address (if any) */
+	contractAddress: ViemAddress | null;
+	/** The amount of gas used */
+	gasUsed: bigint;
+	/** The transaction status (1 for success, 0 for failure) */
+	status: 'success' | 'reverted';
+	/** The block number the transaction was included in */
+	blockNumber: bigint;
+	/** The block hash */
+	blockHash: Hash;
+	/** Transaction logs */
+	logs: TransactionReceipt['logs'];
 }
 
 /**
- * Parameters used to prepare a transaction.
- * This is an internal class used by the Client for transaction preparation.
+ * Configuration options for creating a RadiusClient.
  */
-class TxParams {
-  /**
-   * The transaction data (bytecode for contract creation or method call data)
-   * @private
-   */
-  data: Uint8Array;
-
-  /**
-   * The signer used to sign the transaction
-   * @private
-   */
-  signer?: Signer;
-
-  /**
-   * The destination address for the transaction (undefined for contract creation)
-   * @private
-   */
-  to?: Address;
-
-  /**
-   * The amount of native currency to send with the transaction
-   * @private
-   */
-  value?: BigNumberish;
-
-  /**
-   * Creates a new transaction parameters object
-   * @param data The transaction data (bytecode or method call data)
-   * @param signer Optional signer to sign the transaction
-   * @param to Optional destination address (undefined for contract creation)
-   * @param value Optional amount of native currency to send
-   */
-  constructor(data: Uint8Array, signer?: Signer, to?: Address, value?: BigNumberish) {
-    this.data = data;
-    this.signer = signer;
-    this.to = to;
-    this.value = value;
-  }
+export interface RadiusClientConfig {
+	/** The chain configuration (use radiusTestnet or radiusMainnet from @radiustechsystems/sdk/chains) */
+	chain: Chain;
+	/** The viem transport to use (defaults to http transport based on chain config) */
+	transport?: Transport;
+	/** Optional response interceptor for modifying or monitoring JSON-RPC responses */
+	interceptor?: Interceptor;
+	/** Optional logger function for debugging request/response cycles */
+	logger?: Logf;
 }
+
+/**
+ * Contract interface for the client's call and execute methods.
+ * Must have an ABI and address for contract interactions.
+ */
+export interface ContractInstance {
+	/** The contract's ABI */
+	abi: Abi;
+	/** The contract's deployed address */
+	address: ViemAddress;
+}
+
+/**
+ * The RadiusClient provides methods for interacting with the Radius platform.
+ *
+ * This is the main entry point for:
+ * - Reading blockchain state (balances, contract data, chain info)
+ * - Sending transactions (native transfers, contract calls)
+ * - Deploying smart contracts
+ *
+ * @example
+ * ```typescript
+ * import { createRadiusClient, createPrivateKeySigner } from '@radiustechsystems/sdk';
+ * import { radiusTestnet } from '@radiustechsystems/sdk/chains';
+ * import { http } from 'viem';
+ *
+ * const client = createRadiusClient({
+ *   chain: radiusTestnet,
+ *   transport: http(),
+ * });
+ *
+ * // Get balance
+ * const balance = await client.getBalance('0x...');
+ *
+ * // Send transaction
+ * const signer = createPrivateKeySigner('0x...privateKey', radiusTestnet.id);
+ * const receipt = await client.sendSync(signer, '0x...recipient', 1000000000000000000n);
+ * ```
+ */
+export interface RadiusClient {
+	/**
+	 * The underlying viem PublicClient for advanced operations.
+	 */
+	readonly publicClient: PublicClient;
+
+	/**
+	 * Get the chain ID of the connected network.
+	 * @returns The chain ID as a bigint
+	 */
+	getChainId(): Promise<bigint>;
+
+	/**
+	 * Get the balance of an address in wei.
+	 * @param address - The address to check
+	 * @returns The balance in wei
+	 */
+	getBalance(address: ViemAddress): Promise<bigint>;
+
+	/**
+	 * Get the bytecode deployed at an address.
+	 * @param address - The contract address
+	 * @returns The bytecode as a hex string, or '0x' if no code
+	 */
+	getCode(address: ViemAddress): Promise<Hex>;
+
+	/**
+	 * Get the pending nonce for an address.
+	 * @param address - The address to check
+	 * @returns The next nonce to use
+	 */
+	getNonce(address: ViemAddress): Promise<number>;
+
+	/**
+	 * Estimate gas for a transaction.
+	 * Applies a 20% safety margin and caps at MAX_GAS.
+	 * @param tx - The transaction parameters
+	 * @returns The estimated gas with safety margin
+	 */
+	estimateGas(tx: TransactionRequest): Promise<bigint>;
+
+	/**
+	 * Call a read-only contract method (does not create a transaction).
+	 * @param contract - The contract instance with ABI and address
+	 * @param method - The method name to call
+	 * @param args - Arguments to pass to the method
+	 * @returns The decoded return value(s) from the contract
+	 */
+	call<T = unknown>(contract: ContractInstance, method: string, ...args: unknown[]): Promise<T>;
+
+	/**
+	 * Execute a state-changing contract method.
+	 * Returns immediately after the transaction is sent (does not wait for receipt).
+	 * @param contract - The contract instance with ABI and address
+	 * @param signer - The signer to sign the transaction
+	 * @param method - The method name to execute
+	 * @param args - Arguments to pass to the method
+	 * @returns The transaction hash
+	 */
+	execute(
+		contract: ContractInstance,
+		signer: RadiusSigner,
+		method: string,
+		...args: unknown[]
+	): Promise<Hash>;
+
+	/**
+	 * Execute a state-changing contract method and wait for the receipt.
+	 * @param contract - The contract instance with ABI and address
+	 * @param signer - The signer to sign the transaction
+	 * @param method - The method name to execute
+	 * @param args - Arguments to pass to the method
+	 * @returns The transaction receipt
+	 */
+	executeSync(
+		contract: ContractInstance,
+		signer: RadiusSigner,
+		method: string,
+		...args: unknown[]
+	): Promise<RadiusReceipt>;
+
+	/**
+	 * Send native currency to an address.
+	 * Returns immediately after the transaction is sent (does not wait for receipt).
+	 * @param signer - The signer to sign the transaction
+	 * @param to - The recipient address
+	 * @param value - The amount to send in wei
+	 * @returns The transaction hash
+	 */
+	send(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<Hash>;
+
+	/**
+	 * Send native currency to an address and wait for the receipt.
+	 * @param signer - The signer to sign the transaction
+	 * @param to - The recipient address
+	 * @param value - The amount to send in wei
+	 * @returns The transaction receipt
+	 */
+	sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
+
+	/**
+	 * Deploy a smart contract.
+	 * @param signer - The signer to sign the deployment transaction
+	 * @param bytecode - The contract bytecode
+	 * @param abi - The contract ABI
+	 * @param args - Constructor arguments (if any)
+	 * @returns The deployed contract address and transaction receipt
+	 */
+	deployContract(
+		signer: RadiusSigner,
+		bytecode: Hex,
+		abi: Abi,
+		...args: unknown[]
+	): Promise<{ address: ViemAddress; receipt: RadiusReceipt }>;
+
+	/**
+	 * Send a raw signed transaction.
+	 * Returns immediately after the transaction is sent.
+	 * @param signedTx - The signed transaction as a hex string
+	 * @returns The transaction hash
+	 */
+	sendRawTransaction(signedTx: Hex): Promise<Hash>;
+
+	/**
+	 * Wait for a transaction receipt.
+	 * @param hash - The transaction hash to wait for
+	 * @returns The transaction receipt
+	 */
+	waitForReceipt(hash: Hash): Promise<RadiusReceipt>;
+}
+
+/**
+ * Creates a new RadiusClient instance.
+ *
+ * @param config - Configuration options for the client
+ * @returns A RadiusClient instance
+ *
+ * @example
+ * ```typescript
+ * import { createRadiusClient } from '@radiustechsystems/sdk';
+ * import { radiusTestnet } from '@radiustechsystems/sdk/chains';
+ * import { http } from 'viem';
+ *
+ * // Basic usage
+ * const client = createRadiusClient({
+ *   chain: radiusTestnet,
+ *   transport: http(),
+ * });
+ *
+ * // With logging
+ * const clientWithLogging = createRadiusClient({
+ *   chain: radiusTestnet,
+ *   logger: console.log,
+ * });
+ *
+ * // With custom interceptor
+ * const clientWithInterceptor = createRadiusClient({
+ *   chain: radiusTestnet,
+ *   interceptor: async (reqBody, response) => {
+ *     // Custom response handling
+ *     return response;
+ *   },
+ * });
+ * ```
+ */
+export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
+	// Create transport - use provided transport or create intercepting transport if logger/interceptor provided
+	let transport: Transport;
+	if (config.transport) {
+		transport = config.transport;
+	} else if (config.logger || config.interceptor) {
+		const rpcUrl = config.chain.rpcUrls.default.http[0];
+		if (!rpcUrl) {
+			throw new Error('No RPC URL configured for chain');
+		}
+		transport = createInterceptingTransport({
+			url: rpcUrl,
+			interceptor: config.interceptor,
+			logger: config.logger,
+		});
+	} else {
+		// Create a basic http transport using the intercepting transport without logger/interceptor
+		const rpcUrl = config.chain.rpcUrls.default.http[0];
+		if (!rpcUrl) {
+			throw new Error('No RPC URL configured for chain');
+		}
+		transport = createInterceptingTransport({ url: rpcUrl });
+	}
+
+	const publicClient = createPublicClient({
+		chain: config.chain,
+		transport,
+	});
+
+	/**
+	 * Convert a viem TransactionReceipt to RadiusReceipt
+	 */
+	function toRadiusReceipt(receipt: TransactionReceipt): RadiusReceipt {
+		return {
+			transactionHash: receipt.transactionHash,
+			from: receipt.from,
+			to: receipt.to ?? null,
+			contractAddress: receipt.contractAddress ?? null,
+			gasUsed: receipt.gasUsed,
+			status: receipt.status,
+			blockNumber: receipt.blockNumber,
+			blockHash: receipt.blockHash,
+			logs: receipt.logs,
+		};
+	}
+
+	/**
+	 * Sign and send a transaction
+	 */
+	async function signAndSendTransaction(
+		signer: RadiusSigner,
+		tx: {
+			to?: ViemAddress;
+			data?: Hex;
+			value?: bigint;
+			gas?: bigint;
+		},
+	): Promise<Hash> {
+		// Get nonce
+		const nonce = await publicClient.getTransactionCount({
+			address: signer.address,
+			blockTag: 'pending',
+		});
+
+		// Estimate gas if not provided
+		let gas: bigint;
+		if (tx.gas !== undefined) {
+			gas = tx.gas;
+		} else {
+			const estimate = await publicClient.estimateGas({
+				account: signer.address,
+				to: tx.to,
+				data: tx.data,
+				value: tx.value,
+			});
+			// Apply 20% safety margin
+			const margin = estimate / 5n;
+			gas = estimate + margin;
+			// Cap at MAX_GAS
+			if (gas > MAX_GAS) {
+				gas = MAX_GAS;
+			}
+		}
+
+		// Sign the transaction
+		const signedTx = await signer.signTransaction({
+			to: tx.to,
+			data: tx.data,
+			value: tx.value ?? 0n,
+			nonce,
+			gas,
+			gasPrice: 0n, // Radius uses zero gas price
+			chainId: signer.chainId,
+		});
+
+		// Send the signed transaction
+		return publicClient.sendRawTransaction({
+			serializedTransaction: signedTx,
+		});
+	}
+
+	return {
+		publicClient,
+
+		async getChainId(): Promise<bigint> {
+			return BigInt(publicClient.chain?.id ?? (await publicClient.getChainId()));
+		},
+
+		async getBalance(address: ViemAddress): Promise<bigint> {
+			return publicClient.getBalance({ address });
+		},
+
+		async getCode(address: ViemAddress): Promise<Hex> {
+			const code = await publicClient.getCode({ address });
+			return code ?? '0x';
+		},
+
+		async getNonce(address: ViemAddress): Promise<number> {
+			return publicClient.getTransactionCount({
+				address,
+				blockTag: 'pending',
+			});
+		},
+
+		async estimateGas(tx: TransactionRequest): Promise<bigint> {
+			const estimate = await publicClient.estimateGas(tx);
+			// Apply 20% safety margin
+			const margin = estimate / 5n;
+			const gas = estimate + margin;
+			// Cap at MAX_GAS
+			return gas > MAX_GAS ? MAX_GAS : gas;
+		},
+
+		async call<T = unknown>(
+			contract: ContractInstance,
+			method: string,
+			...args: unknown[]
+		): Promise<T> {
+			if (!contract.abi) {
+				throw new Error('Contract ABI is required');
+			}
+			if (!contract.address) {
+				throw new Error('Contract address is required');
+			}
+
+			// Encode the function call
+			const data = encodeFunctionData({
+				abi: contract.abi,
+				functionName: method,
+				args: args as readonly unknown[],
+			});
+
+			// Make the call
+			const result = await publicClient.call({
+				to: contract.address,
+				data,
+			});
+
+			if (!result.data) {
+				throw new Error('No data returned from contract call');
+			}
+
+			// Decode the result
+			const decoded = decodeFunctionResult({
+				abi: contract.abi,
+				functionName: method,
+				data: result.data,
+			});
+
+			return decoded as T;
+		},
+
+		async execute(
+			contract: ContractInstance,
+			signer: RadiusSigner,
+			method: string,
+			...args: unknown[]
+		): Promise<Hash> {
+			if (!contract.abi) {
+				throw new Error('Contract ABI is required');
+			}
+			if (!contract.address) {
+				throw new Error('Contract address is required');
+			}
+
+			// Encode the function call
+			const data = encodeFunctionData({
+				abi: contract.abi,
+				functionName: method,
+				args: args as readonly unknown[],
+			});
+
+			return signAndSendTransaction(signer, {
+				to: contract.address,
+				data,
+				value: 0n,
+			});
+		},
+
+		async executeSync(
+			contract: ContractInstance,
+			signer: RadiusSigner,
+			method: string,
+			...args: unknown[]
+		): Promise<RadiusReceipt> {
+			const hash = await this.execute(contract, signer, method, ...args);
+			return this.waitForReceipt(hash);
+		},
+
+		async send(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<Hash> {
+			return signAndSendTransaction(signer, {
+				to,
+				value,
+			});
+		},
+
+		async sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
+			const hash = await this.send(signer, to, value);
+			return this.waitForReceipt(hash);
+		},
+
+		async deployContract(
+			signer: RadiusSigner,
+			bytecode: Hex,
+			abi: Abi,
+			...args: unknown[]
+		): Promise<{ address: ViemAddress; receipt: RadiusReceipt }> {
+			// Encode constructor arguments if any
+			let deployData: Hex = bytecode;
+			if (args.length > 0) {
+				// Find the constructor in the ABI
+				const ctorItem = abi.find(
+					(item): item is AbiConstructor =>
+						typeof item === 'object' &&
+						item !== null &&
+						'type' in item &&
+						item.type === 'constructor',
+				);
+				if (ctorItem?.inputs && ctorItem.inputs.length > 0) {
+					const encodedArgs = encodeAbiParameters(ctorItem.inputs, args as readonly unknown[]);
+					// Append constructor args to bytecode (remove 0x prefix from encoded args)
+					deployData = `${bytecode}${encodedArgs.slice(2)}` as Hex;
+				}
+			}
+
+			// Send deployment transaction (to is undefined for contract creation)
+			const hash = await signAndSendTransaction(signer, {
+				data: deployData,
+				value: 0n,
+			});
+
+			// Wait for receipt
+			const receipt = await this.waitForReceipt(hash);
+
+			if (!receipt.contractAddress) {
+				throw new Error('Contract deployment failed: no contract address in receipt');
+			}
+
+			if (receipt.status !== 'success') {
+				throw new Error('Contract deployment failed: transaction reverted');
+			}
+
+			return {
+				address: receipt.contractAddress,
+				receipt,
+			};
+		},
+
+		async sendRawTransaction(signedTx: Hex): Promise<Hash> {
+			return publicClient.sendRawTransaction({
+				serializedTransaction: signedTx,
+			});
+		},
+
+		async waitForReceipt(hash: Hash): Promise<RadiusReceipt> {
+			const receipt = await publicClient.waitForTransactionReceipt({ hash });
+			return toRadiusReceipt(receipt);
+		},
+	};
+}
+
+// Re-export commonly used viem types for convenience
+export type { Chain, Transport, Abi, Hash, Hex, TransactionReceipt };
+export type { ViemAddress as Address };

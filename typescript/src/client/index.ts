@@ -1,7 +1,20 @@
 /**
  * The client package provides the primary interface for interacting with the Radius platform.
- * Includes the main Client class and configuration options for connecting to and communicating
- * with Radius JSON-RPC endpoints.
+ * Includes the createRadiusClient factory function and related types for connecting to and
+ * communicating with Radius JSON-RPC endpoints.
  */
-export * from './client';
-export * from './options';
+export {
+	type Abi,
+	type Address,
+	type Chain,
+	type ContractInstance,
+	createRadiusClient,
+	type Hash,
+	type Hex,
+	MAX_GAS,
+	type RadiusClient,
+	type RadiusClientConfig,
+	type RadiusReceipt,
+	type TransactionReceipt,
+	type Transport,
+} from './client';

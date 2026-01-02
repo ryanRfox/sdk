@@ -1,80 +1,114 @@
 {
-  "name": "@radiustechsystems/sdk",
-  "version": "1.0.0",
-  "description": "TypeScript SDK for interacting with the Radius Platform for smart contracts, automation, and payments",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/radiustechsystems/sdk.git"
-  },
-  "type": "module",
-  "scripts": {
-    "build": "tsup",
-    "build:prod": "cross-env NODE_ENV=production tsup",
-    "clean": "rimraf dist",
-    "lint": "biome check .",
-    "lint:fix": "biome check --apply .",
-    "format": "biome format .",
-    "format:fix": "biome format --write .",
-    "test": "vitest --run",
-    "test:integration": "vitest integration --run",
-    "test:watch": "vitest",
-    "test:integration:watch": "vitest integration"
-  },
-  "dependencies": {
-    "ethers": "6.13.5"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "1.5.3",
-    "@testing-library/jest-dom": "6.9.1",
-    "@types/node": "22.7.4",
-    "cross-env": "7.0.3",
-    "jsdom": "27.4.0",
-    "rimraf": "6.0.1",
-    "tsup": "8.3.5",
-    "typescript": "5.3.3",
-    "viem": "^2.43.3",
-    "vitest": "3.0.5"
-  },
-  "pnpm": {
-    "overrides": {
-      "esbuild": ">=0.25.0"
-    }
-  },
-  "engines": {
-    "node": ">=20.12.2 <23",
-    "pnpm": ">=9"
-  },
-  "license": "MIT",
-  "packageManager": "pnpm@9.14.2",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "radius",
-    "evm",
-    "automation",
-    "contract",
-    "payment",
-    "transaction",
-    "ethereum",
-    "crypto",
-    "sdk",
-    "ai"
-  ],
-  "homepage": "https://github.com/radiustechsystems/sdk/typescript#readme",
-  "bugs": {
-    "url": "https://github.com/radiustechsystems/sdk/issues"
-  },
-  "publishConfig": {
-    "access": "public"
-  }
+	"name": "@radiustechsystems/sdk",
+	"version": "2.0.0-alpha.0",
+	"description": "TypeScript SDK for interacting with the Radius Platform",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/radiustechsystems/sdk.git"
+	},
+	"type": "module",
+	"scripts": {
+		"build": "pnpm clean && pnpm build:cjs && pnpm build:esm && pnpm build:types",
+		"build:esm": "tsc --project ./tsconfig.build.json --module esnext --moduleResolution bundler --outDir ./src/_esm && printf '{\"type\": \"module\",\"sideEffects\":false}' > ./src/_esm/package.json",
+		"build:cjs": "tsc --project ./tsconfig.build.json --module commonjs --moduleResolution node10 --outDir ./src/_cjs --removeComments --verbatimModuleSyntax false && printf '{\"type\":\"commonjs\"}' > ./src/_cjs/package.json",
+		"build:types": "tsc --project ./tsconfig.build.json --module esnext --moduleResolution bundler --declarationDir ./src/_types --emitDeclarationOnly --declaration --declarationMap",
+		"check": "biome check . --fix --unsafe",
+		"check:types": "tsc --noEmit",
+		"clean": "rimraf src/_types src/_esm src/_cjs ./tsconfig.build.tsbuildinfo src/tsconfig.build.tsbuildinfo",
+		"format": "biome format --write",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"test": "vitest --run",
+		"test:watch": "vitest"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.2.2",
+		"@tanstack/react-query": "^5.90.16",
+		"@testing-library/jest-dom": "6.9.1",
+		"@testing-library/react": "16.3.1",
+		"@types/node": "^22.10.0",
+		"@types/react": "^19.1.4",
+		"@vitest/coverage-v8": "^4.0.15",
+		"jsdom": "27.4.0",
+		"react": "^19.1.4",
+		"rimraf": "^6.0.1",
+		"typescript": "^5.9.3",
+		"viem": "^2.43.3",
+		"vitest": "^4.0.15",
+		"wagmi": "^3.1.3"
+	},
+	"peerDependencies": {
+		"@tanstack/react-query": ">=5.0.0",
+		"react": ">=18.0.0",
+		"typescript": ">=5.0.0",
+		"viem": ">=2.0.0",
+		"wagmi": ">=3.0.0"
+	},
+	"peerDependenciesMeta": {
+		"wagmi": {
+			"optional": true
+		},
+		"react": {
+			"optional": true
+		},
+		"@tanstack/react-query": {
+			"optional": true
+		}
+	},
+	"engines": {
+		"node": ">=22"
+	},
+	"license": "MIT",
+	"packageManager": "pnpm@9.14.2",
+	"main": "./src/_cjs/index.js",
+	"module": "./src/_esm/index.js",
+	"types": "./src/_types/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./src/_types/index.d.ts",
+			"import": "./src/_esm/index.js",
+			"default": "./src/_cjs/index.js"
+		},
+		"./react": {
+			"types": "./src/_types/react/index.d.ts",
+			"import": "./src/_esm/react/index.js",
+			"default": "./src/_cjs/react/index.js"
+		},
+		"./chains": {
+			"types": "./src/_types/chains/index.d.ts",
+			"import": "./src/_esm/chains/index.js",
+			"default": "./src/_cjs/chains/index.js"
+		},
+		"./events": {
+			"types": "./src/_types/events/index.d.ts",
+			"import": "./src/_esm/events/index.js",
+			"default": "./src/_cjs/events/index.js"
+		},
+		"./wagmi": {
+			"types": "./src/_types/wagmi/index.d.ts",
+			"import": "./src/_esm/wagmi/index.js",
+			"default": "./src/_cjs/wagmi/index.js"
+		}
+	},
+	"files": [
+		"src/_cjs",
+		"src/_esm",
+		"src/_types"
+	],
+	"keywords": [
+		"radius",
+		"evm",
+		"viem",
+		"wagmi",
+		"sdk",
+		"ethereum",
+		"crypto"
+	],
+	"homepage": "https://github.com/radiustechsystems/sdk/typescript#readme",
+	"bugs": {
+		"url": "https://github.com/radiustechsystems/sdk/issues"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
 }
