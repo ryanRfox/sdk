@@ -142,7 +142,7 @@ jobs:
 
 The `docs:check` script validates documentation for common issues:
 
-- References to removed code (RadiusSigner, ClefSigner)
+- References to removed V1 signer types
 - References to old package names
 - Missing required files
 
