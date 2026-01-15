@@ -13,7 +13,6 @@
 
 // Types
 export type {
-  Handler,
   HandlerOptions,
   FeePayerOptions,
   KeyManagerOptions,
@@ -28,6 +27,9 @@ export {
   ChallengeExpiredError,
   CredentialNotFoundError,
 } from './errors.js';
+
+// Handler
+export * as Handler from './Handler.js';
 
 // KV Store
 export * as Kv from './Kv.js';
