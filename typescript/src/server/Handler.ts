@@ -5,7 +5,6 @@ import {
 } from '@remix-run/fetch-router';
 import type { Hex, Chain, Client, Transport } from 'viem';
 import type { LocalAccount } from 'viem/accounts';
-import { signTransaction } from 'viem/actions';
 import { createClient } from 'viem';
 import type { Handler, HandlerOptions, KeyManagerOptions, FeePayerOptions, ComposeOptions } from './types.js';
 import * as RequestListener from './internal/requestListener.js';
@@ -144,10 +143,19 @@ export function keyManager(options: KeyManagerOptions): Handler {
   // GET /:id - Get public key for credential
   router.get(`${path}/:id`, async ({ params }) => {
     const { id } = params;
+
+    // Validate credential ID (alphanumeric, reasonable length, no path traversal)
+    if (!id || !/^[a-zA-Z0-9_-]{1,255}$/.test(id)) {
+      return Response.json(
+        { error: 'Invalid credential ID format' },
+        { status: 400 }
+      );
+    }
+
     const publicKey = await kv.get<Hex>(`credential:${id}`);
 
     if (!publicKey) {
-      return new Response('Credential not found', { status: 404 });
+      return Response.json({ error: 'Credential not found' }, { status: 404 });
     }
 
     return Response.json({ publicKey });
@@ -156,7 +164,24 @@ export function keyManager(options: KeyManagerOptions): Handler {
   // POST /:id - Store public key for credential
   router.post(`${path}/:id`, async ({ params, request }) => {
     const { id } = params;
-    const { credential, publicKey } = (await request.json()) as {
+
+    // Validate credential ID (alphanumeric, reasonable length, no path traversal)
+    if (!id || !/^[a-zA-Z0-9_-]{1,255}$/.test(id)) {
+      return Response.json(
+        { error: 'Invalid credential ID format' },
+        { status: 400 }
+      );
+    }
+
+    // Handle JSON parsing errors
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
+
+    const { credential, publicKey } = body as {
       credential?: { response?: { clientDataJSON?: string } };
       publicKey?: Hex;
     };
@@ -226,17 +251,54 @@ export function feePayer(options: FeePayerOptions): Handler {
   const router = from(options);
 
   router.post(path, async ({ request: req }) => {
+    let body: any;
+
+    // Handle JSON parsing errors
     try {
-      const body = await req.json();
+      body = await req.json();
+    } catch (e) {
+      return Response.json({
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32700, message: 'Parse error: Invalid JSON' },
+      });
+    }
+
+    try {
+      // Validate JSON-RPC request structure
+      if (typeof body.method !== 'string') {
+        return Response.json({
+          jsonrpc: '2.0',
+          id: body.id ?? null,
+          error: { code: -32600, message: 'Invalid Request: missing method' },
+        });
+      }
+
       await onRequest?.(body);
 
       if (body.method === 'eth_sendRawTransaction') {
-        const [serializedTx] = body.params as [Hex];
+        // Validate params is a non-empty array with a valid hex string
+        if (!Array.isArray(body.params) || body.params.length === 0) {
+          return Response.json({
+            jsonrpc: '2.0',
+            id: body.id,
+            error: { code: -32602, message: 'Invalid params: expected array with transaction data' },
+          });
+        }
+
+        const serializedTx = body.params[0];
+        if (typeof serializedTx !== 'string' || !serializedTx.startsWith('0x')) {
+          return Response.json({
+            jsonrpc: '2.0',
+            id: body.id,
+            error: { code: -32602, message: 'Invalid params: transaction must be a hex string' },
+          });
+        }
 
         // Sign as fee payer and submit
         const result = await client.request({
           method: 'eth_sendRawTransaction',
-          params: [serializedTx],
+          params: [serializedTx as Hex],
         });
 
         return Response.json({
@@ -252,10 +314,13 @@ export function feePayer(options: FeePayerOptions): Handler {
         error: { code: -32601, message: `Method not supported: ${body.method}` },
       });
     } catch (error) {
+      // Log full error server-side, return generic message to client
+      console.error('feePayer handler error:', error);
+
       return Response.json({
         jsonrpc: '2.0',
-        id: null,
-        error: { code: -32603, message: (error as Error).message },
+        id: body?.id ?? null,
+        error: { code: -32603, message: 'Internal error: transaction processing failed' },
       });
     }
   });

@@ -32,6 +32,14 @@ type AbiConstructor = {
 };
 
 import { createInterceptingTransport, type Interceptor, type Logf } from '../transport';
+import {
+	AbiError,
+	ContractCallError,
+	ContractDeploymentError,
+	MissingAbiError,
+	RadiusError,
+	TransactionRevertedError,
+} from '../errors';
 
 /**
  * Maximum gas limit for transactions.
@@ -334,8 +342,11 @@ function getRpcUrl(chain: Chain): string {
 	// Fall back to chain config
 	const chainUrl = chain.rpcUrls.default.http[0];
 	if (!chainUrl) {
-		throw new Error(
+		throw new RadiusError(
 			'No RPC URL configured. Set RADIUS_RPC_URL environment variable or configure chain.rpcUrls',
+			{
+				shortMessage: 'Missing RPC URL configuration',
+			},
 		);
 	}
 	return chainUrl;
@@ -475,18 +486,28 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			...args: unknown[]
 		): Promise<T> {
 			if (!contract.abi) {
-				throw new Error('Contract ABI is required');
+				throw new MissingAbiError('Contract ABI is required');
 			}
 			if (!contract.address) {
-				throw new Error('Contract address is required');
+				throw new ContractCallError('Contract address is required', {
+					functionName: method,
+					args: args as readonly unknown[],
+				});
 			}
 
 			// Encode the function call
-			const data = encodeFunctionData({
-				abi: contract.abi,
-				functionName: method,
-				args: args as readonly unknown[],
-			});
+			let data: Hex;
+			try {
+				data = encodeFunctionData({
+					abi: contract.abi,
+					functionName: method,
+					args: args as readonly unknown[],
+				});
+			} catch (err) {
+				throw new AbiError(`Failed to encode function call: ${(err as Error).message}`, {
+					cause: err,
+				});
+			}
 
 			// Make the call
 			const result = await publicClient.call({
@@ -495,15 +516,26 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			});
 
 			if (!result.data) {
-				throw new Error('No data returned from contract call');
+				throw new ContractCallError('No data returned from contract call', {
+					contractAddress: contract.address,
+					functionName: method,
+					args: args as readonly unknown[],
+				});
 			}
 
 			// Decode the result
-			const decoded = decodeFunctionResult({
-				abi: contract.abi,
-				functionName: method,
-				data: result.data,
-			});
+			let decoded: unknown;
+			try {
+				decoded = decodeFunctionResult({
+					abi: contract.abi,
+					functionName: method,
+					data: result.data,
+				});
+			} catch (err) {
+				throw new AbiError(`Failed to decode function result: ${(err as Error).message}`, {
+					cause: err,
+				});
+			}
 
 			return decoded as T;
 		},
@@ -515,18 +547,28 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			...args: unknown[]
 		): Promise<Hash> {
 			if (!contract.abi) {
-				throw new Error('Contract ABI is required');
+				throw new MissingAbiError('Contract ABI is required');
 			}
 			if (!contract.address) {
-				throw new Error('Contract address is required');
+				throw new ContractCallError('Contract address is required', {
+					functionName: method,
+					args: args as readonly unknown[],
+				});
 			}
 
 			// Encode the function call
-			const data = encodeFunctionData({
-				abi: contract.abi,
-				functionName: method,
-				args: args as readonly unknown[],
-			});
+			let data: Hex;
+			try {
+				data = encodeFunctionData({
+					abi: contract.abi,
+					functionName: method,
+					args: args as readonly unknown[],
+				});
+			} catch (err) {
+				throw new AbiError(`Failed to encode function call: ${(err as Error).message}`, {
+					cause: err,
+				});
+			}
 
 			return signAndSendTransaction(signer, {
 				to: contract.address,
@@ -590,9 +632,15 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 						item.type === 'constructor',
 				);
 				if (ctorItem?.inputs && ctorItem.inputs.length > 0) {
-					const encodedArgs = encodeAbiParameters(ctorItem.inputs, args as readonly unknown[]);
-					// Append constructor args to bytecode (remove 0x prefix from encoded args)
-					deployData = `${bytecode}${encodedArgs.slice(2)}` as Hex;
+					try {
+						const encodedArgs = encodeAbiParameters(ctorItem.inputs, args as readonly unknown[]);
+						// Append constructor args to bytecode (remove 0x prefix from encoded args)
+						deployData = `${bytecode}${encodedArgs.slice(2)}` as Hex;
+					} catch (err) {
+						throw new AbiError(`Failed to encode constructor arguments: ${(err as Error).message}`, {
+							cause: err,
+						});
+					}
 				}
 			}
 
@@ -606,11 +654,16 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			const receipt = await this.waitForReceipt(hash);
 
 			if (!receipt.contractAddress) {
-				throw new Error('Contract deployment failed: no contract address in receipt');
+				throw new ContractDeploymentError('Contract deployment failed: no contract address in receipt', {
+					bytecode,
+					constructorArgs: args as readonly unknown[],
+				});
 			}
 
 			if (receipt.status !== 'success') {
-				throw new Error('Contract deployment failed: transaction reverted');
+				throw new TransactionRevertedError('Contract deployment failed: transaction reverted', {
+					transactionHash: receipt.transactionHash,
+				});
 			}
 
 			return {

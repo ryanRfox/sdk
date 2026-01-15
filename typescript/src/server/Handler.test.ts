@@ -334,7 +334,7 @@ describe('Handler.feePayer', () => {
 
 		expect(json.error).toBeDefined();
 		expect(json.error.code).toBe(-32603);
-		expect(json.error.message).toContain('Network error');
+		expect(json.error.message).toBe('Internal error: transaction processing failed');
 	});
 
 	it('should pass correct parameters to client.request', async () => {

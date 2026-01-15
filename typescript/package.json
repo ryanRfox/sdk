@@ -10,7 +10,7 @@
 	"scripts": {
 		"build": "pnpm clean && pnpm build:cjs && pnpm build:esm && pnpm build:types",
 		"build:esm": "tsc --project ./tsconfig.build.json --module esnext --moduleResolution bundler --outDir ./src/_esm && printf '{\"type\": \"module\",\"sideEffects\":false}' > ./src/_esm/package.json",
-		"build:cjs": "tsc --project ./tsconfig.build.json --module commonjs --moduleResolution node10 --outDir ./src/_cjs --removeComments --verbatimModuleSyntax false && printf '{\"type\":\"commonjs\"}' > ./src/_cjs/package.json",
+		"build:cjs": "tsc --project ./tsconfig.cjs.json --outDir ./src/_cjs --removeComments --verbatimModuleSyntax false && printf '{\"type\":\"commonjs\"}' > ./src/_cjs/package.json",
 		"build:types": "tsc --project ./tsconfig.build.json --module esnext --moduleResolution bundler --declarationDir ./src/_types --emitDeclarationOnly --declaration --declarationMap",
 		"check": "biome check . --fix --unsafe",
 		"check:types": "tsc --noEmit",
@@ -87,8 +87,7 @@
 		},
 		"./server": {
 			"types": "./src/_types/server/index.d.ts",
-			"import": "./src/_esm/server/index.js",
-			"default": "./src/_cjs/server/index.js"
+			"import": "./src/_esm/server/index.js"
 		},
 		"./wagmi": {
 			"types": "./src/_types/wagmi/index.d.ts",

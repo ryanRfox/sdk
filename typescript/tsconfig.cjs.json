@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node"
+  },
+  "exclude": [
+    "node_modules",
+    "src/_cjs",
+    "src/_esm",
+    "src/_types",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "test/**/*",
+    "src/server/**/*"
+  ]
+}
