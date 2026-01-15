@@ -19,6 +19,110 @@ You are the **orchestrator** for this project. You coordinate work but do NOT ex
 
 ---
 
+## Task Tool and Custom Agent Files
+
+### Important Limitation
+
+The `Task` tool only accepts specific `subagent_type` values (`haiku`, `sonnet`, `opus`) and **cannot directly invoke custom agent files**. The agent definitions in `.claude/agents/` are **templates and reference documentation**, not directly executable agents.
+
+### Solution: Include Worker Instructions in Prompts
+
+When spawning subagents via the Task tool, you must include the essential worker instructions **in the prompt itself**. The agent files serve as the source of truth for these instructions:
+
+- **Coder instructions**: `.claude/agents/coder.md`
+- **QA instructions**: `.claude/agents/qa.md`
+
+---
+
+## Worker Prompt Templates
+
+Use these templates when spawning workers. Replace `{placeholders}` with task-specific values.
+
+### Coder Worker Prompt Template
+
+```
+You are a WORKER AGENT, not an orchestrator.
+
+CRITICAL CONSTRAINTS:
+- Do NOT spawn subagents or delegate work
+- Do NOT make architectural decisions
+- Implement EXACTLY what is specified - no more, no less
+- If the task is ambiguous, implement the most straightforward interpretation
+
+TASK: {task_description}
+
+FILES TO MODIFY: {list_of_files}
+
+PREVIOUS FEEDBACK (if retry): {feedback_from_qa}
+
+WORKFLOW:
+1. Read and understand the task
+2. Explore relevant code with Glob/Grep/Read
+3. Implement the specified changes
+4. Run `pnpm check:types` and capture results
+5. Save output summary
+
+OUTPUT FILE: .claude/{task}/{NN}-{model}-code.md
+
+Save a summary in this format:
+# Coder Output - {task}
+## Changes Made
+- [files and descriptions]
+## Type Check Results
+[full output from pnpm check:types]
+## Status
+[COMPLETE | INCOMPLETE]
+## Notes
+[observations for QA]
+```
+
+### QA Worker Prompt Template
+
+```
+You are a WORKER AGENT, not an orchestrator.
+
+CRITICAL CONSTRAINTS:
+- You are READ-ONLY - do NOT modify any code
+- Do NOT spawn subagents or delegate work
+- Your job is verification only
+
+VERIFICATION TASK: {verification_criteria}
+
+CODER OUTPUT TO VERIFY: .claude/{task}/{NN}-{model}-code.md
+
+LEGACY PATTERNS TO CHECK (if any): {patterns_to_grep}
+
+WORKFLOW:
+1. Run `pnpm check:types` - capture FULL output
+2. Run `pnpm test` - capture FULL output
+3. If legacy patterns specified, grep for them
+4. Review the code changes
+5. Save your report
+
+OUTPUT FILE: .claude/{task}/{NN}-{model}-qa.md
+
+REQUIRED REPORT FORMAT:
+# QA Report - {task}
+## Type Check Results
+[full pnpm check:types output]
+**Status**: PASS | FAIL
+## Test Results
+[full pnpm test output]
+**Status**: PASS | FAIL
+## Legacy Code Check
+[grep results if applicable]
+## Issues Found
+[numbered list]
+## Verdict
+**PASS** | **FAIL**
+## Escalation Recommendation
+[If FAIL: YES escalate / NO retry at same tier]
+## Feedback for Coder
+[specific actionable feedback if FAIL]
+```
+
+---
+
 ## Required Skill: /coding-task-escalator
 
 **ALWAYS use this skill pattern for implementation tasks.**
@@ -45,6 +149,41 @@ ALL QA subagents MUST:
 3. Grep for any removed/legacy code references
 4. Only mark "PASS" if ALL checks succeed
 5. Recommend "ESCALATE" if ANY check fails
+
+### How to Spawn Workers
+
+When using the Task tool, include the worker constraints directly in the prompt:
+
+**Spawning a Coder (example with Haiku):**
+```
+Task tool call:
+- subagent_type: "haiku"
+- prompt: [Use Coder Worker Prompt Template above, filling in:
+    - {task}: "phase0-update-client"
+    - {task_description}: "Update client.ts to accept LocalAccount"
+    - {NN}: "02"
+    - {model}: "haiku"
+    - Other placeholders as needed]
+```
+
+**Spawning a QA (example with Haiku):**
+```
+Task tool call:
+- subagent_type: "haiku"
+- prompt: [Use QA Worker Prompt Template above, filling in:
+    - {task}: "phase0-update-client"
+    - {verification_criteria}: "Verify client changes compile and tests pass"
+    - {NN}: "03"
+    - {model}: "haiku"
+    - {patterns_to_grep}: "RadiusSigner|ClefSigner"
+    - Other placeholders as needed]
+```
+
+**Key points:**
+- The `subagent_type` determines which model runs
+- The prompt content determines worker behavior (coder vs QA)
+- Always include the "WORKER AGENT" and "do NOT spawn subagents" constraints
+- Always specify the output file path
 
 ### Escalator Directory Structure
 
@@ -134,6 +273,12 @@ Example parallel tasks:
 ---
 
 ## Reference Files
+
+### Agent Definitions (source of truth for worker prompts)
+- `.claude/agents/coder.md` - Full coder worker specification
+- `.claude/agents/qa.md` - Full QA worker specification
+
+These files define the complete worker behavior. The prompt templates above are distilled versions. If you need to understand the full context or update worker behavior, refer to these files.
 
 ### Tempo Implementation (patterns to follow)
 - `/tmp/tempo-ts/src/server/Handler.ts`
