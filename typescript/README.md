@@ -5,12 +5,13 @@ The official TypeScript SDK for interacting with the [Radius platform](https://r
 ## Features
 
 - viem-based client for seamless EVM compatibility
-- Account management with PrivateKeySigner and ClefSigner
+- Account management with viem LocalAccount-based signing
 - Smart contract deployment and interaction
 - Rich error hierarchy for better debugging
 - React hooks for frontend integration
 - wagmi connector support
 - Optional request logging and interceptors
+- Server-side handlers for fee payment and key management
 
 ## Requirements
 
@@ -109,6 +110,75 @@ const receipt = await client.executeAndWait(
   recipientAddress,
   amount
 );
+```
+
+## Server Handlers
+
+Build backend services with the server module:
+
+### Import Server Module
+
+```typescript
+import { Handler, Kv } from '@radiustechsystems/sdk/server';
+```
+
+### Fee Payer Service
+
+Sponsor transactions on behalf of users:
+
+```typescript
+import { createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
+import { Handler } from '@radiustechsystems/sdk/server';
+import { privateKeyToAccount } from 'viem/accounts';
+
+const account = privateKeyToAccount(process.env.FEE_PAYER_KEY as `0x${string}`);
+const client = createRadiusClient({ chain: radiusTestnet });
+
+const handler = Handler.feePayer({
+  account,
+  client,
+  onRequest: async (body) => {
+    // Optional: validate/log requests
+    console.log('Sponsoring tx:', body.params[0]);
+  },
+});
+
+// Use with Node.js http server
+import { createServer } from 'node:http';
+createServer(handler.listener).listen(3000);
+```
+
+### Key Manager
+
+Store and retrieve WebAuthn credentials:
+
+```typescript
+import { Handler, Kv } from '@radiustechsystems/sdk/server';
+
+const handler = Handler.keyManager({
+  kv: Kv.memory(), // Use Kv.cloudflare() in production
+  rp: 'example.com',
+});
+
+// Endpoints:
+// GET /challenge - Generate auth challenge
+// GET /:id - Retrieve credential
+// POST /:id - Store credential
+```
+
+### Compose Handlers
+
+Combine multiple handlers under a single server:
+
+```typescript
+const app = Handler.compose([
+  Handler.keyManager({ kv, path: '/keys' }),
+  Handler.feePayer({ account, client, path: '/sponsor' }),
+], { path: '/api' });
+
+// Routes:
+// /api/keys/challenge, /api/keys/:id
+// /api/sponsor
 ```
 
 ## Error Handling
