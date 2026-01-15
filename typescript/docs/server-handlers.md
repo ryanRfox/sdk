@@ -767,6 +767,68 @@ app.listen(3000, () => {
 });
 ```
 
+## Future Work
+
+Planned features and enhancements for the server handlers API that are not yet implemented.
+
+### Client-Side Utilities
+
+Helper functions for calling handlers from the browser or client-side applications.
+
+**Description:** Provide a lightweight client library that constructs properly formatted JSON-RPC requests for the fee payer handler and handles WebAuthn credential challenges. Similar to what Tempo provides for other RPC interactions.
+
+**Use Case:** Developers building client applications need boilerplate code to correctly format requests, handle responses, and manage WebAuthn flows. A dedicated utilities library would reduce friction and potential bugs.
+
+**Design Notes:**
+- Utilities for constructing `eth_sendRawTransaction` JSON-RPC requests
+- Helper functions for WebAuthn challenge/response flows
+- Error handling and response parsing utilities
+- Could be published as a separate package (e.g., `@radiustechsystems/sdk/client-handlers`)
+
+### Sign-Only Mode
+
+Option to return signed transactions to the client without submitting them to the network.
+
+**Description:** Extend the fee payer handler to support a "sign-only" mode where the fee payer signs a transaction and returns it to the client, but does not submit it to the network. This allows clients to decide when and how to broadcast the transaction.
+
+**Use Case:** Advanced applications need control over transaction broadcasting timing for better UX (batch transactions, delayed submission, multi-signature flows). Users may want to review signed transactions before broadcasting or submit them through alternative channels.
+
+**Design Notes:**
+- Add `signOnly` option to `Handler.feePayer()` configuration
+- Return signed transaction in response instead of transaction hash
+- Could support both modes simultaneously (flag in request)
+- Requires careful documentation of security implications
+
+### Rate Limiting Utilities
+
+Built-in rate limiting for fee payer handlers to prevent abuse and control costs.
+
+**Description:** Provide standardized rate limiting utilities for the fee payer handler, including per-user rate limits, transaction fee caps, and daily quota management.
+
+**Use Case:** Fee payer handlers are a prime target for abuse. Applications need flexible rate limiting to prevent malicious users from exhausting the fee payer's balance. Different applications have different constraints and threat models.
+
+**Design Notes:**
+- Rate limit strategies: per-IP, per-user, per-API-key
+- Configurable limits: transactions per minute, maximum fee per transaction, daily quota
+- Integration with the `onRequest` callback or standalone middleware
+- Could use KV store for distributed rate limiting
+- Error responses should follow JSON-RPC error format
+
+### Metrics & Logging Hooks
+
+Standardized hooks for monitoring, metrics, and logging integration.
+
+**Description:** Provide hooks for capturing metrics and logs at key points in the handler lifecycle: request received, transaction signed, transaction submitted, request completed. Enable integration with monitoring platforms like Datadog, New Relic, or open-source solutions like Prometheus.
+
+**Use Case:** Production applications need visibility into handler behavior: success rates, latency, fee costs, error patterns, and transaction volume. Standardized hooks reduce implementation overhead and encourage best practices.
+
+**Design Notes:**
+- Hooks at key lifecycle points: `onRequest`, `onTransactionSigned`, `onTransactionSubmitted`, `onResponse`, `onError`
+- Hook payload should include request details, transaction info, timing, and errors
+- Utilities for common metrics: gas costs, execution time, error rates
+- Example implementations for popular platforms (Datadog, Prometheus)
+- Could include structured logging formatters
+
 ## Next Steps
 
 - Review the [main SDK documentation](/docs/sdk-typescript.mdx) for client-side usage
