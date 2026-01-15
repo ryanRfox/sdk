@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@remix-run/fetch-router':
+        specifier: 0.14.0
+        version: 0.14.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.16.0)(@remix-run/session@0.4.1)
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.2.2
@@ -379,6 +383,22 @@ packages:
   '@noble/hashes@1.8.0':
     resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
     engines: {node: ^14.21.3 || >=16}
+
+  '@remix-run/fetch-router@0.14.0':
+    resolution: {integrity: sha512-NAujUz27JtkAdzPHG0vX85tS3HS5Gpw0NqxpGYgrQ7Jt9ua+BYZdFcPbMduioLcs7e/1jsmNVpr4zmMQtK9d7g==}
+    peerDependencies:
+      '@remix-run/headers': ^0.18.0
+      '@remix-run/route-pattern': ^0.16.0
+      '@remix-run/session': ^0.4.1
+
+  '@remix-run/headers@0.18.0':
+    resolution: {integrity: sha512-5V/doLOF1IBuMhV+USa/ImUzpql4SQ0VBbNKbRHvrwRK59GYGVqtcwpVzgdFb5QEa2vIedq4JdOy7FIesZUpIw==}
+
+  '@remix-run/route-pattern@0.16.0':
+    resolution: {integrity: sha512-Co6bPtODF7cLYVBweayRXfEb31ybz45WqwT/u72eDQJZgRSVKFf0Ps9fqinSaiX0Xp7jvkRCBAbSUgLuLLjzuw==}
+
+  '@remix-run/session@0.4.1':
+    resolution: {integrity: sha512-Bm6aKYgutb/raHZ3laloz8g/Qu7f3CeK3o4gUVDMxtEiAdWCzJamwHoTpGOc5+g1Kuy7z85v4M6nGrF06MFDSg==}
 
   '@rollup/rollup-android-arm-eabi@4.54.0':
     resolution: {integrity: sha512-OywsdRHrFvCdvsewAInDKCNyR3laPA2mc9bRYJ6LBp5IyvF3fvXbbNR0bSzHlZVFtn6E0xw2oZlyjg4rKCVcng==}
@@ -1381,6 +1401,18 @@ snapshots:
       '@noble/hashes': 1.8.0
 
   '@noble/hashes@1.8.0': {}
+
+  '@remix-run/fetch-router@0.14.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.16.0)(@remix-run/session@0.4.1)':
+    dependencies:
+      '@remix-run/headers': 0.18.0
+      '@remix-run/route-pattern': 0.16.0
+      '@remix-run/session': 0.4.1
+
+  '@remix-run/headers@0.18.0': {}
+
+  '@remix-run/route-pattern@0.16.0': {}
+
+  '@remix-run/session@0.4.1': {}
 
   '@rollup/rollup-android-arm-eabi@4.54.0':
     optional: true

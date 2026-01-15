@@ -111,5 +111,8 @@
 	},
 	"publishConfig": {
 		"access": "public"
+	},
+	"dependencies": {
+		"@remix-run/fetch-router": "0.14.0"
 	}
 }
