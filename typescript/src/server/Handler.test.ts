@@ -1,7 +1,76 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Handler } from './index.js';
 import { Kv } from './index.js';
-import type { LocalAccount } from 'viem/accounts';
+
+/**
+ * Creates test WebAuthn credential data for testing.
+ * @param challenge - The challenge hex string (with 0x prefix)
+ * @param options - Override options for testing error cases
+ */
+function createTestWebAuthnCredential(
+  challenge: string,
+  options: {
+    type?: string;
+    origin?: string;
+    userPresent?: boolean;
+  } = {}
+) {
+  const {
+    type = 'webauthn.create',
+    origin = 'http://localhost',
+    userPresent = true,
+  } = options;
+
+  // Convert hex challenge to base64url (remove 0x prefix, convert hex to bytes, then base64url)
+  const challengeBytes = hexToBytes(challenge.slice(2));
+  const challengeBase64Url = bytesToBase64Url(challengeBytes);
+
+  // Create clientDataJSON
+  const clientDataJSON = JSON.stringify({
+    type,
+    challenge: challengeBase64Url,
+    origin,
+    crossOrigin: false,
+  });
+  const clientDataJSONBase64Url = stringToBase64Url(clientDataJSON);
+
+  // Create authenticatorData (37 bytes minimum: 32 byte rpIdHash + 1 byte flags + 4 byte counter)
+  const authenticatorData = new Uint8Array(37);
+  // rpIdHash (32 bytes) - just zeros for test
+  // flags (byte 32): bit 0 = User Present (UP)
+  authenticatorData[32] = userPresent ? 0x01 : 0x00;
+  // signCount (4 bytes) - zeros
+  const authenticatorDataBase64Url = bytesToBase64Url(authenticatorData);
+
+  return {
+    response: {
+      clientDataJSON: clientDataJSONBase64Url,
+      authenticatorData: authenticatorDataBase64Url,
+    },
+  };
+}
+
+/** Convert hex string to Uint8Array */
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+/** Convert Uint8Array to base64url string */
+function bytesToBase64Url(bytes: Uint8Array): string {
+  const binary = String.fromCharCode(...bytes);
+  const base64 = btoa(binary);
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** Convert string to base64url string */
+function stringToBase64Url(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  return bytesToBase64Url(bytes);
+}
 
 describe('Handler.compose', () => {
   it('should create a composed handler', () => {
@@ -122,15 +191,24 @@ describe('Handler.keyManager', () => {
     expect(response.status).toBe(404);
   });
 
-  it('should store and retrieve credential', async () => {
+  it('should store and retrieve credential with valid WebAuthn data', async () => {
     const kv = Kv.memory();
     const handler = Handler.keyManager({ kv });
 
-    // Store credential
+    // 1. Get a challenge first
+    const challengeResponse = await handler.fetch(
+      new Request('http://localhost/challenge', { method: 'GET' })
+    );
+    const { challenge } = await challengeResponse.json();
+
+    // 2. Create valid WebAuthn credential data
+    const credential = createTestWebAuthnCredential(challenge);
+
+    // 3. Store credential
     const storeRequest = new Request('http://localhost/test-cred', {
       method: 'POST',
       body: JSON.stringify({
-        credential: { response: { clientDataJSON: 'test' } },
+        credential,
         publicKey: '0x1234',
       }),
     });
@@ -138,7 +216,7 @@ describe('Handler.keyManager', () => {
     const storeResponse = await handler.fetch(storeRequest);
     expect(storeResponse.status).toBe(204);
 
-    // Retrieve credential
+    // 4. Retrieve credential
     const getRequest = new Request('http://localhost/test-cred', {
       method: 'GET',
     });
@@ -146,6 +224,99 @@ describe('Handler.keyManager', () => {
     const getResponse = await handler.fetch(getRequest);
     const json = await getResponse.json();
     expect(json.publicKey).toBe('0x1234');
+  });
+
+  it('should reject credential with invalid challenge', async () => {
+    const kv = Kv.memory();
+    const handler = Handler.keyManager({ kv });
+
+    // Create credential with a challenge that was never issued
+    const fakeChallenge = '0x' + '00'.repeat(32);
+    const credential = createTestWebAuthnCredential(fakeChallenge);
+
+    const storeRequest = new Request('http://localhost/test-cred', {
+      method: 'POST',
+      body: JSON.stringify({
+        credential,
+        publicKey: '0x1234',
+      }),
+    });
+
+    const storeResponse = await handler.fetch(storeRequest);
+    expect(storeResponse.status).toBe(400);
+    const json = await storeResponse.json();
+    expect(json.error).toContain('challenge');
+  });
+
+  it('should reject replayed challenge', async () => {
+    const kv = Kv.memory();
+    const handler = Handler.keyManager({ kv });
+
+    // Get a challenge
+    const challengeResponse = await handler.fetch(
+      new Request('http://localhost/challenge', { method: 'GET' })
+    );
+    const { challenge } = await challengeResponse.json();
+
+    const credential = createTestWebAuthnCredential(challenge);
+
+    // First use - should succeed
+    const firstStore = await handler.fetch(new Request('http://localhost/cred-1', {
+      method: 'POST',
+      body: JSON.stringify({ credential, publicKey: '0x1234' }),
+    }));
+    expect(firstStore.status).toBe(204);
+
+    // Second use of same challenge - should fail (replay attack)
+    const secondStore = await handler.fetch(new Request('http://localhost/cred-2', {
+      method: 'POST',
+      body: JSON.stringify({ credential, publicKey: '0x5678' }),
+    }));
+    expect(secondStore.status).toBe(400);
+    const json = await secondStore.json();
+    expect(json.error).toContain('challenge');
+  });
+
+  it('should reject credential with wrong type', async () => {
+    const kv = Kv.memory();
+    const handler = Handler.keyManager({ kv });
+
+    const challengeResponse = await handler.fetch(
+      new Request('http://localhost/challenge', { method: 'GET' })
+    );
+    const { challenge } = await challengeResponse.json();
+
+    // Create credential with wrong type
+    const credential = createTestWebAuthnCredential(challenge, { type: 'webauthn.get' });
+
+    const storeResponse = await handler.fetch(new Request('http://localhost/test-cred', {
+      method: 'POST',
+      body: JSON.stringify({ credential, publicKey: '0x1234' }),
+    }));
+    expect(storeResponse.status).toBe(400);
+    const json = await storeResponse.json();
+    expect(json.error).toContain('type');
+  });
+
+  it('should reject credential without User Present flag', async () => {
+    const kv = Kv.memory();
+    const handler = Handler.keyManager({ kv });
+
+    const challengeResponse = await handler.fetch(
+      new Request('http://localhost/challenge', { method: 'GET' })
+    );
+    const { challenge } = await challengeResponse.json();
+
+    // Create credential with User Present flag cleared
+    const credential = createTestWebAuthnCredential(challenge, { userPresent: false });
+
+    const storeResponse = await handler.fetch(new Request('http://localhost/test-cred', {
+      method: 'POST',
+      body: JSON.stringify({ credential, publicKey: '0x1234' }),
+    }));
+    expect(storeResponse.status).toBe(400);
+    const json = await storeResponse.json();
+    expect(json.error).toContain('User not present');
   });
 
   it('should return error for missing credential', async () => {
@@ -178,268 +349,4 @@ describe('Handler.keyManager', () => {
     expect(json.rp).toBeDefined();
     expect(json.rp.id).toBe('example.com');
   });
-});
-
-describe('Handler.feePayer', () => {
-	// Mock account
-	const mockAccount = {
-		address: '0x1234567890123456789012345678901234567890',
-		publicKey: '0x04...',
-		type: 'local',
-		source: 'privateKey',
-		sign: vi.fn(),
-		signAuthorization: vi.fn(),
-		signMessage: vi.fn(),
-		signTransaction: vi.fn(),
-		signTypedData: vi.fn(),
-	} as unknown as LocalAccount;
-
-	// Mock client
-	const mockClient = {
-		request: vi.fn(),
-	};
-
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
-
-	it('should create a handler with listener', () => {
-		const handler = Handler.feePayer({
-			account: mockAccount,
-			client: mockClient as any,
-		});
-
-		expect(handler).toBeDefined();
-		expect(handler.fetch).toBeDefined();
-		expect(handler.listener).toBeDefined();
-	});
-
-	it('should handle eth_sendRawTransaction', async () => {
-		mockClient.request.mockResolvedValueOnce('0xtxhash');
-
-		const handler = Handler.feePayer({
-			account: mockAccount,
-			client: mockClient as any,
-		});
-
-		const request = new Request('http://localhost/', {
-			method: 'POST',
-			body: JSON.stringify({
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'eth_sendRawTransaction',
-				params: ['0xserialized'],
-			}),
-		});
-
-		const response = await handler.fetch(request);
-		const json = await response.json();
-
-		expect(json.result).toBe('0xtxhash');
-		expect(json.id).toBe(1);
-	});
-
-	it('should return error for unsupported method', async () => {
-		const handler = Handler.feePayer({
-			account: mockAccount,
-			client: mockClient as any,
-		});
-
-		const request = new Request('http://localhost/', {
-			method: 'POST',
-			body: JSON.stringify({
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'unsupported_method',
-				params: [],
-			}),
-		});
-
-		const response = await handler.fetch(request);
-		const json = await response.json();
-
-		expect(json.error).toBeDefined();
-		expect(json.error.code).toBe(-32601);
-	});
-
-	it('should call onRequest callback', async () => {
-		const onRequest = vi.fn();
-		mockClient.request.mockResolvedValueOnce('0xtxhash');
-
-		const handler = Handler.feePayer({
-			account: mockAccount,
-			client: mockClient as any,
-			onRequest,
-		});
-
-		const request = new Request('http://localhost/', {
-			method: 'POST',
-			body: JSON.stringify({
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'eth_sendRawTransaction',
-				params: ['0xserialized'],
-			}),
-		});
-
-		await handler.fetch(request);
-		expect(onRequest).toHaveBeenCalled();
-	});
-
-	it('should use custom path', async () => {
-		mockClient.request.mockResolvedValueOnce('0xtxhash');
-
-		const handler = Handler.feePayer({
-			account: mockAccount,
-			client: mockClient as any,
-			path: '/custom-path',
-		});
-
-		const request = new Request('http://localhost/custom-path', {
-			method: 'POST',
-			body: JSON.stringify({
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'eth_sendRawTransaction',
-				params: ['0xserialized'],
-			}),
-		});
-
-		const response = await handler.fetch(request);
-		const json = await response.json();
-
-		expect(json.result).toBe('0xtxhash');
-	});
-
-	it('should handle errors in request processing', async () => {
-		mockClient.request.mockRejectedValueOnce(new Error('Network error'));
-
-		const handler = Handler.feePayer({
-			account: mockAccount,
-			client: mockClient as any,
-		});
-
-		const request = new Request('http://localhost/', {
-			method: 'POST',
-			body: JSON.stringify({
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'eth_sendRawTransaction',
-				params: ['0xserialized'],
-			}),
-		});
-
-		const response = await handler.fetch(request);
-		const json = await response.json();
-
-		expect(json.error).toBeDefined();
-		expect(json.error.code).toBe(-32603);
-		expect(json.error.message).toBe('Internal error: transaction processing failed');
-	});
-
-	it('should pass correct parameters to client.request', async () => {
-		mockClient.request.mockResolvedValueOnce('0xtxhash');
-
-		const handler = Handler.feePayer({
-			account: mockAccount,
-			client: mockClient as any,
-		});
-
-		const serializedTx = '0xf86a0485a4e3b14d82520894...';
-		const request = new Request('http://localhost/', {
-			method: 'POST',
-			body: JSON.stringify({
-				jsonrpc: '2.0',
-				id: 42,
-				method: 'eth_sendRawTransaction',
-				params: [serializedTx],
-			}),
-		});
-
-		await handler.fetch(request);
-
-		expect(mockClient.request).toHaveBeenCalledWith({
-			method: 'eth_sendRawTransaction',
-			params: [serializedTx],
-		});
-	});
-
-	it('should preserve jsonrpc version in response', async () => {
-		mockClient.request.mockResolvedValueOnce('0xtxhash');
-
-		const handler = Handler.feePayer({
-			account: mockAccount,
-			client: mockClient as any,
-		});
-
-		const request = new Request('http://localhost/', {
-			method: 'POST',
-			body: JSON.stringify({
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'eth_sendRawTransaction',
-				params: ['0xserialized'],
-			}),
-		});
-
-		const response = await handler.fetch(request);
-		const json = await response.json();
-
-		expect(json.jsonrpc).toBe('2.0');
-	});
-
-	it('should handle request with custom headers', async () => {
-		mockClient.request.mockResolvedValueOnce('0xtxhash');
-
-		const handler = Handler.feePayer({
-			account: mockAccount,
-			client: mockClient as any,
-			headers: {
-				'X-Custom-Header': 'test-value',
-			},
-		});
-
-		const request = new Request('http://localhost/', {
-			method: 'POST',
-			body: JSON.stringify({
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'eth_sendRawTransaction',
-				params: ['0xserialized'],
-			}),
-		});
-
-		const response = await handler.fetch(request);
-		const json = await response.json();
-
-		expect(response.headers.get('X-Custom-Header')).toBe('test-value');
-		expect(json.result).toBe('0xtxhash');
-	});
-
-	it('should handle onRequest callback errors gracefully', async () => {
-		const onRequest = vi.fn().mockRejectedValueOnce(new Error('Callback error'));
-		mockClient.request.mockResolvedValueOnce('0xtxhash');
-
-		const handler = Handler.feePayer({
-			account: mockAccount,
-			client: mockClient as any,
-			onRequest,
-		});
-
-		const request = new Request('http://localhost/', {
-			method: 'POST',
-			body: JSON.stringify({
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'eth_sendRawTransaction',
-				params: ['0xserialized'],
-			}),
-		});
-
-		const response = await handler.fetch(request);
-		const json = await response.json();
-
-		expect(json.error).toBeDefined();
-		expect(json.error.code).toBe(-32603);
-	});
 });

@@ -2,8 +2,6 @@ import type {
   Router,
   RouterOptions,
 } from '@remix-run/fetch-router'
-import type { LocalAccount } from 'viem/accounts'
-import type { Chain, Client, Transport } from 'viem'
 // Forward reference: Kv will be implemented in 1.5
 import type { Kv } from './Kv.js'
 
@@ -38,7 +36,7 @@ export type Handler = Router & {
  * Base configuration options for all handler types.
  *
  * Extends Remix RouterOptions with additional options for common HTTP needs.
- * These options are inherited by all specialized handler types (feePayer, keyManager, etc.).
+ * These options are inherited by all specialized handler types (keyManager, etc.).
  */
 export type HandlerOptions = RouterOptions & {
   /**
@@ -59,69 +57,6 @@ export type HandlerOptions = RouterOptions & {
    */
   headers?: Headers | Record<string, string> | undefined
 }
-
-/**
- * Configuration options for the feePayer handler.
- *
- * Configures a handler that can sponsor transaction fees on behalf of users.
- * The fee payer account will be used to sign and submit transactions, allowing
- * application-level fee sponsorship.
- *
- * You must provide either:
- * - A pre-configured viem `client`, OR
- * - Both `chain` and `transport` (handler will create the client)
- */
-export type FeePayerOptions = HandlerOptions & {
-  /**
-   * The viem LocalAccount to use as the fee payer.
-   *
-   * This account will sponsor fees for all transactions processed by this handler.
-   *
-   * @example
-   * ```typescript
-   * import { privateKeyToAccount } from 'viem/accounts';
-   * const account = privateKeyToAccount('0x...');
-   * ```
-   */
-  account: LocalAccount
-  /**
-   * Optional callback invoked before processing each request.
-   *
-   * Useful for logging, request validation, or triggering side effects.
-   * If the callback throws, the request processing stops and an error is returned.
-   */
-  onRequest?: (request: unknown) => Promise<void>
-  /**
-   * The path prefix for the fee payer endpoints.
-   * Defaults to '/' if not specified.
-   */
-  path?: string | undefined
-} & (
-  | {
-      /**
-       * A pre-configured viem Client.
-       *
-       * The client should be configured with the appropriate chain and transport
-       * for submitting transactions.
-       */
-      client: Client
-    }
-  | {
-      /**
-       * The blockchain chain configuration.
-       *
-       * Used with `transport` to create an internal viem client.
-       */
-      chain: Chain
-      /**
-       * The viem transport configuration.
-       *
-       * Used with `chain` to create an internal viem client.
-       * Examples: http(), websocket(), custom()
-       */
-      transport: Transport
-    }
-)
 
 /**
  * Configuration options for the keyManager handler.
@@ -193,12 +128,12 @@ export type ComposeOptions = HandlerOptions & {
    *
    * @example
    * ```typescript
-   * // Mount handlers under /api/radius:
-   * const handler = Handler.compose([keyManager, feePayer], {
-   *   path: '/api/radius'
+   * // Mount handlers under /api:
+   * const handler = Handler.compose([keyManager, customHandler], {
+   *   path: '/api'
    * });
-   * // Request to /api/radius/challenge reaches the keyManager handler
-   * // Request to /api/radius/other reaches the feePayer handler
+   * // Request to /api/challenge reaches the keyManager handler
+   * // Request to /api/health reaches the customHandler
    * // Request to /other returns 404
    * ```
    */

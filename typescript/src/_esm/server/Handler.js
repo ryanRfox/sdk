@@ -1,5 +1,4 @@
 import { createRouter, } from '@remix-run/fetch-router';
-import { createClient } from 'viem';
 import * as RequestListener from './internal/requestListener.js';
 /**
  * Creates a base request handler with routing and request handling capabilities.
@@ -10,7 +9,7 @@ import * as RequestListener from './internal/requestListener.js';
  * - Both fetch-based and listener-based request handling
  * - Custom header configuration
  *
- * For most use cases, use the specialized handlers like `feePayer()` or `keyManager()`
+ * For most use cases, use the specialized handlers like `keyManager()`
  * instead of calling this directly.
  *
  * @param options - Configuration options for the base handler
@@ -160,131 +159,72 @@ export function keyManager(options) {
         if (!publicKey) {
             return Response.json({ error: 'Missing publicKey' }, { status: 400 });
         }
-        // Store the public key
+        // Validate credential.response structure
+        if (!credential.response?.clientDataJSON) {
+            return Response.json({ error: 'Missing clientDataJSON' }, { status: 400 });
+        }
+        if (!credential.response?.authenticatorData) {
+            return Response.json({ error: 'Missing authenticatorData' }, { status: 400 });
+        }
+        // 1. Decode and parse clientDataJSON (Base64URL encoded)
+        let clientDataJSON;
+        try {
+            const decoded = base64UrlDecode(credential.response.clientDataJSON);
+            clientDataJSON = JSON.parse(decoded);
+        }
+        catch (e) {
+            return Response.json({ error: 'Invalid clientDataJSON' }, { status: 400 });
+        }
+        // 2. Verify challenge exists in KV
+        if (!clientDataJSON.challenge) {
+            return Response.json({ error: 'Missing challenge in clientDataJSON' }, { status: 400 });
+        }
+        const challengeHex = base64UrlToHex(clientDataJSON.challenge);
+        const challengeExists = await kv.get(`challenge:${challengeHex}`);
+        if (!challengeExists) {
+            return Response.json({ error: 'Invalid or expired challenge' }, { status: 400 });
+        }
+        // 3. Verify type is 'webauthn.create'
+        if (clientDataJSON.type !== 'webauthn.create') {
+            return Response.json({ error: 'Invalid clientDataJSON type' }, { status: 400 });
+        }
+        // 4. Verify origin (if rp is configured and not localhost)
+        if (rpConfig?.id && !rpConfig.id.includes('localhost')) {
+            const expectedOrigin = `https://${rpConfig.id}`;
+            if (clientDataJSON.origin !== expectedOrigin) {
+                return Response.json({ error: 'Invalid origin' }, { status: 400 });
+            }
+        }
+        // 5. Parse authenticatorData and check User Present flag
+        let authenticatorData;
+        try {
+            authenticatorData = base64UrlToBytes(credential.response.authenticatorData);
+        }
+        catch (e) {
+            return Response.json({ error: 'Invalid authenticatorData' }, { status: 400 });
+        }
+        // Flags are at byte 32 (after 32-byte rpIdHash)
+        const flags = authenticatorData[32];
+        if (flags === undefined) {
+            return Response.json({ error: 'Invalid authenticatorData structure' }, { status: 400 });
+        }
+        // Check User Present (UP) flag - bit 0
+        const userPresent = (flags & 0x01) !== 0;
+        if (!userPresent) {
+            return Response.json({ error: 'User not present' }, { status: 400 });
+        }
+        // 6. CRITICAL: Consume the challenge (delete it to prevent replay attacks)
+        await kv.delete(`challenge:${challengeHex}`);
+        // 7. Store the public key
         await kv.set(`credential:${id}`, publicKey);
         return new Response(null, { status: 204 });
     });
     return router;
 }
 /**
- * Creates a fee payer handler that sponsors transaction fees.
- *
- * This handler accepts raw transactions via JSON-RPC and submits them on behalf of
- * the application, allowing fee sponsorship for user transactions. The account is used
- * as the fee payer for all transactions processed through this handler.
- *
- * @param options - Configuration options for the fee payer handler
- * @param options.account - The viem LocalAccount to use as the fee payer
- * @param options.client - Pre-configured viem Client, OR provide chain and transport
- * @param options.chain - The blockchain chain (used with transport)
- * @param options.transport - The viem transport configuration (used with chain)
- * @param options.path - The path prefix for the fee payer endpoint (default: '/')
- * @param options.onRequest - Optional callback invoked before processing each request
- * @param options.headers - Optional headers to add to all responses
- * @returns A Handler instance for the fee payer service
- * @throws Error if neither client nor (chain + transport) are provided
- *
- * @example
- * ```typescript
- * import { Handler } from '@radiustechsystems/sdk/server';
- * import { createClient, http } from 'viem';
- * import { mainnet } from 'viem/chains';
- * import { privateKeyToAccount } from 'viem/accounts';
- *
- * const handler = Handler.feePayer({
- *   account: privateKeyToAccount('0x...'),
- *   client: createClient({ chain: mainnet, transport: http() }),
- *   path: '/api/feepayer',
- * });
- * ```
- */
-export function feePayer(options) {
-    const { account, onRequest, path = '/' } = options;
-    const client = (() => {
-        if ('client' in options)
-            return options.client;
-        if ('chain' in options && 'transport' in options) {
-            return createClient({
-                chain: options.chain,
-                transport: options.transport,
-            });
-        }
-        throw new Error('feePayer requires either client or chain+transport');
-    })();
-    const router = from(options);
-    router.post(path, async ({ request: req }) => {
-        let body;
-        // Handle JSON parsing errors
-        try {
-            body = await req.json();
-        }
-        catch (e) {
-            return Response.json({
-                jsonrpc: '2.0',
-                id: null,
-                error: { code: -32700, message: 'Parse error: Invalid JSON' },
-            });
-        }
-        try {
-            // Validate JSON-RPC request structure
-            if (typeof body.method !== 'string') {
-                return Response.json({
-                    jsonrpc: '2.0',
-                    id: body.id ?? null,
-                    error: { code: -32600, message: 'Invalid Request: missing method' },
-                });
-            }
-            await onRequest?.(body);
-            if (body.method === 'eth_sendRawTransaction') {
-                // Validate params is a non-empty array with a valid hex string
-                if (!Array.isArray(body.params) || body.params.length === 0) {
-                    return Response.json({
-                        jsonrpc: '2.0',
-                        id: body.id,
-                        error: { code: -32602, message: 'Invalid params: expected array with transaction data' },
-                    });
-                }
-                const serializedTx = body.params[0];
-                if (typeof serializedTx !== 'string' || !serializedTx.startsWith('0x')) {
-                    return Response.json({
-                        jsonrpc: '2.0',
-                        id: body.id,
-                        error: { code: -32602, message: 'Invalid params: transaction must be a hex string' },
-                    });
-                }
-                // Sign as fee payer and submit
-                const result = await client.request({
-                    method: 'eth_sendRawTransaction',
-                    params: [serializedTx],
-                });
-                return Response.json({
-                    jsonrpc: '2.0',
-                    id: body.id,
-                    result,
-                });
-            }
-            return Response.json({
-                jsonrpc: '2.0',
-                id: body.id,
-                error: { code: -32601, message: `Method not supported: ${body.method}` },
-            });
-        }
-        catch (error) {
-            // Log full error server-side, return generic message to client
-            console.error('feePayer handler error:', error);
-            return Response.json({
-                jsonrpc: '2.0',
-                id: body?.id ?? null,
-                error: { code: -32603, message: 'Internal error: transaction processing failed' },
-            });
-        }
-    });
-    return router;
-}
-/**
  * Composes multiple handlers into a single unified handler.
  *
- * This function allows you to combine multiple specialized handlers (feePayer, keyManager, etc.)
+ * This function allows you to combine multiple specialized handlers (keyManager, custom handlers, etc.)
  * into a single handler. Requests are routed to each handler in order until one returns a
  * non-404 response. This enables building complex server setups with multiple services.
  *
@@ -301,13 +241,13 @@ export function feePayer(options) {
  * @example
  * ```typescript
  * import { Handler, Kv } from '@radiustechsystems/sdk/server';
- * import { createClient } from 'viem';
  *
  * const keyManager = Handler.keyManager({ kv: Kv.memory() });
- * const feePayer = Handler.feePayer({ account, client });
+ * const customHandler = Handler.from();
+ * customHandler.get('/health', () => Response.json({ status: 'ok' }));
  *
- * const handler = Handler.compose([keyManager, feePayer], {
- *   path: '/api/radius',
+ * const handler = Handler.compose([keyManager, customHandler], {
+ *   path: '/api',
  *   headers: { 'X-API-Version': '1.0' }
  * });
  *
@@ -335,5 +275,55 @@ export function compose(handlers, options = {}) {
             return new Response('Not Found', { status: 404 });
         },
     });
+}
+/**
+ * Decodes a Base64URL encoded string to a UTF-8 string.
+ * WebAuthn uses Base64URL encoding (RFC 4648 §5).
+ * @internal
+ */
+function base64UrlDecode(base64url) {
+    // Convert Base64URL to standard Base64
+    const base64 = base64url
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+    // Add padding if needed
+    const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=');
+    // Decode using atob and handle UTF-8
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
+}
+/**
+ * Converts a Base64URL encoded string to a hex string with 0x prefix.
+ * @internal
+ */
+function base64UrlToHex(base64url) {
+    const bytes = base64UrlToBytes(base64url);
+    const hex = Array.from(bytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    return `0x${hex}`;
+}
+/**
+ * Decodes a Base64URL encoded string to a Uint8Array.
+ * @internal
+ */
+function base64UrlToBytes(base64url) {
+    // Convert Base64URL to standard Base64
+    const base64 = base64url
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+    // Add padding if needed
+    const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=');
+    // Decode
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
 }
 //# sourceMappingURL=Handler.js.map

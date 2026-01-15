@@ -1,4 +1,4 @@
-import type { Handler, HandlerOptions, KeyManagerOptions, FeePayerOptions, ComposeOptions } from './types.js';
+import type { Handler, HandlerOptions, KeyManagerOptions, ComposeOptions } from './types.js';
 /**
  * Creates a base request handler with routing and request handling capabilities.
  *
@@ -8,7 +8,7 @@ import type { Handler, HandlerOptions, KeyManagerOptions, FeePayerOptions, Compo
  * - Both fetch-based and listener-based request handling
  * - Custom header configuration
  *
- * For most use cases, use the specialized handlers like `feePayer()` or `keyManager()`
+ * For most use cases, use the specialized handlers like `keyManager()`
  * instead of calling this directly.
  *
  * @param options - Configuration options for the base handler
@@ -60,42 +60,9 @@ export declare function from(options?: HandlerOptions): Handler;
  */
 export declare function keyManager(options: KeyManagerOptions): Handler;
 /**
- * Creates a fee payer handler that sponsors transaction fees.
- *
- * This handler accepts raw transactions via JSON-RPC and submits them on behalf of
- * the application, allowing fee sponsorship for user transactions. The account is used
- * as the fee payer for all transactions processed through this handler.
- *
- * @param options - Configuration options for the fee payer handler
- * @param options.account - The viem LocalAccount to use as the fee payer
- * @param options.client - Pre-configured viem Client, OR provide chain and transport
- * @param options.chain - The blockchain chain (used with transport)
- * @param options.transport - The viem transport configuration (used with chain)
- * @param options.path - The path prefix for the fee payer endpoint (default: '/')
- * @param options.onRequest - Optional callback invoked before processing each request
- * @param options.headers - Optional headers to add to all responses
- * @returns A Handler instance for the fee payer service
- * @throws Error if neither client nor (chain + transport) are provided
- *
- * @example
- * ```typescript
- * import { Handler } from '@radiustechsystems/sdk/server';
- * import { createClient, http } from 'viem';
- * import { mainnet } from 'viem/chains';
- * import { privateKeyToAccount } from 'viem/accounts';
- *
- * const handler = Handler.feePayer({
- *   account: privateKeyToAccount('0x...'),
- *   client: createClient({ chain: mainnet, transport: http() }),
- *   path: '/api/feepayer',
- * });
- * ```
- */
-export declare function feePayer(options: FeePayerOptions): Handler;
-/**
  * Composes multiple handlers into a single unified handler.
  *
- * This function allows you to combine multiple specialized handlers (feePayer, keyManager, etc.)
+ * This function allows you to combine multiple specialized handlers (keyManager, custom handlers, etc.)
  * into a single handler. Requests are routed to each handler in order until one returns a
  * non-404 response. This enables building complex server setups with multiple services.
  *
@@ -112,13 +79,13 @@ export declare function feePayer(options: FeePayerOptions): Handler;
  * @example
  * ```typescript
  * import { Handler, Kv } from '@radiustechsystems/sdk/server';
- * import { createClient } from 'viem';
  *
  * const keyManager = Handler.keyManager({ kv: Kv.memory() });
- * const feePayer = Handler.feePayer({ account, client });
+ * const customHandler = Handler.from();
+ * customHandler.get('/health', () => Response.json({ status: 'ok' }));
  *
- * const handler = Handler.compose([keyManager, feePayer], {
- *   path: '/api/radius',
+ * const handler = Handler.compose([keyManager, customHandler], {
+ *   path: '/api',
  *   headers: { 'X-API-Version': '1.0' }
  * });
  *

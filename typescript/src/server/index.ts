@@ -1,7 +1,7 @@
 /**
  * Server module for Radius SDK
  *
- * Provides request handlers for gasless transactions and key management.
+ * Provides request handlers for key management.
  *
  * @example
  * ```typescript
@@ -14,7 +14,6 @@
 // Types
 export type {
   HandlerOptions,
-  FeePayerOptions,
   KeyManagerOptions,
   ComposeOptions,
 } from './types.js';

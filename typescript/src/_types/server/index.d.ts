@@ -1,7 +1,7 @@
 /**
  * Server module for Radius SDK
  *
- * Provides request handlers for gasless transactions and key management.
+ * Provides request handlers for key management.
  *
  * @example
  * ```typescript
@@ -10,7 +10,7 @@
  * const kv = Kv.memory();
  * ```
  */
-export type { HandlerOptions, FeePayerOptions, KeyManagerOptions, ComposeOptions, } from './types.js';
+export type { HandlerOptions, KeyManagerOptions, ComposeOptions, } from './types.js';
 export { ServerError, InvalidRequestError, MethodNotSupportedError, ChallengeExpiredError, CredentialNotFoundError, } from './errors.js';
 export * as Handler from './Handler.js';
 export * as Kv from './Kv.js';

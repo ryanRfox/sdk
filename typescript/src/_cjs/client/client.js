@@ -4,6 +4,7 @@ exports.MAX_GAS = void 0;
 exports.createRadiusClient = createRadiusClient;
 const viem_1 = require("viem");
 const transport_1 = require("../transport");
+const errors_1 = require("../errors");
 exports.MAX_GAS = 1319413953330n;
 function getRpcUrl(chain) {
     if (typeof process !== 'undefined' && process.env) {
@@ -14,7 +15,9 @@ function getRpcUrl(chain) {
     }
     const chainUrl = chain.rpcUrls.default.http[0];
     if (!chainUrl) {
-        throw new Error('No RPC URL configured. Set RADIUS_RPC_URL environment variable or configure chain.rpcUrls');
+        throw new errors_1.RadiusError('No RPC URL configured. Set RADIUS_RPC_URL environment variable or configure chain.rpcUrls', {
+            shortMessage: 'Missing RPC URL configuration',
+        });
     }
     return chainUrl;
 }
@@ -112,42 +115,76 @@ function createRadiusClient(config) {
         },
         async call(contract, method, ...args) {
             if (!contract.abi) {
-                throw new Error('Contract ABI is required');
+                throw new errors_1.MissingAbiError('Contract ABI is required');
             }
             if (!contract.address) {
-                throw new Error('Contract address is required');
+                throw new errors_1.ContractCallError('Contract address is required', {
+                    functionName: method,
+                    args: args,
+                });
             }
-            const data = (0, viem_1.encodeFunctionData)({
-                abi: contract.abi,
-                functionName: method,
-                args: args,
-            });
+            let data;
+            try {
+                data = (0, viem_1.encodeFunctionData)({
+                    abi: contract.abi,
+                    functionName: method,
+                    args: args,
+                });
+            }
+            catch (err) {
+                throw new errors_1.AbiError(`Failed to encode function call: ${err.message}`, {
+                    cause: err,
+                });
+            }
             const result = await publicClient.call({
                 to: contract.address,
                 data,
             });
             if (!result.data) {
-                throw new Error('No data returned from contract call');
+                throw new errors_1.ContractCallError('No data returned from contract call', {
+                    contractAddress: contract.address,
+                    functionName: method,
+                    args: args,
+                });
             }
-            const decoded = (0, viem_1.decodeFunctionResult)({
-                abi: contract.abi,
-                functionName: method,
-                data: result.data,
-            });
+            let decoded;
+            try {
+                decoded = (0, viem_1.decodeFunctionResult)({
+                    abi: contract.abi,
+                    functionName: method,
+                    data: result.data,
+                });
+            }
+            catch (err) {
+                throw new errors_1.AbiError(`Failed to decode function result: ${err.message}`, {
+                    cause: err,
+                });
+            }
             return decoded;
         },
         async execute(contract, signer, method, ...args) {
             if (!contract.abi) {
-                throw new Error('Contract ABI is required');
+                throw new errors_1.MissingAbiError('Contract ABI is required');
             }
             if (!contract.address) {
-                throw new Error('Contract address is required');
+                throw new errors_1.ContractCallError('Contract address is required', {
+                    functionName: method,
+                    args: args,
+                });
             }
-            const data = (0, viem_1.encodeFunctionData)({
-                abi: contract.abi,
-                functionName: method,
-                args: args,
-            });
+            let data;
+            try {
+                data = (0, viem_1.encodeFunctionData)({
+                    abi: contract.abi,
+                    functionName: method,
+                    args: args,
+                });
+            }
+            catch (err) {
+                throw new errors_1.AbiError(`Failed to encode function call: ${err.message}`, {
+                    cause: err,
+                });
+            }
             return signAndSendTransaction(signer, {
                 to: contract.address,
                 data,
@@ -182,8 +219,15 @@ function createRadiusClient(config) {
                     'type' in item &&
                     item.type === 'constructor');
                 if (ctorItem?.inputs && ctorItem.inputs.length > 0) {
-                    const encodedArgs = (0, viem_1.encodeAbiParameters)(ctorItem.inputs, args);
-                    deployData = `${bytecode}${encodedArgs.slice(2)}`;
+                    try {
+                        const encodedArgs = (0, viem_1.encodeAbiParameters)(ctorItem.inputs, args);
+                        deployData = `${bytecode}${encodedArgs.slice(2)}`;
+                    }
+                    catch (err) {
+                        throw new errors_1.AbiError(`Failed to encode constructor arguments: ${err.message}`, {
+                            cause: err,
+                        });
+                    }
                 }
             }
             const hash = await signAndSendTransaction(signer, {
@@ -192,10 +236,15 @@ function createRadiusClient(config) {
             });
             const receipt = await this.waitForReceipt(hash);
             if (!receipt.contractAddress) {
-                throw new Error('Contract deployment failed: no contract address in receipt');
+                throw new errors_1.ContractDeploymentError('Contract deployment failed: no contract address in receipt', {
+                    bytecode,
+                    constructorArgs: args,
+                });
             }
             if (receipt.status !== 'success') {
-                throw new Error('Contract deployment failed: transaction reverted');
+                throw new errors_1.TransactionRevertedError('Contract deployment failed: transaction reverted', {
+                    transactionHash: receipt.transactionHash,
+                });
             }
             return {
                 address: receipt.contractAddress,

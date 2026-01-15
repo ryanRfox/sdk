@@ -11,7 +11,7 @@ The official TypeScript SDK for interacting with the [Radius platform](https://r
 - React hooks for frontend integration
 - wagmi connector support
 - Optional request logging and interceptors
-- Server-side handlers for fee payment and key management
+- Server-side handlers for key management
 
 ## Requirements
 
@@ -44,8 +44,7 @@ const client = createRadiusClient({ chain: radiusTestnet });
 
 // Create signer from private key
 const signer = createPrivateKeySigner(
-  process.env.RADIUS_PRIVATE_KEY as `0x${string}`,
-  radiusTestnet.id
+  process.env.RADIUS_PRIVATE_KEY as `0x${string}`
 );
 
 // Check balance
@@ -122,32 +121,6 @@ Build backend services with the server module:
 import { Handler, Kv } from '@radiustechsystems/sdk/server';
 ```
 
-### Fee Payer Service
-
-Sponsor transactions on behalf of users:
-
-```typescript
-import { createRadiusClient, radiusTestnet } from '@radiustechsystems/sdk';
-import { Handler } from '@radiustechsystems/sdk/server';
-import { privateKeyToAccount } from 'viem/accounts';
-
-const account = privateKeyToAccount(process.env.FEE_PAYER_KEY as `0x${string}`);
-const client = createRadiusClient({ chain: radiusTestnet });
-
-const handler = Handler.feePayer({
-  account,
-  client,
-  onRequest: async (body) => {
-    // Optional: validate/log requests
-    console.log('Sponsoring tx:', body.params[0]);
-  },
-});
-
-// Use with Node.js http server
-import { createServer } from 'node:http';
-createServer(handler.listener).listen(3000);
-```
-
 ### Key Manager
 
 Store and retrieve WebAuthn credentials:
@@ -163,7 +136,11 @@ const handler = Handler.keyManager({
 // Endpoints:
 // GET /challenge - Generate auth challenge
 // GET /:id - Retrieve credential
-// POST /:id - Store credential
+// POST /:id - Store credential (with WebAuthn verification)
+
+// Use with Node.js http server
+import { createServer } from 'node:http';
+createServer(handler.listener).listen(3000);
 ```
 
 ### Compose Handlers
@@ -171,14 +148,15 @@ const handler = Handler.keyManager({
 Combine multiple handlers under a single server:
 
 ```typescript
-const app = Handler.compose([
-  Handler.keyManager({ kv, path: '/keys' }),
-  Handler.feePayer({ account, client, path: '/sponsor' }),
-], { path: '/api' });
+const keyManager = Handler.keyManager({ kv, path: '/keys' });
+const healthCheck = Handler.from();
+healthCheck.get('/health', () => Response.json({ status: 'ok' }));
+
+const app = Handler.compose([keyManager, healthCheck], { path: '/api' });
 
 // Routes:
 // /api/keys/challenge, /api/keys/:id
-// /api/sponsor
+// /api/health
 ```
 
 ## Error Handling
