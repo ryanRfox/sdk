@@ -1,0 +1,129 @@
+---
+title: V1 to V2 Migration
+description: Migrating from Radius SDK V1 to V2
+---
+
+# Migrating from V1 to V2
+
+This guide helps you migrate from Radius SDK V1 to V2.
+
+## Breaking Changes
+
+### Account Creation
+
+**V1:**
+```typescript
+import { createPrivateKeySigner } from '@aspect-build/radius-sdk';
+
+const signer = createPrivateKeySigner(privateKey, chainId);
+```
+
+**V2:**
+```typescript
+import { createPrivateKeySigner } from '@radiustechsystems/sdk';
+
+// Chain ID is no longer required - determined by the client
+const account = createPrivateKeySigner(privateKey);
+```
+
+### Package Name
+
+The package has been renamed:
+
+```bash
+# V1
+pnpm remove @aspect-build/radius-sdk
+
+# V2
+pnpm add @radiustechsystems/sdk
+```
+
+### viem Integration
+
+V2 is built on viem. The `RadiusSigner` interface has been replaced with viem's `LocalAccount`:
+
+**V1:**
+```typescript
+interface RadiusSigner {
+  address: Address;
+  signTransaction(...): Promise<Hex>;
+}
+```
+
+**V2:**
+```typescript
+import type { LocalAccount } from 'viem';
+
+// createPrivateKeySigner returns a viem LocalAccount
+const account: LocalAccount = createPrivateKeySigner(privateKey);
+```
+
+### ClefSigner Removed
+
+The `ClefSigner` and `createClefSigner` have been removed in V2.
+If you were using Clef, you'll need to implement a custom solution.
+
+### Subpath Exports
+
+V2 uses subpath exports for better tree-shaking:
+
+```typescript
+// Main exports
+import { createRadiusClient, createPrivateKeySigner } from '@radiustechsystems/sdk';
+
+// Chain definitions
+import { radiusTestnet, radiusMainnet } from '@radiustechsystems/sdk/chains';
+
+// React hooks
+import { useRadiusBalance, useRadiusSend } from '@radiustechsystems/sdk/react';
+
+// Events
+import { watchTransfer, getLogs } from '@radiustechsystems/sdk/events';
+
+// Server handlers
+import { Handler, Kv } from '@radiustechsystems/sdk/server';
+
+// wagmi integration
+import { privateKeyConnector } from '@radiustechsystems/sdk/wagmi';
+```
+
+## Step-by-Step Migration
+
+1. **Update package:**
+   ```bash
+   pnpm remove @aspect-build/radius-sdk
+   pnpm add @radiustechsystems/sdk viem
+   ```
+
+2. **Update imports:**
+   ```typescript
+   // Old
+   import { createRadiusClient } from '@aspect-build/radius-sdk';
+
+   // New
+   import { createRadiusClient } from '@radiustechsystems/sdk';
+   import { radiusTestnet } from '@radiustechsystems/sdk/chains';
+   ```
+
+3. **Update account creation:**
+   ```typescript
+   // Old
+   const signer = createPrivateKeySigner(privateKey, chainId);
+
+   // New
+   const account = createPrivateKeySigner(privateKey);
+   ```
+
+4. **Update type imports:**
+   ```typescript
+   // Old
+   import type { RadiusSigner } from '@aspect-build/radius-sdk';
+
+   // New
+   import type { LocalAccount } from 'viem';
+   ```
+
+## Need Help?
+
+If you encounter issues during migration, please [open an issue](https://github.com/radiustechsystems/sdk/issues).
+

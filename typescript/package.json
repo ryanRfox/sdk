@@ -20,7 +20,10 @@
 		"lint:fix": "biome check --write .",
 		"test": "vitest --run",
 		"test:watch": "vitest",
-		"generate:docs": "npx tsx scripts/generate-docs.ts"
+		"generate:api": "typedoc",
+		"generate:guides": "npx tsx scripts/generate-guides.ts",
+		"generate:docs": "pnpm generate:api && pnpm generate:guides",
+		"docs:check": "npx tsx scripts/validate-docs.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.2",
@@ -33,6 +36,8 @@
 		"jsdom": "27.4.0",
 		"react": "^19.1.4",
 		"rimraf": "^6.0.1",
+		"typedoc": "0.28.16",
+		"typedoc-plugin-markdown": "4.9.0",
 		"typescript": "^5.9.3",
 		"viem": "^2.43.3",
 		"vitest": "^4.0.15",

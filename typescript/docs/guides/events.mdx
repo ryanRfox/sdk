@@ -1,0 +1,115 @@
+---
+title: Events & Subscriptions
+description: Watching blockchain events with the Radius SDK
+---
+
+# Events & Subscriptions
+
+The events module provides utilities for watching blockchain events and querying logs.
+
+## Installation
+
+```bash
+pnpm add @radiustechsystems/sdk
+```
+
+## Watching Events
+
+### Block Watching
+
+```typescript
+import { watchBlockNumber } from '@radiustechsystems/sdk/events';
+import { createRadiusClient } from '@radiustechsystems/sdk';
+import { radiusTestnet } from '@radiustechsystems/sdk/chains';
+
+const client = createRadiusClient({ chain: radiusTestnet });
+
+const unwatch = watchBlockNumber(client.publicClient, {
+  onBlockNumber: (blockNumber) => {
+    console.log('New block:', blockNumber);
+  },
+});
+
+// Stop watching
+unwatch();
+```
+
+### Transfer Events
+
+Watch ERC-20 transfers:
+
+```typescript
+import { watchTransfer } from '@radiustechsystems/sdk/events';
+
+const unwatch = watchTransfer(client.publicClient, {
+  address: '0x...tokenAddress',
+  onTransfer: (event) => {
+    console.log(`Transfer: ${event.from} -> ${event.to}: ${event.value}`);
+  },
+});
+```
+
+### Approval Events
+
+Watch ERC-20 approvals:
+
+```typescript
+import { watchApproval } from '@radiustechsystems/sdk/events';
+
+const unwatch = watchApproval(client.publicClient, {
+  address: '0x...tokenAddress',
+  onApproval: (event) => {
+    console.log(`Approval: ${event.owner} -> ${event.spender}: ${event.value}`);
+  },
+});
+```
+
+## Querying Historical Logs
+
+### Basic Log Query
+
+```typescript
+import { getLogs } from '@radiustechsystems/sdk/events';
+
+const logs = await getLogs(client.publicClient, {
+  address: '0x...contractAddress',
+  fromBlock: 1000000n,
+  toBlock: 1001000n,
+});
+```
+
+### Adaptive Log Query
+
+For large block ranges, use `getLogsAdaptive` which automatically handles RPC limits:
+
+```typescript
+import { getLogsAdaptive } from '@radiustechsystems/sdk/events';
+
+const logs = await getLogsAdaptive(client.publicClient, {
+  address: '0x...contractAddress',
+  fromBlock: 0n,
+  toBlock: 'latest',
+});
+```
+
+## WebSocket Transport
+
+For real-time events, use WebSocket transport:
+
+```typescript
+import { createWebSocketTransport } from '@radiustechsystems/sdk/events';
+import { createRadiusClient } from '@radiustechsystems/sdk';
+import { radiusTestnet } from '@radiustechsystems/sdk/chains';
+
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  transport: createWebSocketTransport({
+    url: 'wss://...',
+  }),
+});
+```
+
+## API Reference
+
+See the [Events API Reference](/docs/api/events) for complete documentation.
+

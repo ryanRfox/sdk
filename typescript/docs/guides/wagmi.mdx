@@ -1,0 +1,78 @@
+---
+title: wagmi Integration
+description: Using the Radius SDK with wagmi
+---
+
+# wagmi Integration
+
+The Radius SDK provides wagmi connectors for easy integration with wagmi-based dApps.
+
+## Installation
+
+```bash
+pnpm add @radiustechsystems/sdk viem wagmi @tanstack/react-query
+```
+
+## Setup
+
+```typescript
+import { createConfig, http, WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { radiusTestnet } from '@radiustechsystems/sdk/chains';
+import { privateKeyConnector } from '@radiustechsystems/sdk/wagmi';
+
+const config = createConfig({
+  chains: [radiusTestnet],
+  connectors: [
+    privateKeyConnector({
+      privateKey: '0x...',
+    }),
+  ],
+  transports: {
+    [radiusTestnet.id]: http(),
+  },
+});
+
+const queryClient = new QueryClient();
+
+function App() {
+  return (
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <YourApp />
+      </QueryClientProvider>
+    </WagmiProvider>
+  );
+}
+```
+
+## Using wagmi Hooks
+
+Once configured, you can use standard wagmi hooks:
+
+```typescript
+import { useAccount, useBalance, useSendTransaction } from 'wagmi';
+
+function Wallet() {
+  const { address, isConnected } = useAccount();
+  const { data: balance } = useBalance({ address });
+  const { sendTransaction } = useSendTransaction();
+
+  if (!isConnected) return <div>Not connected</div>;
+
+  return (
+    <div>
+      <p>Address: {address}</p>
+      <p>Balance: {balance?.formatted}</p>
+      <button onClick={() => sendTransaction({ to: '0x...', value: 1n })}>
+        Send
+      </button>
+    </div>
+  );
+}
+```
+
+## API Reference
+
+See the [wagmi API Reference](/docs/api/wagmi) for complete documentation.
+

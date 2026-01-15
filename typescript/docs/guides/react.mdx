@@ -1,0 +1,80 @@
+---
+title: React Integration
+description: Using the Radius SDK with React applications
+---
+
+# React Integration
+
+The Radius SDK provides React hooks for building dApps.
+
+## Installation
+
+```bash
+pnpm add @radiustechsystems/sdk viem @tanstack/react-query
+```
+
+## Setup Provider
+
+```typescript
+import { RadiusProvider } from '@radiustechsystems/sdk/react';
+import { radiusTestnet } from '@radiustechsystems/sdk/chains';
+
+function App() {
+  return (
+    <RadiusProvider chain={radiusTestnet}>
+      <YourApp />
+    </RadiusProvider>
+  );
+}
+```
+
+## Available Hooks
+
+### useRadiusBalance
+
+Query the balance of an address:
+
+```typescript
+import { useRadiusBalance } from '@radiustechsystems/sdk/react';
+
+function Balance({ address }) {
+  const { data: balance, isLoading } = useRadiusBalance({ address });
+
+  if (isLoading) return <div>Loading...</div>;
+  return <div>Balance: {balance?.toString()}</div>;
+}
+```
+
+### useRadiusSend
+
+Send transactions:
+
+```typescript
+import { useRadiusSend } from '@radiustechsystems/sdk/react';
+
+function SendButton({ to, amount }) {
+  const { send, isPending } = useRadiusSend();
+
+  return (
+    <button
+      onClick={() => send({ to, value: amount })}
+      disabled={isPending}
+    >
+      {isPending ? 'Sending...' : 'Send'}
+    </button>
+  );
+}
+```
+
+### ERC-20 Hooks
+
+- `useERC20Balance` - Query token balance
+- `useERC20Allowance` - Query spending allowance
+- `useERC20Approve` - Approve token spending
+- `useERC20Transfer` - Transfer tokens
+- `useERC20Metadata` - Query token metadata
+
+## API Reference
+
+See the [React API Reference](/docs/api/react) for complete documentation.
+

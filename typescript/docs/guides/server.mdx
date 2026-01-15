@@ -1,0 +1,95 @@
+---
+title: Server Handlers
+description: Building backend services with Radius SDK server module
+---
+
+# Server Handlers
+
+The server module provides handlers for building backend services that interact with Radius.
+
+## Installation
+
+```bash
+pnpm add @radiustechsystems/sdk
+```
+
+## Key Manager
+
+The key manager handler provides WebAuthn credential storage:
+
+```typescript
+import { Handler, Kv } from '@radiustechsystems/sdk/server';
+
+const handler = Handler.keyManager({
+  kv: Kv.memory(),
+  path: '/api/credentials',
+  rp: { id: 'example.com', name: 'Example App' },
+});
+```
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/challenge` | Generate WebAuthn challenge |
+| GET | `/:id` | Get credential public key |
+| POST | `/:id` | Store credential public key |
+
+## KV Stores
+
+### In-Memory Store
+
+```typescript
+import { Kv } from '@radiustechsystems/sdk/server';
+
+const kv = Kv.memory();
+```
+
+### Cloudflare KV
+
+```typescript
+import { Kv } from '@radiustechsystems/sdk/server';
+
+const kv = Kv.cloudflare({ namespace: env.KV });
+```
+
+## Composing Handlers
+
+Combine multiple handlers:
+
+```typescript
+import { Handler, Kv } from '@radiustechsystems/sdk/server';
+
+const keyManager = Handler.keyManager({ kv: Kv.memory() });
+const health = Handler.from();
+health.get('/health', () => Response.json({ status: 'ok' }));
+
+const handler = Handler.compose([keyManager, health], {
+  path: '/api',
+});
+```
+
+## Integration
+
+### Express.js
+
+```typescript
+import express from 'express';
+
+const app = express();
+app.use(handler.listener);
+app.listen(3000);
+```
+
+### Cloudflare Workers
+
+```typescript
+export default {
+  fetch: handler.fetch,
+};
+```
+
+## API Reference
+
+See the [Server API Reference](/docs/api/server) for complete documentation.
+
