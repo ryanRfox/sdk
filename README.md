@@ -1,20 +1,43 @@
 # Radius SDKs
 
-[![TypeScript](https://img.shields.io/npm/v/@radiustechsystems/sdk?label=TypeScript&color=blue)](https://www.npmjs.com/package/@radiustechsystems/sdk)
-[![Go](https://img.shields.io/badge/Go-coming%20soon-lightgrey)](go/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-2.0.0--alpha.1-blue)](typescript/)
+[![Go](https://img.shields.io/badge/Go-v1-green)](go/)
 [![Python](https://img.shields.io/badge/Python-coming%20soon-lightgrey)](python/)
 [![Rust](https://img.shields.io/badge/Rust-coming%20soon-lightgrey)](rust/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Official SDKs for [Radius](https://radiustech.xyz/) — a high-performance smart contract platform with near-instant settlement and millions of transactions per second.
 
-## Quick Start
+> **V2 Alpha Notice:** The TypeScript SDK on this branch is **V2-alpha** and is not yet published to npm. See [Local Installation](#local-installation-v2-alpha) below. Go, Python, and Rust SDKs remain at V1.
 
-### TypeScript
+## Quick Start (TypeScript V2)
+
+### Local Installation (V2-alpha)
+
+V2 is not yet on npm. To use this branch locally:
 
 ```bash
-npm install @radiustechsystems/sdk viem
+# Clone and build the SDK
+git clone https://github.com/radiustechsystems/sdk.git
+cd sdk/typescript
+pnpm install
+pnpm build
+
+# Link globally
+pnpm link --global
 ```
+
+Then in your project:
+
+```bash
+# Link the SDK
+pnpm link --global @radiustechsystems/sdk
+
+# Or with npm
+npm link @radiustechsystems/sdk
+```
+
+### Usage
 
 ```typescript
 import { createRadiusClient, createPrivateKeySigner } from '@radiustechsystems/sdk';
@@ -26,7 +49,13 @@ const account = createPrivateKeySigner('0x...');
 const receipt = await client.sendAndWait(account, '0x...', 1000000000000000000n);
 ```
 
-### Go
+### Unlink when done
+
+```bash
+pnpm unlink --global @radiustechsystems/sdk
+```
+
+## Go SDK (V1)
 
 ```bash
 go get github.com/radiustechsystems/sdk/go
@@ -50,12 +79,23 @@ balance, _ := client.GetBalance(ctx, address)
 
 ## Available SDKs
 
-| SDK | Status | Install |
-|-----|--------|---------|
-| [TypeScript](typescript/) | [![npm](https://img.shields.io/npm/v/@radiustechsystems/sdk)](https://www.npmjs.com/package/@radiustechsystems/sdk) | `npm install @radiustechsystems/sdk` |
-| [Go](go/) | Stable | `go get github.com/radiustechsystems/sdk/go` |
-| [Python](python/) | Coming soon | — |
-| [Rust](rust/) | Coming soon | — |
+| SDK | Version | Status | Install |
+|-----|---------|--------|---------|
+| [TypeScript](typescript/) | 2.0.0-alpha.1 | **V2 Alpha** (local only) | See [Local Installation](#local-installation-v2-alpha) |
+| [Go](go/) | 1.x | Stable (V1) | `go get github.com/radiustechsystems/sdk/go` |
+| [Python](python/) | — | Coming soon | — |
+| [Rust](rust/) | — | Coming soon | — |
+
+## What's New in TypeScript V2
+
+- **viem integration** — Full compatibility with viem types and patterns
+- **React hooks** — `useRadiusBalance`, `useRadiusSend`, ERC-20 hooks
+- **Server handlers** — `Handler.keyManager()`, `Handler.compose()`
+- **wagmi connector** — `privateKeyConnector()` for wagmi v3
+- **Events module** — `watchTransfer`, `watchApproval`, `getLogs`
+- **Subpath exports** — `/chains`, `/react`, `/events`, `/server`, `/wagmi`
+
+See [typescript/CHANGELOG.md](typescript/CHANGELOG.md) for breaking changes.
 
 ## Why Radius?
 
