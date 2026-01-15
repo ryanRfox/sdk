@@ -1,256 +1,84 @@
 # Radius TypeScript SDK
 
-The official TypeScript SDK for interacting with the [Radius platform](https://radiustech.xyz/). Built on viem for maximum compatibility with the Ethereum ecosystem.
+[![npm](https://img.shields.io/npm/v/@radiustechsystems/sdk)](https://www.npmjs.com/package/@radiustechsystems/sdk)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 
-## Features
-
-- viem-based client for seamless EVM compatibility
-- Account management with viem LocalAccount-based signing
-- Smart contract deployment and interaction
-- Rich error hierarchy for better debugging
-- React hooks for frontend integration
-- wagmi connector support
-- Optional request logging and interceptors
-- Server-side handlers for key management
-
-## Requirements
-
-- Node.js >= 22
-- Radius JSON-RPC endpoint: https://docs.radiustech.xyz/radius-testnet-access
-- Ethereum private key: https://ethereum.org/en/developers/docs/accounts/#account-creation
+The official TypeScript SDK for [Radius](https://radiustech.xyz/). Built on [viem](https://viem.sh/) for seamless EVM compatibility.
 
 ## Installation
 
 ```bash
-# Using npm
-npm install @radiustechsystems/sdk
-
-# Using pnpm
-pnpm add @radiustechsystems/sdk
-
-# Using yarn
-yarn add @radiustechsystems/sdk
+npm install @radiustechsystems/sdk viem
 ```
 
 ## Quick Start
 
-### Connect to Radius
-
 ```typescript
-import { createRadiusClient, createPrivateKeySigner, radiusTestnet } from '@radiustechsystems/sdk';
+import { createRadiusClient, createPrivateKeySigner } from '@radiustechsystems/sdk';
+import { radiusTestnet } from '@radiustechsystems/sdk/chains';
 
-// Create client - uses RADIUS_RPC_URL env var if set
+// Create client
 const client = createRadiusClient({ chain: radiusTestnet });
 
-// Create signer from private key
-const signer = createPrivateKeySigner(
-  process.env.RADIUS_PRIVATE_KEY as `0x${string}`
-);
+// Create account from private key
+const account = createPrivateKeySigner('0x...');
 
 // Check balance
-const balance = await client.getBalance(signer.address);
-console.log('Balance:', balance, 'wei');
-```
+const balance = await client.getBalance(account.address);
 
-### Transfer Value
-
-```typescript
-import type { Address } from '@radiustechsystems/sdk';
-
-const recipient: Address = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
-const amount = 1000000000000000000n; // 1 USD in wei
-
-// Send and wait for receipt
-const receipt = await client.sendAndWait(signer, recipient, amount);
-
-console.log('Transaction hash:', receipt.transactionHash);
-console.log('Status:', receipt.status); // 'success' or 'reverted'
-console.log('Gas used:', receipt.gasUsed);
-```
-
-### Deploy a Smart Contract
-
-```typescript
-import { parseAbi } from 'viem';
-
-const abi = parseAbi([
-  'constructor(string name, string symbol)',
-  'function name() view returns (string)',
-  'function symbol() view returns (string)',
-]);
-
-const bytecode = '0x608060405234801561001057600080fd5b50...';
-
-const { address, receipt } = await client.deployContract(
-  signer,
-  bytecode,
-  abi,
-  'My Token',
-  'MTK'
-);
-
-console.log('Contract deployed at:', address);
-```
-
-### Interact with a Smart Contract
-
-```typescript
-// Read from contract
-const name = await client.call<string>(
-  { address: contractAddress, abi },
-  'name'
-);
-
-// Write to contract
-const receipt = await client.executeAndWait(
-  { address: contractAddress, abi },
-  signer,
-  'transfer',
-  recipientAddress,
-  amount
+// Send transaction
+const receipt = await client.sendAndWait(
+  account,
+  '0x...recipient',
+  1000000000000000000n
 );
 ```
 
-## Server Handlers
+## Features
 
-Build backend services with the server module:
+- **Client** — Read balances, send transactions, deploy contracts
+- **React Hooks** — `useRadiusBalance`, `useRadiusSend`, ERC-20 hooks
+- **Server Handlers** — WebAuthn key management, composable handlers
+- **wagmi Integration** — Drop-in connector for wagmi apps
+- **Events** — Watch blocks, transfers, approvals, and logs
 
-### Import Server Module
+## Subpath Exports
 
 ```typescript
+import { createRadiusClient } from '@radiustechsystems/sdk';
+import { radiusTestnet } from '@radiustechsystems/sdk/chains';
+import { useRadiusBalance } from '@radiustechsystems/sdk/react';
+import { watchTransfer } from '@radiustechsystems/sdk/events';
 import { Handler, Kv } from '@radiustechsystems/sdk/server';
+import { privateKeyConnector } from '@radiustechsystems/sdk/wagmi';
 ```
-
-### Key Manager
-
-Store and retrieve WebAuthn credentials:
-
-```typescript
-import { Handler, Kv } from '@radiustechsystems/sdk/server';
-
-const handler = Handler.keyManager({
-  kv: Kv.memory(), // Use Kv.cloudflare() in production
-  rp: 'example.com',
-});
-
-// Endpoints:
-// GET /challenge - Generate auth challenge
-// GET /:id - Retrieve credential
-// POST /:id - Store credential (with WebAuthn verification)
-
-// Use with Node.js http server
-import { createServer } from 'node:http';
-createServer(handler.listener).listen(3000);
-```
-
-### Compose Handlers
-
-Combine multiple handlers under a single server:
-
-```typescript
-const keyManager = Handler.keyManager({ kv, path: '/keys' });
-const healthCheck = Handler.from();
-healthCheck.get('/health', () => Response.json({ status: 'ok' }));
-
-const app = Handler.compose([keyManager, healthCheck], { path: '/api' });
-
-// Routes:
-// /api/keys/challenge, /api/keys/:id
-// /api/health
-```
-
-## Error Handling
-
-The SDK provides a rich error hierarchy for better debugging:
-
-```typescript
-import {
-  RadiusError,
-  InsufficientBalanceError,
-  TransactionRevertedError,
-} from '@radiustechsystems/sdk';
-
-try {
-  await client.sendAndWait(signer, to, amount);
-} catch (error) {
-  if (error instanceof InsufficientBalanceError) {
-    console.error('Need:', error.required, 'Have:', error.balance);
-  } else if (error instanceof TransactionRevertedError) {
-    console.error('Reverted:', error.revertReason);
-  } else if (error instanceof RadiusError) {
-    console.error('Error:', error.shortMessage);
-    console.error('Details:', error.details);
-  }
-}
-```
-
-## Client Extension
-
-Extend the client with custom actions:
-
-```typescript
-import { formatEther } from 'viem';
-
-const client = createRadiusClient({ chain: radiusTestnet }).extend((base) => ({
-  async getBalanceFormatted(address: Address) {
-    const balance = await base.getBalance(address);
-    return formatEther(balance);
-  },
-}));
-
-const formatted = await client.getBalanceFormatted(signer.address);
-```
-
-## Chain Contracts
-
-Access well-known contract addresses:
-
-```typescript
-import { radiusTestnet, RADIUS_TESTNET_CONTRACTS } from '@radiustechsystems/sdk';
-
-// Via chain definition
-const sbcAddress = radiusTestnet.contracts?.sbc?.address;
-
-// Or constant
-const sbcAddress2 = RADIUS_TESTNET_CONTRACTS.sbc;
-```
-
-## Environment Variables
-
-The client reads RPC URL from environment:
-
-| Variable | Description |
-|----------|-------------|
-| `RADIUS_RPC_URL` | Primary RPC endpoint |
-| `RADIUS_ENDPOINT` | Fallback RPC endpoint |
 
 ## Documentation
 
-To regenerate the API documentation:
+**[docs.radiustech.xyz](https://docs.radiustech.xyz/)** — Full documentation, guides, and API reference.
 
-```bash
-pnpm generate:docs
-```
+- [Getting Started](https://docs.radiustech.xyz/getting-started)
+- [TypeScript SDK Guide](https://docs.radiustech.xyz/sdk/typescript)
+- [API Reference](https://docs.radiustech.xyz/sdk/typescript/api)
+- [React Integration](https://docs.radiustech.xyz/sdk/typescript/react)
+- [Server Handlers](https://docs.radiustech.xyz/sdk/typescript/server)
 
-See [`docs/GENERATION.md`](docs/GENERATION.md) for details.
+## Requirements
 
-Generated documentation files:
-- `docs/sdk-typescript.mdx` - Main API reference
-- `docs/sdk-typescript-events.mdx` - Events API
-- `docs/sdk-typescript-react.mdx` - React hooks
-
-## Resources
-
-- [Website](https://radiustech.xyz/)
+- Node.js >= 22
 - [Testnet Access](https://docs.radiustech.xyz/radius-testnet-access)
-- [GitHub Issues](https://github.com/radiustechsystems/sdks/issues)
-- [Changelog](CHANGELOG.md)
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `RADIUS_RPC_URL` | RPC endpoint URL |
+| `RADIUS_PRIVATE_KEY` | Account private key (for scripts) |
 
 ## Contributing
 
-Please see the [TypeScript SDK Contributing Guide](CONTRIBUTING.md) for detailed information about contributing to this
-SDK. For repository-wide guidelines, see the [General Contributing Guide](../CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-All Radius SDKs are released under the [MIT License](../LICENSE).
+[MIT](../LICENSE)
