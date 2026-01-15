@@ -7,7 +7,7 @@ import type { Hex, Chain, Client, Transport } from 'viem';
 import type { LocalAccount } from 'viem/accounts';
 import { signTransaction } from 'viem/actions';
 import { createClient } from 'viem';
-import type { Handler, HandlerOptions, KeyManagerOptions, FeePayerOptions } from './types.js';
+import type { Handler, HandlerOptions, KeyManagerOptions, FeePayerOptions, ComposeOptions } from './types.js';
 import * as RequestListener from './internal/requestListener.js';
 
 /**
@@ -203,4 +203,46 @@ export function feePayer(options: FeePayerOptions): Handler {
   });
 
   return router;
+}
+
+/**
+ * Composes multiple handlers into a single handler.
+ * Routes requests to each handler in order until one returns a non-404 response.
+ *
+ * @example
+ * ```typescript
+ * import { Handler, Kv } from '@radiustechsystems/sdk/server';
+ *
+ * const handler = Handler.compose([
+ *   Handler.feePayer({ account, client }),
+ *   Handler.keyManager({ kv: Kv.memory() }),
+ * ]);
+ *
+ * app.use('/api/radius', handler.listener);
+ * ```
+ */
+export function compose(handlers: Handler[], options: ComposeOptions = {}): Handler {
+  const path = options.path ?? '/';
+
+  return from({
+    ...options,
+    async defaultHandler(context) {
+      const url = new URL(context.request.url);
+      if (!url.pathname.startsWith(path)) {
+        return new Response('Not Found', { status: 404 });
+      }
+
+      url.pathname = url.pathname.replace(path, '') || '/';
+
+      for (const handler of handlers) {
+        const request = new Request(url, context.request.clone());
+        const response = await handler.fetch(request);
+        if (response.status !== 404) {
+          return response;
+        }
+      }
+
+      return new Response('Not Found', { status: 404 });
+    },
+  });
 }
