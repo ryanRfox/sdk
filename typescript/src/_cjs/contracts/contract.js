@@ -14,8 +14,8 @@ class Contract {
     async call(client, method, ...args) {
         return client.call(this, method, ...args);
     }
-    async execute(client, signer, method, ...args) {
-        return client.execute(this, signer, method, ...args);
+    async execute(client, account, method, ...args) {
+        return client.execute(this, account, method, ...args);
     }
 }
 exports.Contract = Contract;

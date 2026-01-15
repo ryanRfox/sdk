@@ -1,4 +1,4 @@
-import type { RadiusSigner } from '../auth';
+import type { LocalAccount } from 'viem';
 import { type Address, type BytesLike, type Receipt, SignedTransaction, type Transaction } from '../common';
 import type { AccountOption } from './options';
 import type { AccountClient } from './types';
@@ -9,23 +9,23 @@ import type { AccountClient } from './types';
  */
 export declare class Account {
     /**
-     * The signer used to cryptographically sign messages and transactions
+     * The local account used to cryptographically sign messages and transactions
      */
-    signer?: RadiusSigner;
+    account?: LocalAccount;
     /**
      * Creates a new Account instance
-     * @param signer Optional signer to use with this account
+     * @param account Optional local account to use with this account
      */
-    constructor(signer?: RadiusSigner);
+    constructor(account?: LocalAccount);
     /**
      * Creates a new Account with the given options
-     * @param opts Functional options to configure the account (e.g., WithSigner)
+     * @param opts Functional options to configure the account (e.g., withAccount, withPrivateKey)
      * @returns A new Account instance configured with the provided options
      */
     static New(...opts: AccountOption[]): Promise<Account>;
     /**
      * Returns the address of the account
-     * @returns The account address, or zero address if no signer is available
+     * @returns The account address, or zero address if no account is available
      */
     address(): Address;
     /**
@@ -48,7 +48,7 @@ export declare class Account {
      * @param recipient Destination address to receive the funds
      * @param value Amount of native currency to send in wei
      * @returns Receipt of the completed transaction
-     * @throws Error if no signer is available
+     * @throws Error if no account is available
      * @throws Error if the transaction fails
      */
     send(client: AccountClient, recipient: Address, value: bigint): Promise<Receipt>;
@@ -56,17 +56,18 @@ export declare class Account {
      * Signs a message using the EIP-191 standard
      * @param message Message bytes to sign
      * @returns The signature bytes
-     * @throws Error if no signer is available
+     * @throws Error if no account is available
      * @throws Error if signing fails
      */
     signMessage(message: BytesLike): Promise<Uint8Array>;
     /**
      * Signs a transaction using the EIP-155 standard
      * @param transaction Transaction to sign
+     * @param chainId The chain ID for signing the transaction
      * @returns The signed transaction ready to be sent to the network
-     * @throws Error if no signer is available
+     * @throws Error if no account is available
      * @throws Error if signing fails
      */
-    signTransaction(transaction: Transaction): Promise<SignedTransaction>;
+    signTransaction(transaction: Transaction, chainId: number): Promise<SignedTransaction>;
 }
 //# sourceMappingURL=account.d.ts.map

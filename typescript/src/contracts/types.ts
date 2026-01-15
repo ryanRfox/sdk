@@ -1,4 +1,4 @@
-import type { RadiusSigner } from '../auth';
+import type { LocalAccount } from 'viem';
 import type { Receipt } from '../common';
 import type { Contract } from './contract';
 
@@ -22,7 +22,7 @@ export interface ContractClient {
 	/**
 	 * Executes a contract method that modifies Radius state
 	 * @param contract Contract instance to interact with
-	 * @param signer The signer used to sign the transaction
+	 * @param account The local account used to sign the transaction
 	 * @param method Name of the method to execute on the contract
 	 * @param args Arguments to pass to the contract method
 	 * @returns Transaction receipt after the method execution
@@ -33,7 +33,7 @@ export interface ContractClient {
 	 */
 	execute(
 		contract: Contract,
-		signer: RadiusSigner,
+		account: LocalAccount,
 		method: string,
 		...args: unknown[]
 	): Promise<Receipt>;

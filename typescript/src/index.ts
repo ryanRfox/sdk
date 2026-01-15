@@ -19,16 +19,9 @@ export type {
 // Accounts
 export * from './accounts';
 
-// Auth / Signers
-export {
-	ClefSigner,
-	type ClefSignerConfig,
-	createClefSigner,
-	createPrivateKeySigner,
-	PrivateKeySigner,
-	type PrivateKeySignerConfig,
-	type RadiusSigner,
-} from './auth';
+// Auth / Accounts
+export { createPrivateKeySigner } from './auth';
+export type { LocalAccount } from 'viem';
 // Chains
 export {
 	radiusMainnet,

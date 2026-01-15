@@ -1,5 +1,5 @@
 /**
- * Integration tests for PrivateKeySigner.
+ * Integration tests for createPrivateKeySigner.
  *
  * These tests validate the signer functionality including address derivation,
  * message signing, and transaction signing. Most tests can run without network
@@ -11,12 +11,10 @@
 import {
 	createPrivateKeySigner,
 	createRadiusClient,
-	PrivateKeySigner,
 	type RadiusClient,
-	type RadiusSigner,
 	radiusTestnet,
 } from '@radiustechsystems/sdk';
-import { defineChain, type Hex, parseTransaction, recoverMessageAddress } from 'viem';
+import { defineChain, type Hex, type LocalAccount, parseTransaction, recoverMessageAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -54,47 +52,34 @@ function createTestChain() {
 	});
 }
 
-describe('PrivateKeySigner Integration Tests', () => {
-	describe('Signer Creation', () => {
-		it('should create a signer from private key', () => {
-			const signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
+describe('createPrivateKeySigner Integration Tests', () => {
+	describe('Account Creation', () => {
+		it('should create a LocalAccount from private key', () => {
+			const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
 
-			expect(signer).toBeDefined();
-			expect(signer).toBeInstanceOf(PrivateKeySigner);
-		});
-
-		it('should create a signer using class constructor', () => {
-			const signer = new PrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
-
-			expect(signer).toBeDefined();
-			expect(signer).toBeInstanceOf(PrivateKeySigner);
+			expect(account).toBeDefined();
+			expect(account.type).toBe('local');
 		});
 
 		it('should derive correct address from known private key', () => {
-			const signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
+			const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
 
 			// The address should match the known address for this private key
-			expect(signer.address.toLowerCase()).toBe(KNOWN_TEST_ADDRESS.toLowerCase());
+			expect(account.address.toLowerCase()).toBe(KNOWN_TEST_ADDRESS.toLowerCase());
 		});
 
-		it('should store chain ID correctly', () => {
-			const signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
+		it('should create same address regardless of when created', () => {
+			const account1 = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+			const account2 = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
 
-			expect(signer.chainId).toBe(radiusTestnet.id);
-		});
-
-		it('should work with different chain IDs', () => {
-			const mainnetChainId = 1;
-			const signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, mainnetChainId);
-
-			expect(signer.chainId).toBe(mainnetChainId);
-			// Address should be the same regardless of chain ID
-			expect(signer.address.toLowerCase()).toBe(KNOWN_TEST_ADDRESS.toLowerCase());
+			// Address should be the same (derived from private key)
+			expect(account1.address.toLowerCase()).toBe(KNOWN_TEST_ADDRESS.toLowerCase());
+			expect(account2.address.toLowerCase()).toBe(KNOWN_TEST_ADDRESS.toLowerCase());
 		});
 
 		it('should throw for invalid private key', () => {
 			expect(() => {
-				createPrivateKeySigner('0xinvalid', radiusTestnet.id);
+				createPrivateKeySigner('0xinvalid');
 			}).toThrow();
 		});
 
@@ -103,22 +88,21 @@ describe('PrivateKeySigner Integration Tests', () => {
 			expect(() => {
 				createPrivateKeySigner(
 					'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex,
-					radiusTestnet.id,
 				);
 			}).toThrow();
 		});
 	});
 
 	describe('Message Signing', () => {
-		let signer: PrivateKeySigner;
+		let account: LocalAccount;
 
 		beforeAll(() => {
-			signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
+			account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
 		});
 
 		it('should sign a string message', async () => {
 			const message = 'Hello, Radius!';
-			const signature = await signer.signMessage(message);
+			const signature = await account.signMessage({ message });
 
 			expect(signature).toBeDefined();
 			expect(typeof signature).toBe('string');
@@ -129,7 +113,7 @@ describe('PrivateKeySigner Integration Tests', () => {
 
 		it('should produce recoverable signatures', async () => {
 			const message = 'Recoverable message test';
-			const signature = await signer.signMessage(message);
+			const signature = await account.signMessage({ message });
 
 			// Recover the address from the signature
 			const recoveredAddress = await recoverMessageAddress({
@@ -137,14 +121,14 @@ describe('PrivateKeySigner Integration Tests', () => {
 				signature,
 			});
 
-			expect(recoveredAddress.toLowerCase()).toBe(signer.address.toLowerCase());
+			expect(recoveredAddress.toLowerCase()).toBe(account.address.toLowerCase());
 		});
 
 		it('should produce consistent signatures for same message', async () => {
 			const message = 'Consistent message';
 
-			const sig1 = await signer.signMessage(message);
-			const sig2 = await signer.signMessage(message);
+			const sig1 = await account.signMessage({ message });
+			const sig2 = await account.signMessage({ message });
 
 			// Note: ECDSA signatures can vary due to nonce (k value)
 			// But with deterministic signing (RFC 6979), they should be the same
@@ -155,22 +139,22 @@ describe('PrivateKeySigner Integration Tests', () => {
 			const message1 = 'Message 1';
 			const message2 = 'Message 2';
 
-			const sig1 = await signer.signMessage(message1);
-			const sig2 = await signer.signMessage(message2);
+			const sig1 = await account.signMessage({ message: message1 });
+			const sig2 = await account.signMessage({ message: message2 });
 
 			expect(sig1).not.toBe(sig2);
 		});
 
 		it('should sign hex data messages', async () => {
 			const hexData = '0x1234567890abcdef' as Hex;
-			const signature = await signer.signMessage({ raw: hexData });
+			const signature = await account.signMessage({ message: { raw: hexData } });
 
 			expect(signature).toBeDefined();
 			expect(signature).toMatch(/^0x[a-fA-F0-9]+$/);
 		});
 
 		it('should sign empty message', async () => {
-			const signature = await signer.signMessage('');
+			const signature = await account.signMessage({ message: '' });
 
 			expect(signature).toBeDefined();
 			expect(signature).toMatch(/^0x[a-fA-F0-9]+$/);
@@ -178,7 +162,7 @@ describe('PrivateKeySigner Integration Tests', () => {
 
 		it('should sign long messages', async () => {
 			const longMessage = 'x'.repeat(10000);
-			const signature = await signer.signMessage(longMessage);
+			const signature = await account.signMessage({ message: longMessage });
 
 			expect(signature).toBeDefined();
 			expect(signature.length).toBe(132); // Signature length is fixed
@@ -186,7 +170,7 @@ describe('PrivateKeySigner Integration Tests', () => {
 
 		it('should sign Unicode messages', async () => {
 			const unicodeMessage = 'Hello World! Special chars: < > " & \' \n \t';
-			const signature = await signer.signMessage(unicodeMessage);
+			const signature = await account.signMessage({ message: unicodeMessage });
 
 			expect(signature).toBeDefined();
 
@@ -196,15 +180,15 @@ describe('PrivateKeySigner Integration Tests', () => {
 				signature,
 			});
 
-			expect(recoveredAddress.toLowerCase()).toBe(signer.address.toLowerCase());
+			expect(recoveredAddress.toLowerCase()).toBe(account.address.toLowerCase());
 		});
 	});
 
 	describe('Transaction Signing', () => {
-		let signer: PrivateKeySigner;
+		let account: LocalAccount;
 
 		beforeAll(() => {
-			signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
+			account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
 		});
 
 		it('should sign a basic transaction', async () => {
@@ -216,7 +200,7 @@ describe('PrivateKeySigner Integration Tests', () => {
 				gas: 21000n,
 			};
 
-			const signedTx = await signer.signTransaction(tx);
+			const signedTx = await account.signTransaction(tx);
 
 			expect(signedTx).toBeDefined();
 			expect(typeof signedTx).toBe('string');
@@ -230,9 +214,10 @@ describe('PrivateKeySigner Integration Tests', () => {
 				nonce: 0,
 				gasPrice: 0n,
 				gas: 21000n,
+				chainId: radiusTestnet.id,
 			};
 
-			const signedTx = await signer.signTransaction(tx);
+			const signedTx = await account.signTransaction(tx);
 
 			// Parse the signed transaction to verify chain ID
 			const parsed = parseTransaction(signedTx);
@@ -251,7 +236,7 @@ describe('PrivateKeySigner Integration Tests', () => {
 				gas: 60000n,
 			};
 
-			const signedTx = await signer.signTransaction(tx);
+			const signedTx = await account.signTransaction(tx);
 
 			expect(signedTx).toBeDefined();
 		});
@@ -265,7 +250,7 @@ describe('PrivateKeySigner Integration Tests', () => {
 				gas: 100000n,
 			};
 
-			const signedTx = await signer.signTransaction(tx);
+			const signedTx = await account.signTransaction(tx);
 
 			expect(signedTx).toBeDefined();
 
@@ -282,8 +267,8 @@ describe('PrivateKeySigner Integration Tests', () => {
 				gas: 21000n,
 			};
 
-			const signedTx1 = await signer.signTransaction({ ...baseTx, nonce: 0 });
-			const signedTx2 = await signer.signTransaction({ ...baseTx, nonce: 1 });
+			const signedTx1 = await account.signTransaction({ ...baseTx, nonce: 0 });
+			const signedTx2 = await account.signTransaction({ ...baseTx, nonce: 1 });
 
 			expect(signedTx1).not.toBe(signedTx2);
 		});
@@ -294,27 +279,23 @@ describe('PrivateKeySigner Integration Tests', () => {
 
 		describe.skipIf(!hasPrivateKey)('Network Transaction Tests', () => {
 			let client: RadiusClient;
-			let signer: RadiusSigner;
+			let account: LocalAccount;
 
 			beforeAll(() => {
 				client = createRadiusClient({ chain: testChain });
 				// Guard: describe.skipIf ensures hasPrivateKey is true here
 				if (!RADIUS_PRIVATE_KEY) throw new Error('RADIUS_PRIVATE_KEY required');
-				signer = createPrivateKeySigner(RADIUS_PRIVATE_KEY, testChain.id);
+				account = createPrivateKeySigner(RADIUS_PRIVATE_KEY);
 			});
 
 			it('should have correct address from environment key', () => {
-				expect(signer.address).toBeDefined();
-				expect(signer.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
-				console.log(`Signer address: ${signer.address}`);
-			});
-
-			it('should have correct chain ID', () => {
-				expect(signer.chainId).toBe(testChain.id);
+				expect(account.address).toBeDefined();
+				expect(account.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
+				console.log(`Account address: ${account.address}`);
 			});
 
 			it('should be able to get nonce from network', async () => {
-				const nonce = await client.getNonce(signer.address);
+				const nonce = await client.getNonce(account.address);
 
 				expect(nonce).toBeDefined();
 				expect(typeof nonce).toBe('number');
@@ -325,7 +306,7 @@ describe('PrivateKeySigner Integration Tests', () => {
 
 			it('should be able to sign and submit transaction', async () => {
 				// Check balance first
-				const balance = await client.getBalance(signer.address);
+				const balance = await client.getBalance(account.address);
 
 				if (balance < 1n) {
 					console.log('Skipping transaction test: insufficient balance');
@@ -333,7 +314,7 @@ describe('PrivateKeySigner Integration Tests', () => {
 				}
 
 				// Sign and send a minimal self-transfer
-				const hash = await client.send(signer, signer.address, 1n);
+				const hash = await client.send(account, account.address, 1n);
 
 				expect(hash).toBeDefined();
 				expect(hash).toMatch(/^0x[a-fA-F0-9]{64}$/);
@@ -351,13 +332,13 @@ describe('PrivateKeySigner Integration Tests', () => {
 
 	describe('Address Derivation', () => {
 		it('should match viem privateKeyToAccount address', () => {
-			// Use our signer
-			const signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
+			// Use our function
+			const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
 
 			// Use viem directly
 			const viemAccount = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 
-			expect(signer.address).toBe(viemAccount.address);
+			expect(account.address).toBe(viemAccount.address);
 		});
 
 		it('should derive different addresses for different keys', () => {
@@ -365,57 +346,61 @@ describe('PrivateKeySigner Integration Tests', () => {
 			const secondKey =
 				'0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' as const;
 
-			const signer1 = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
-			const signer2 = createPrivateKeySigner(secondKey, radiusTestnet.id);
+			const account1 = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+			const account2 = createPrivateKeySigner(secondKey);
 
-			expect(signer1.address).not.toBe(signer2.address);
+			expect(account1.address).not.toBe(account2.address);
 		});
 	});
 
-	describe('Signer Interface Compliance', () => {
-		let signer: RadiusSigner;
+	describe('LocalAccount Interface Compliance', () => {
+		let account: LocalAccount;
 
 		beforeAll(() => {
-			signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
+			account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
 		});
 
 		it('should have address property', () => {
-			expect('address' in signer).toBe(true);
-			expect(signer.address).toBeDefined();
+			expect('address' in account).toBe(true);
+			expect(account.address).toBeDefined();
 		});
 
-		it('should have chainId property', () => {
-			expect('chainId' in signer).toBe(true);
-			expect(signer.chainId).toBeDefined();
+		it('should have type property', () => {
+			expect('type' in account).toBe(true);
+			expect(account.type).toBe('local');
 		});
 
 		it('should have signMessage method', () => {
-			expect(typeof signer.signMessage).toBe('function');
+			expect(typeof account.signMessage).toBe('function');
 		});
 
 		it('should have signTransaction method', () => {
-			expect(typeof signer.signTransaction).toBe('function');
+			expect(typeof account.signTransaction).toBe('function');
+		});
+
+		it('should have signTypedData method', () => {
+			expect(typeof account.signTypedData).toBe('function');
 		});
 	});
 
 	describe('Environment Key Tests', () => {
 		describe.skipIf(!hasPrivateKey)('Using RADIUS_PRIVATE_KEY', () => {
-			it('should create signer from environment key', () => {
+			it('should create account from environment key', () => {
 				if (!RADIUS_PRIVATE_KEY) throw new Error('RADIUS_PRIVATE_KEY required');
-				const signer = createPrivateKeySigner(RADIUS_PRIVATE_KEY, radiusTestnet.id);
+				const account = createPrivateKeySigner(RADIUS_PRIVATE_KEY);
 
-				expect(signer).toBeDefined();
-				expect(signer.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
+				expect(account).toBeDefined();
+				expect(account.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
 
-				console.log(`Environment key address: ${signer.address}`);
+				console.log(`Environment key address: ${account.address}`);
 			});
 
 			it('should sign message with environment key', async () => {
 				if (!RADIUS_PRIVATE_KEY) throw new Error('RADIUS_PRIVATE_KEY required');
-				const signer = createPrivateKeySigner(RADIUS_PRIVATE_KEY, radiusTestnet.id);
+				const account = createPrivateKeySigner(RADIUS_PRIVATE_KEY);
 				const message = 'Test message with env key';
 
-				const signature = await signer.signMessage(message);
+				const signature = await account.signMessage({ message });
 
 				expect(signature).toBeDefined();
 
@@ -425,15 +410,15 @@ describe('PrivateKeySigner Integration Tests', () => {
 					signature,
 				});
 
-				expect(recoveredAddress.toLowerCase()).toBe(signer.address.toLowerCase());
+				expect(recoveredAddress.toLowerCase()).toBe(account.address.toLowerCase());
 			});
 		});
 	});
 });
 
-describe('PrivateKeySigner Edge Cases', () => {
+describe('createPrivateKeySigner Edge Cases', () => {
 	it('should handle maximum value transaction', async () => {
-		const signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
+		const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
 
 		const tx = {
 			to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as const,
@@ -443,13 +428,13 @@ describe('PrivateKeySigner Edge Cases', () => {
 			gas: 21000n,
 		};
 
-		const signedTx = await signer.signTransaction(tx);
+		const signedTx = await account.signTransaction(tx);
 
 		expect(signedTx).toBeDefined();
 	});
 
 	it('should handle zero value transaction', async () => {
-		const signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
+		const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
 
 		const tx = {
 			to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as const,
@@ -459,13 +444,13 @@ describe('PrivateKeySigner Edge Cases', () => {
 			gas: 21000n,
 		};
 
-		const signedTx = await signer.signTransaction(tx);
+		const signedTx = await account.signTransaction(tx);
 
 		expect(signedTx).toBeDefined();
 	});
 
 	it('should handle large nonce', async () => {
-		const signer = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY, radiusTestnet.id);
+		const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
 
 		const tx = {
 			to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as const,
@@ -475,7 +460,7 @@ describe('PrivateKeySigner Edge Cases', () => {
 			gas: 21000n,
 		};
 
-		const signedTx = await signer.signTransaction(tx);
+		const signedTx = await account.signTransaction(tx);
 
 		expect(signedTx).toBeDefined();
 	});

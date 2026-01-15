@@ -1,4 +1,4 @@
-import type { RadiusSigner } from '../auth';
+import type { LocalAccount } from 'viem';
 import {
 	type Address,
 	type BytesLike,
@@ -17,21 +17,21 @@ import type { AccountClient } from './types';
  */
 export class Account {
 	/**
-	 * The signer used to cryptographically sign messages and transactions
+	 * The local account used to cryptographically sign messages and transactions
 	 */
-	signer?: RadiusSigner;
+	account?: LocalAccount;
 
 	/**
 	 * Creates a new Account instance
-	 * @param signer Optional signer to use with this account
+	 * @param account Optional local account to use with this account
 	 */
-	constructor(signer?: RadiusSigner) {
-		this.signer = signer;
+	constructor(account?: LocalAccount) {
+		this.account = account;
 	}
 
 	/**
 	 * Creates a new Account with the given options
-	 * @param opts Functional options to configure the account (e.g., WithSigner)
+	 * @param opts Functional options to configure the account (e.g., withAccount, withPrivateKey)
 	 * @returns A new Account instance configured with the provided options
 	 */
 	static async New(...opts: AccountOption[]): Promise<Account> {
@@ -39,15 +39,15 @@ export class Account {
 		for (const opt of opts) {
 			await opt(options);
 		}
-		return new Account(options.signer);
+		return new Account(options.account);
 	}
 
 	/**
 	 * Returns the address of the account
-	 * @returns The account address, or zero address if no signer is available
+	 * @returns The account address, or zero address if no account is available
 	 */
 	address(): Address {
-		return this.signer?.address ?? ZERO_ADDRESS;
+		return this.account?.address ?? ZERO_ADDRESS;
 	}
 
 	/**
@@ -76,30 +76,30 @@ export class Account {
 	 * @param recipient Destination address to receive the funds
 	 * @param value Amount of native currency to send in wei
 	 * @returns Receipt of the completed transaction
-	 * @throws Error if no signer is available
+	 * @throws Error if no account is available
 	 * @throws Error if the transaction fails
 	 */
 	async send(client: AccountClient, recipient: Address, value: bigint): Promise<Receipt> {
-		if (!this.signer) {
-			throw new Error('Signer is required for sending transactions');
+		if (!this.account) {
+			throw new Error('Account is required for sending transactions');
 		}
-		return client.send(this.signer, recipient, value);
+		return client.send(this.account, recipient, value);
 	}
 
 	/**
 	 * Signs a message using the EIP-191 standard
 	 * @param message Message bytes to sign
 	 * @returns The signature bytes
-	 * @throws Error if no signer is available
+	 * @throws Error if no account is available
 	 * @throws Error if signing fails
 	 */
 	async signMessage(message: BytesLike): Promise<Uint8Array> {
-		if (!this.signer) {
-			throw new Error('Signer is required for signing messages');
+		if (!this.account) {
+			throw new Error('Account is required for signing messages');
 		}
-		// Convert message to the format expected by viem signer
+		// Convert message to the format expected by viem LocalAccount
 		const messageStr = typeof message === 'string' ? message : new TextDecoder().decode(message);
-		const signature = await this.signer.signMessage(messageStr);
+		const signature = await this.account.signMessage({ message: messageStr });
 		// Convert hex signature to Uint8Array
 		const hexStr = signature.startsWith('0x') ? signature.slice(2) : signature;
 		const bytes = new Uint8Array(hexStr.length / 2);
@@ -112,13 +112,14 @@ export class Account {
 	/**
 	 * Signs a transaction using the EIP-155 standard
 	 * @param transaction Transaction to sign
+	 * @param chainId The chain ID for signing the transaction
 	 * @returns The signed transaction ready to be sent to the network
-	 * @throws Error if no signer is available
+	 * @throws Error if no account is available
 	 * @throws Error if signing fails
 	 */
-	async signTransaction(transaction: Transaction): Promise<SignedTransaction> {
-		if (!this.signer) {
-			throw new Error('Signer is required for sending transactions');
+	async signTransaction(transaction: Transaction, chainId: number): Promise<SignedTransaction> {
+		if (!this.account) {
+			throw new Error('Account is required for signing transactions');
 		}
 		// Helper to convert BigNumberish to bigint
 		const toBigInt = (value: bigint | number | string | undefined): bigint | undefined => {
@@ -127,14 +128,14 @@ export class Account {
 		};
 		// Convert to viem transaction format
 		// transaction.to is already a viem Address type (`0x${string}`)
-		const signedTx = await this.signer.signTransaction({
+		const signedTx = await this.account.signTransaction({
 			to: transaction.to,
 			value: toBigInt(transaction.value) ?? 0n,
 			data: transaction.data as `0x${string}`,
 			nonce: transaction.nonce,
 			gas: toBigInt(transaction.gas),
 			gasPrice: toBigInt(transaction.gasPrice) ?? 0n,
-			chainId: this.signer.chainId,
+			chainId,
 		});
 		return new SignedTransaction(signedTx);
 	}

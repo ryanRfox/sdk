@@ -7,8 +7,8 @@
  */
 // Accounts
 export * from './accounts';
-// Auth / Signers
-export { ClefSigner, createClefSigner, createPrivateKeySigner, PrivateKeySigner, } from './auth';
+// Auth / Accounts
+export { createPrivateKeySigner } from './auth';
 // Chains
 export { radiusMainnet, radiusTestnet, RADIUS_MAINNET_CONTRACTS, RADIUS_TESTNET_CONTRACTS, } from './chains';
 // Client - main entry point

@@ -4,8 +4,7 @@
  * This module provides the primary interface for reading blockchain state,
  * sending transactions, deploying contracts, and interacting with smart contracts.
  */
-import { type Abi, type Chain, type Hash, type Hex, type PublicClient, type TransactionReceipt, type TransactionRequest, type Transport, type Address as ViemAddress } from 'viem';
-import type { RadiusSigner } from '../auth';
+import { type Abi, type Chain, type Hash, type Hex, type LocalAccount, type PublicClient, type TransactionReceipt, type TransactionRequest, type Transport, type Address as ViemAddress } from 'viem';
 import { type Interceptor, type Logf } from '../transport';
 /**
  * Maximum gas limit for transactions.
@@ -82,8 +81,8 @@ export interface ContractInstance {
  * const balance = await client.getBalance('0x...');
  *
  * // Send transaction and wait for receipt
- * const signer = createPrivateKeySigner('0x...privateKey', radiusTestnet.id);
- * const receipt = await client.sendAndWait(signer, '0x...recipient', 1000000000000000000n);
+ * const account = createPrivateKeySigner('0x...privateKey');
+ * const receipt = await client.sendAndWait(account, '0x...recipient', 1000000000000000000n);
  * ```
  */
 export interface RadiusClient {
@@ -138,7 +137,7 @@ export interface RadiusClient {
      * @param args - Arguments to pass to the method
      * @returns The transaction hash
      */
-    execute(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<Hash>;
+    execute(contract: ContractInstance, signer: LocalAccount, method: string, ...args: unknown[]): Promise<Hash>;
     /**
      * Execute a state-changing contract method and wait for the receipt.
      * @param contract - The contract instance with ABI and address
@@ -147,11 +146,11 @@ export interface RadiusClient {
      * @param args - Arguments to pass to the method
      * @returns The transaction receipt
      */
-    executeAndWait(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
+    executeAndWait(contract: ContractInstance, signer: LocalAccount, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
     /**
      * @deprecated Use executeAndWait instead
      */
-    executeSync(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
+    executeSync(contract: ContractInstance, signer: LocalAccount, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
     /**
      * Send native currency to an address.
      * Returns immediately after the transaction is sent (does not wait for receipt).
@@ -160,7 +159,7 @@ export interface RadiusClient {
      * @param value - The amount to send in wei
      * @returns The transaction hash
      */
-    send(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<Hash>;
+    send(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<Hash>;
     /**
      * Send native currency to an address and wait for the receipt.
      * @param signer - The signer to sign the transaction
@@ -168,11 +167,11 @@ export interface RadiusClient {
      * @param value - The amount to send in wei
      * @returns The transaction receipt
      */
-    sendAndWait(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
+    sendAndWait(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
     /**
      * @deprecated Use sendAndWait instead
      */
-    sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
+    sendSync(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
     /**
      * Deploy a smart contract.
      * @param signer - The signer to sign the deployment transaction
@@ -181,7 +180,7 @@ export interface RadiusClient {
      * @param args - Constructor arguments (if any)
      * @returns The deployed contract address and transaction receipt
      */
-    deployContract(signer: RadiusSigner, bytecode: Hex, abi: Abi, ...args: unknown[]): Promise<{
+    deployContract(signer: LocalAccount, bytecode: Hex, abi: Abi, ...args: unknown[]): Promise<{
         address: ViemAddress;
         receipt: RadiusReceipt;
     }>;

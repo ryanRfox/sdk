@@ -47,7 +47,7 @@ export class Contract {
     /**
      * Executes a contract method that modifies Radius state
      * @param client Radius client instance used to execute the transaction
-     * @param signer The signer used to sign the transaction
+     * @param account The local account used to sign the transaction
      * @param method Name of the method to execute on the contract
      * @param args Arguments to pass to the contract method
      * @returns Transaction receipt after the method execution
@@ -56,8 +56,8 @@ export class Contract {
      * @throws Error if the transaction fails or is reverted
      * @throws Error if the transaction receipt is not returned
      */
-    async execute(client, signer, method, ...args) {
-        return client.execute(this, signer, method, ...args);
+    async execute(client, account, method, ...args) {
+        return client.execute(this, account, method, ...args);
     }
 }
 //# sourceMappingURL=contract.js.map

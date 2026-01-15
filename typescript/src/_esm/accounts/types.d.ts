@@ -1,4 +1,4 @@
-import type { RadiusSigner } from '../auth';
+import type { LocalAccount } from 'viem';
 import type { Address, HttpClient, Receipt, Transaction } from '../common';
 /**
  * Client interface for account operations.
@@ -46,13 +46,13 @@ export interface AccountClient {
     /**
      * Sends native currency to a recipient address.
      *
-     * @param signer The signer used to sign the transaction
+     * @param account The local account used to sign the transaction
      * @param recipient Destination address to receive the funds
      * @param value Amount of native currency to send in wei
      * @returns Receipt of the completed transaction
      * @throws Error if the transaction fails
      * @throws Error if the transaction receipt is not returned
      */
-    send(signer: RadiusSigner, recipient: Address, value: bigint): Promise<Receipt>;
+    send(account: LocalAccount, recipient: Address, value: bigint): Promise<Receipt>;
 }
 //# sourceMappingURL=types.d.ts.map

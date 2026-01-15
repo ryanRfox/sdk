@@ -1,4 +1,4 @@
-import type { RadiusSigner } from '../auth';
+import type { LocalAccount } from 'viem';
 import type { ABI, Address, Receipt } from '../common';
 import type { ContractClient } from './types';
 
@@ -56,7 +56,7 @@ export class Contract {
 	/**
 	 * Executes a contract method that modifies Radius state
 	 * @param client Radius client instance used to execute the transaction
-	 * @param signer The signer used to sign the transaction
+	 * @param account The local account used to sign the transaction
 	 * @param method Name of the method to execute on the contract
 	 * @param args Arguments to pass to the contract method
 	 * @returns Transaction receipt after the method execution
@@ -67,10 +67,10 @@ export class Contract {
 	 */
 	async execute(
 		client: ContractClient,
-		signer: RadiusSigner,
+		account: LocalAccount,
 		method: string,
 		...args: unknown[]
 	): Promise<Receipt> {
-		return client.execute(this, signer, method, ...args);
+		return client.execute(this, account, method, ...args);
 	}
 }

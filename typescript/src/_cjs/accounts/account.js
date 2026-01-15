@@ -3,19 +3,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Account = void 0;
 const common_1 = require("../common");
 class Account {
-    signer;
-    constructor(signer) {
-        this.signer = signer;
+    account;
+    constructor(account) {
+        this.account = account;
     }
     static async New(...opts) {
         const options = {};
         for (const opt of opts) {
             await opt(options);
         }
-        return new Account(options.signer);
+        return new Account(options.account);
     }
     address() {
-        return this.signer?.address ?? common_1.ZERO_ADDRESS;
+        return this.account?.address ?? common_1.ZERO_ADDRESS;
     }
     async balance(client) {
         return client.balanceAt(this.address());
@@ -24,17 +24,17 @@ class Account {
         return client.pendingNonceAt(this.address());
     }
     async send(client, recipient, value) {
-        if (!this.signer) {
-            throw new Error('Signer is required for sending transactions');
+        if (!this.account) {
+            throw new Error('Account is required for sending transactions');
         }
-        return client.send(this.signer, recipient, value);
+        return client.send(this.account, recipient, value);
     }
     async signMessage(message) {
-        if (!this.signer) {
-            throw new Error('Signer is required for signing messages');
+        if (!this.account) {
+            throw new Error('Account is required for signing messages');
         }
         const messageStr = typeof message === 'string' ? message : new TextDecoder().decode(message);
-        const signature = await this.signer.signMessage(messageStr);
+        const signature = await this.account.signMessage({ message: messageStr });
         const hexStr = signature.startsWith('0x') ? signature.slice(2) : signature;
         const bytes = new Uint8Array(hexStr.length / 2);
         for (let i = 0; i < bytes.length; i++) {
@@ -42,23 +42,23 @@ class Account {
         }
         return bytes;
     }
-    async signTransaction(transaction) {
-        if (!this.signer) {
-            throw new Error('Signer is required for sending transactions');
+    async signTransaction(transaction, chainId) {
+        if (!this.account) {
+            throw new Error('Account is required for signing transactions');
         }
         const toBigInt = (value) => {
             if (value === undefined)
                 return undefined;
             return typeof value === 'bigint' ? value : BigInt(value);
         };
-        const signedTx = await this.signer.signTransaction({
+        const signedTx = await this.account.signTransaction({
             to: transaction.to,
             value: toBigInt(transaction.value) ?? 0n,
             data: transaction.data,
             nonce: transaction.nonce,
             gas: toBigInt(transaction.gas),
             gasPrice: toBigInt(transaction.gasPrice) ?? 0n,
-            chainId: this.signer.chainId,
+            chainId,
         });
         return new common_1.SignedTransaction(signedTx);
     }

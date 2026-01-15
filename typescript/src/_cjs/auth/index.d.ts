@@ -1,4 +1,3 @@
-export { ClefSigner, createClefSigner } from './clef/signer';
-export { createPrivateKeySigner, PrivateKeySigner } from './privatekey/signer';
-export type { ClefSignerConfig, PrivateKeySignerConfig, RadiusSigner, } from './types';
+export { createPrivateKeySigner } from './privatekey/signer';
+export type { LocalAccount } from 'viem';
 //# sourceMappingURL=index.d.ts.map

@@ -15,9 +15,9 @@ import {
 	createRadiusClient,
 	ERC20,
 	type RadiusClient,
-	type RadiusSigner,
 	radiusTestnet,
 } from '@radiustechsystems/sdk';
+import type { LocalAccount } from 'viem';
 import { createWalletClient, defineChain, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -72,7 +72,7 @@ function createTestChain() {
 
 describe('ERC20 Integration Tests', () => {
 	let client: RadiusClient;
-	let signer: RadiusSigner | undefined;
+	let signer: LocalAccount | undefined;
 	let erc20: ERC20 | undefined;
 	let tokenAddress: `0x${string}` | undefined;
 	const testChain = createTestChain();
@@ -85,7 +85,7 @@ describe('ERC20 Integration Tests', () => {
 
 		// Create signer if private key is available
 		if (hasPrivateKey && RADIUS_PRIVATE_KEY) {
-			signer = createPrivateKeySigner(RADIUS_PRIVATE_KEY, testChain.id);
+			signer = createPrivateKeySigner(RADIUS_PRIVATE_KEY);
 		}
 
 		// Try to find a valid ERC20 token on the network

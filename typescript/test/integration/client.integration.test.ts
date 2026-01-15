@@ -15,9 +15,9 @@ import {
 	createPrivateKeySigner,
 	createRadiusClient,
 	type RadiusClient,
-	type RadiusSigner,
 	radiusTestnet,
 } from '@radiustechsystems/sdk';
+import type { LocalAccount } from 'viem';
 import { defineChain } from 'viem';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -48,7 +48,7 @@ function createTestChain() {
 
 describe('RadiusClient Integration Tests', () => {
 	let client: RadiusClient;
-	let signer: RadiusSigner | undefined;
+	let signer: LocalAccount | undefined;
 	const testChain = createTestChain();
 
 	beforeAll(() => {
@@ -59,7 +59,7 @@ describe('RadiusClient Integration Tests', () => {
 
 		// Create signer only if private key is available
 		if (hasPrivateKey && RADIUS_PRIVATE_KEY) {
-			signer = createPrivateKeySigner(RADIUS_PRIVATE_KEY, testChain.id);
+			signer = createPrivateKeySigner(RADIUS_PRIVATE_KEY);
 		}
 	});
 

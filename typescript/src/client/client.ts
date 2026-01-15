@@ -14,6 +14,7 @@ import {
 	encodeFunctionData,
 	type Hash,
 	type Hex,
+	type LocalAccount,
 	type PublicClient,
 	type TransactionReceipt,
 	type TransactionRequest,
@@ -30,7 +31,6 @@ type AbiConstructor = {
 	stateMutability: 'nonpayable' | 'payable';
 };
 
-import type { RadiusSigner } from '../auth';
 import { createInterceptingTransport, type Interceptor, type Logf } from '../transport';
 
 /**
@@ -112,8 +112,8 @@ export interface ContractInstance {
  * const balance = await client.getBalance('0x...');
  *
  * // Send transaction and wait for receipt
- * const signer = createPrivateKeySigner('0x...privateKey', radiusTestnet.id);
- * const receipt = await client.sendAndWait(signer, '0x...recipient', 1000000000000000000n);
+ * const account = createPrivateKeySigner('0x...privateKey');
+ * const receipt = await client.sendAndWait(account, '0x...recipient', 1000000000000000000n);
  * ```
  */
 export interface RadiusClient {
@@ -177,7 +177,7 @@ export interface RadiusClient {
 	 */
 	execute(
 		contract: ContractInstance,
-		signer: RadiusSigner,
+		signer: LocalAccount,
 		method: string,
 		...args: unknown[]
 	): Promise<Hash>;
@@ -192,7 +192,7 @@ export interface RadiusClient {
 	 */
 	executeAndWait(
 		contract: ContractInstance,
-		signer: RadiusSigner,
+		signer: LocalAccount,
 		method: string,
 		...args: unknown[]
 	): Promise<RadiusReceipt>;
@@ -202,7 +202,7 @@ export interface RadiusClient {
 	 */
 	executeSync(
 		contract: ContractInstance,
-		signer: RadiusSigner,
+		signer: LocalAccount,
 		method: string,
 		...args: unknown[]
 	): Promise<RadiusReceipt>;
@@ -215,7 +215,7 @@ export interface RadiusClient {
 	 * @param value - The amount to send in wei
 	 * @returns The transaction hash
 	 */
-	send(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<Hash>;
+	send(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<Hash>;
 
 	/**
 	 * Send native currency to an address and wait for the receipt.
@@ -224,12 +224,12 @@ export interface RadiusClient {
 	 * @param value - The amount to send in wei
 	 * @returns The transaction receipt
 	 */
-	sendAndWait(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
+	sendAndWait(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
 
 	/**
 	 * @deprecated Use sendAndWait instead
 	 */
-	sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
+	sendSync(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
 
 	/**
 	 * Deploy a smart contract.
@@ -240,7 +240,7 @@ export interface RadiusClient {
 	 * @returns The deployed contract address and transaction receipt
 	 */
 	deployContract(
-		signer: RadiusSigner,
+		signer: LocalAccount,
 		bytecode: Hex,
 		abi: Abi,
 		...args: unknown[]
@@ -386,7 +386,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 	 * Sign and send a transaction
 	 */
 	async function signAndSendTransaction(
-		signer: RadiusSigner,
+		signer: LocalAccount,
 		tx: {
 			to?: ViemAddress;
 			data?: Hex;
@@ -428,7 +428,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			nonce,
 			gas,
 			gasPrice: 0n, // Radius uses zero gas price
-			chainId: signer.chainId,
+			chainId: config.chain.id,
 		});
 
 		// Send the signed transaction
@@ -510,7 +510,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 
 		async execute(
 			contract: ContractInstance,
-			signer: RadiusSigner,
+			signer: LocalAccount,
 			method: string,
 			...args: unknown[]
 		): Promise<Hash> {
@@ -537,7 +537,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 
 		async executeAndWait(
 			contract: ContractInstance,
-			signer: RadiusSigner,
+			signer: LocalAccount,
 			method: string,
 			...args: unknown[]
 		): Promise<RadiusReceipt> {
@@ -548,32 +548,32 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 		/** @deprecated Use executeAndWait instead */
 		async executeSync(
 			contract: ContractInstance,
-			signer: RadiusSigner,
+			signer: LocalAccount,
 			method: string,
 			...args: unknown[]
 		): Promise<RadiusReceipt> {
 			return this.executeAndWait(contract, signer, method, ...args);
 		},
 
-		async send(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<Hash> {
+		async send(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<Hash> {
 			return signAndSendTransaction(signer, {
 				to,
 				value,
 			});
 		},
 
-		async sendAndWait(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
+		async sendAndWait(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
 			const hash = await this.send(signer, to, value);
 			return this.waitForReceipt(hash);
 		},
 
 		/** @deprecated Use sendAndWait instead */
-		async sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
+		async sendSync(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
 			return this.sendAndWait(signer, to, value);
 		},
 
 		async deployContract(
-			signer: RadiusSigner,
+			signer: LocalAccount,
 			bytecode: Hex,
 			abi: Abi,
 			...args: unknown[]

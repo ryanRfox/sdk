@@ -140,7 +140,7 @@ export function createRadiusClient(config) {
             nonce,
             gas,
             gasPrice: 0n, // Radius uses zero gas price
-            chainId: signer.chainId,
+            chainId: config.chain.id,
         });
         // Send the signed transaction
         return publicClient.sendRawTransaction({

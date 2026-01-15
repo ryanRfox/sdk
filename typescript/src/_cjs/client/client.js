@@ -80,7 +80,7 @@ function createRadiusClient(config) {
             nonce,
             gas,
             gasPrice: 0n,
-            chainId: signer.chainId,
+            chainId: config.chain.id,
         });
         return publicClient.sendRawTransaction({
             serializedTransaction: signedTx,

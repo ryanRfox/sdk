@@ -1,9 +1,8 @@
-import type { Hex } from 'viem';
-import { type RadiusSigner } from '../auth';
+import type { Hex, LocalAccount } from 'viem';
 export type AccountOption = (options: AccountOptions) => Promise<void>;
 export interface AccountOptions {
-    signer?: RadiusSigner;
+    account?: LocalAccount;
 }
-export declare function withPrivateKey(key: Hex, chainId: number): AccountOption;
-export declare function withSigner(signer: RadiusSigner): AccountOption;
+export declare function withPrivateKey(key: Hex): AccountOption;
+export declare function withAccount(account: LocalAccount): AccountOption;
 //# sourceMappingURL=options.d.ts.map

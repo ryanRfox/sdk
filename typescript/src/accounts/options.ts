@@ -1,5 +1,5 @@
-import type { Hex } from 'viem';
-import { PrivateKeySigner, type RadiusSigner } from '../auth';
+import type { Hex, LocalAccount } from 'viem';
+import { createPrivateKeySigner } from '../auth';
 
 /**
  * A function that configures a Radius account.
@@ -13,37 +13,36 @@ export type AccountOption = (options: AccountOptions) => Promise<void>;
  */
 export interface AccountOptions {
 	/**
-	 * The signer to use with this account
+	 * The local account to use with this account
 	 */
-	signer?: RadiusSigner;
+	account?: LocalAccount;
 }
 
 /**
  * Create an AccountOption that sets the account address and signer using a private key.
  * The private key will be stored in memory, so for production systems with high security
- * requirements, consider using withSigner instead, along with a hardware security module
+ * requirements, consider using withAccount instead, along with a hardware security module
  * or key management service.
  *
  * @param key Private key as a hex string
- * @param chainId The chain ID for signing transactions
  * @returns An AccountOption function that configures an Account with the provided private key
  */
-export function withPrivateKey(key: Hex, chainId: number): AccountOption {
+export function withPrivateKey(key: Hex): AccountOption {
 	return async (options: AccountOptions) => {
-		options.signer = new PrivateKeySigner(key, chainId);
+		options.account = createPrivateKeySigner(key);
 	};
 }
 
 /**
- * Create an AccountOption that sets the account address and signer using a custom Signer implementation.
+ * Create an AccountOption that sets the account address and signer using a custom LocalAccount.
  * This is useful when you want to use a custom signing implementation, such as a hardware
  * security module or key management service.
  *
- * @param signer Signer instance for signing transactions and messages
- * @returns An AccountOption function that configures an Account with the provided signer
+ * @param account LocalAccount instance for signing transactions and messages
+ * @returns An AccountOption function that configures an Account with the provided account
  */
-export function withSigner(signer: RadiusSigner): AccountOption {
+export function withAccount(account: LocalAccount): AccountOption {
 	return async (options: AccountOptions) => {
-		options.signer = signer;
+		options.account = account;
 	};
 }

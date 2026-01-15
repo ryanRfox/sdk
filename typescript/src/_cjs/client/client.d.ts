@@ -1,5 +1,4 @@
-import { type Abi, type Chain, type Hash, type Hex, type PublicClient, type TransactionReceipt, type TransactionRequest, type Transport, type Address as ViemAddress } from 'viem';
-import type { RadiusSigner } from '../auth';
+import { type Abi, type Chain, type Hash, type Hex, type LocalAccount, type PublicClient, type TransactionReceipt, type TransactionRequest, type Transport, type Address as ViemAddress } from 'viem';
 import { type Interceptor, type Logf } from '../transport';
 export declare const MAX_GAS = 1319413953330n;
 export interface RadiusReceipt {
@@ -31,13 +30,13 @@ export interface RadiusClient {
     getNonce(address: ViemAddress): Promise<number>;
     estimateGas(tx: TransactionRequest): Promise<bigint>;
     call<T = unknown>(contract: ContractInstance, method: string, ...args: unknown[]): Promise<T>;
-    execute(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<Hash>;
-    executeAndWait(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
-    executeSync(contract: ContractInstance, signer: RadiusSigner, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
-    send(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<Hash>;
-    sendAndWait(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
-    sendSync(signer: RadiusSigner, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
-    deployContract(signer: RadiusSigner, bytecode: Hex, abi: Abi, ...args: unknown[]): Promise<{
+    execute(contract: ContractInstance, signer: LocalAccount, method: string, ...args: unknown[]): Promise<Hash>;
+    executeAndWait(contract: ContractInstance, signer: LocalAccount, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
+    executeSync(contract: ContractInstance, signer: LocalAccount, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
+    send(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<Hash>;
+    sendAndWait(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
+    sendSync(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
+    deployContract(signer: LocalAccount, bytecode: Hex, abi: Abi, ...args: unknown[]): Promise<{
         address: ViemAddress;
         receipt: RadiusReceipt;
     }>;

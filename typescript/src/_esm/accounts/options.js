@@ -1,30 +1,29 @@
-import { PrivateKeySigner } from '../auth';
+import { createPrivateKeySigner } from '../auth';
 /**
  * Create an AccountOption that sets the account address and signer using a private key.
  * The private key will be stored in memory, so for production systems with high security
- * requirements, consider using withSigner instead, along with a hardware security module
+ * requirements, consider using withAccount instead, along with a hardware security module
  * or key management service.
  *
  * @param key Private key as a hex string
- * @param chainId The chain ID for signing transactions
  * @returns An AccountOption function that configures an Account with the provided private key
  */
-export function withPrivateKey(key, chainId) {
+export function withPrivateKey(key) {
     return async (options) => {
-        options.signer = new PrivateKeySigner(key, chainId);
+        options.account = createPrivateKeySigner(key);
     };
 }
 /**
- * Create an AccountOption that sets the account address and signer using a custom Signer implementation.
+ * Create an AccountOption that sets the account address and signer using a custom LocalAccount.
  * This is useful when you want to use a custom signing implementation, such as a hardware
  * security module or key management service.
  *
- * @param signer Signer instance for signing transactions and messages
- * @returns An AccountOption function that configures an Account with the provided signer
+ * @param account LocalAccount instance for signing transactions and messages
+ * @returns An AccountOption function that configures an Account with the provided account
  */
-export function withSigner(signer) {
+export function withAccount(account) {
     return async (options) => {
-        options.signer = signer;
+        options.account = account;
     };
 }
 //# sourceMappingURL=options.js.map

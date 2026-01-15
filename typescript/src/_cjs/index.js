@@ -14,13 +14,10 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MAX_GAS = exports.createRadiusClient = exports.RADIUS_TESTNET_CONTRACTS = exports.RADIUS_MAINNET_CONTRACTS = exports.radiusTestnet = exports.radiusMainnet = exports.PrivateKeySigner = exports.createPrivateKeySigner = exports.createClefSigner = exports.ClefSigner = void 0;
+exports.MAX_GAS = exports.createRadiusClient = exports.RADIUS_TESTNET_CONTRACTS = exports.RADIUS_MAINNET_CONTRACTS = exports.radiusTestnet = exports.radiusMainnet = exports.createPrivateKeySigner = void 0;
 __exportStar(require("./accounts"), exports);
 var auth_1 = require("./auth");
-Object.defineProperty(exports, "ClefSigner", { enumerable: true, get: function () { return auth_1.ClefSigner; } });
-Object.defineProperty(exports, "createClefSigner", { enumerable: true, get: function () { return auth_1.createClefSigner; } });
 Object.defineProperty(exports, "createPrivateKeySigner", { enumerable: true, get: function () { return auth_1.createPrivateKeySigner; } });
-Object.defineProperty(exports, "PrivateKeySigner", { enumerable: true, get: function () { return auth_1.PrivateKeySigner; } });
 var chains_1 = require("./chains");
 Object.defineProperty(exports, "radiusMainnet", { enumerable: true, get: function () { return chains_1.radiusMainnet; } });
 Object.defineProperty(exports, "radiusTestnet", { enumerable: true, get: function () { return chains_1.radiusTestnet; } });
