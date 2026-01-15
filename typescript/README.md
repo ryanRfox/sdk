@@ -1,14 +1,34 @@
 # Radius TypeScript SDK
 
-[![npm](https://img.shields.io/npm/v/@radiustechsystems/sdk)](https://www.npmjs.com/package/@radiustechsystems/sdk)
+[![Version](https://img.shields.io/badge/version-2.0.0--alpha.1-blue)](package.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 
 The official TypeScript SDK for [Radius](https://radiustech.xyz/). Built on [viem](https://viem.sh/) for seamless EVM compatibility.
 
-## Installation
+> **V2 Alpha Notice:** This SDK is in pre-release and not yet published to npm. You must build and link locally to use it.
+
+## Local Installation
+
+V2 is not yet on npm. Build and link locally:
 
 ```bash
-npm install @radiustechsystems/sdk viem
+# In this directory (typescript/)
+pnpm install
+pnpm build
+pnpm link --global
+```
+
+Then in your project:
+
+```bash
+pnpm link --global @radiustechsystems/sdk
+# Or: npm link @radiustechsystems/sdk
+```
+
+When done testing:
+
+```bash
+pnpm unlink --global @radiustechsystems/sdk
 ```
 
 ## Quick Start
@@ -66,6 +86,7 @@ import { privateKeyConnector } from '@radiustechsystems/sdk/wagmi';
 ## Requirements
 
 - Node.js >= 22
+- pnpm (for local development)
 - [Testnet Access](https://docs.radiustech.xyz/radius-testnet-access)
 
 ## Environment Variables
