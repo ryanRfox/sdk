@@ -1,5 +1,5 @@
 /**
- * Integration tests for createPrivateKeySigner.
+ * Integration tests for privateKeyToAccount.
  *
  * These tests validate the signer functionality including address derivation,
  * message signing, and transaction signing. Most tests can run without network
@@ -9,13 +9,12 @@
  */
 
 import {
-	createPrivateKeySigner,
 	createRadiusClient,
+	privateKeyToAccount,
 	type RadiusClient,
 	radiusTestnet,
 } from '@radiustechsystems/sdk';
 import { defineChain, type Hex, type LocalAccount, parseTransaction, recoverMessageAddress } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -52,25 +51,25 @@ function createTestChain() {
 	});
 }
 
-describe('createPrivateKeySigner Integration Tests', () => {
+describe('privateKeyToAccount Integration Tests', () => {
 	describe('Account Creation', () => {
 		it('should create a LocalAccount from private key', () => {
-			const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+			const account = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 
 			expect(account).toBeDefined();
 			expect(account.type).toBe('local');
 		});
 
 		it('should derive correct address from known private key', () => {
-			const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+			const account = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 
 			// The address should match the known address for this private key
 			expect(account.address.toLowerCase()).toBe(KNOWN_TEST_ADDRESS.toLowerCase());
 		});
 
 		it('should create same address regardless of when created', () => {
-			const account1 = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
-			const account2 = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+			const account1 = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
+			const account2 = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 
 			// Address should be the same (derived from private key)
 			expect(account1.address.toLowerCase()).toBe(KNOWN_TEST_ADDRESS.toLowerCase());
@@ -79,14 +78,14 @@ describe('createPrivateKeySigner Integration Tests', () => {
 
 		it('should throw for invalid private key', () => {
 			expect(() => {
-				createPrivateKeySigner('0xinvalid');
+				privateKeyToAccount('0xinvalid');
 			}).toThrow();
 		});
 
 		it('should throw for private key without 0x prefix handling', () => {
 			// viem requires 0x prefix
 			expect(() => {
-				createPrivateKeySigner(
+				privateKeyToAccount(
 					'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex,
 				);
 			}).toThrow();
@@ -97,7 +96,7 @@ describe('createPrivateKeySigner Integration Tests', () => {
 		let account: LocalAccount;
 
 		beforeAll(() => {
-			account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+			account = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 		});
 
 		it('should sign a string message', async () => {
@@ -188,7 +187,7 @@ describe('createPrivateKeySigner Integration Tests', () => {
 		let account: LocalAccount;
 
 		beforeAll(() => {
-			account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+			account = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 		});
 
 		it('should sign a basic transaction', async () => {
@@ -285,7 +284,7 @@ describe('createPrivateKeySigner Integration Tests', () => {
 				client = createRadiusClient({ chain: testChain });
 				// Guard: describe.skipIf ensures hasPrivateKey is true here
 				if (!RADIUS_PRIVATE_KEY) throw new Error('RADIUS_PRIVATE_KEY required');
-				account = createPrivateKeySigner(RADIUS_PRIVATE_KEY);
+				account = privateKeyToAccount(RADIUS_PRIVATE_KEY);
 			});
 
 			it('should have correct address from environment key', () => {
@@ -333,7 +332,7 @@ describe('createPrivateKeySigner Integration Tests', () => {
 	describe('Address Derivation', () => {
 		it('should match viem privateKeyToAccount address', () => {
 			// Use our function
-			const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+			const account = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 
 			// Use viem directly
 			const viemAccount = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
@@ -346,8 +345,8 @@ describe('createPrivateKeySigner Integration Tests', () => {
 			const secondKey =
 				'0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' as const;
 
-			const account1 = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
-			const account2 = createPrivateKeySigner(secondKey);
+			const account1 = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
+			const account2 = privateKeyToAccount(secondKey);
 
 			expect(account1.address).not.toBe(account2.address);
 		});
@@ -357,7 +356,7 @@ describe('createPrivateKeySigner Integration Tests', () => {
 		let account: LocalAccount;
 
 		beforeAll(() => {
-			account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+			account = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 		});
 
 		it('should have address property', () => {
@@ -387,7 +386,7 @@ describe('createPrivateKeySigner Integration Tests', () => {
 		describe.skipIf(!hasPrivateKey)('Using RADIUS_PRIVATE_KEY', () => {
 			it('should create account from environment key', () => {
 				if (!RADIUS_PRIVATE_KEY) throw new Error('RADIUS_PRIVATE_KEY required');
-				const account = createPrivateKeySigner(RADIUS_PRIVATE_KEY);
+				const account = privateKeyToAccount(RADIUS_PRIVATE_KEY);
 
 				expect(account).toBeDefined();
 				expect(account.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
@@ -397,7 +396,7 @@ describe('createPrivateKeySigner Integration Tests', () => {
 
 			it('should sign message with environment key', async () => {
 				if (!RADIUS_PRIVATE_KEY) throw new Error('RADIUS_PRIVATE_KEY required');
-				const account = createPrivateKeySigner(RADIUS_PRIVATE_KEY);
+				const account = privateKeyToAccount(RADIUS_PRIVATE_KEY);
 				const message = 'Test message with env key';
 
 				const signature = await account.signMessage({ message });
@@ -416,9 +415,9 @@ describe('createPrivateKeySigner Integration Tests', () => {
 	});
 });
 
-describe('createPrivateKeySigner Edge Cases', () => {
+describe('privateKeyToAccount Edge Cases', () => {
 	it('should handle maximum value transaction', async () => {
-		const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+		const account = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 
 		const tx = {
 			to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as const,
@@ -434,7 +433,7 @@ describe('createPrivateKeySigner Edge Cases', () => {
 	});
 
 	it('should handle zero value transaction', async () => {
-		const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+		const account = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 
 		const tx = {
 			to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as const,
@@ -450,7 +449,7 @@ describe('createPrivateKeySigner Edge Cases', () => {
 	});
 
 	it('should handle large nonce', async () => {
-		const account = createPrivateKeySigner(KNOWN_TEST_PRIVATE_KEY);
+		const account = privateKeyToAccount(KNOWN_TEST_PRIVATE_KEY);
 
 		const tx = {
 			to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as const,

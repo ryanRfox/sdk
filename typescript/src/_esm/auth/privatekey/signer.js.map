@@ -1,1 +1,0 @@
-{"version":3,"file":"signer.js","sourceRoot":"","sources":["../../../auth/privatekey/signer.ts"],"names":[],"mappings":"AAeA,OAAO,EAAE,mBAAmB,EAAE,MAAM,eAAe,CAAC;AAEpD,MAAM,UAAU,sBAAsB,CAAC,UAAe;IACrD,OAAO,mBAAmB,CAAC,UAAU,CAAC,CAAC;AACxC,CAAC"}

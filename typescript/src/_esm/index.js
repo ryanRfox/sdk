@@ -5,20 +5,14 @@
  *
  * @packageDocumentation
  */
-// Accounts
-export * from './accounts';
-// Auth / Accounts
-export { createPrivateKeySigner } from './auth';
+// Re-export viem account utilities
+export { privateKeyToAccount } from 'viem/accounts';
 // Chains
 export { radiusMainnet, radiusTestnet, RADIUS_MAINNET_CONTRACTS, RADIUS_TESTNET_CONTRACTS, } from './chains';
 // Client - main entry point
 export { createRadiusClient, MAX_GAS, } from './client';
-// Common utilities
-export * from './common';
-// Contracts
+// Contracts (typed contract helper)
 export * from './contracts';
-// Crypto
-export * from './crypto';
 // Errors
 export * from './errors';
 // Transport

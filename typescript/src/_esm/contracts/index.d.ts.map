@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../contracts/index.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AACH,cAAc,YAAY,CAAC;AAC3B,cAAc,SAAS,CAAC;AACxB,cAAc,iBAAiB,CAAC;AAChC,cAAc,SAAS,CAAC"}
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../contracts/index.ts"],"names":[],"mappings":"AAAA;;GAEG;AACH,cAAc,iBAAiB,CAAC"}

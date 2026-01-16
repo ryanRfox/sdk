@@ -1,5 +1,4 @@
-import { decodeEventLog } from 'viem';
-import { ERC20_ABI } from '../contracts/erc20';
+import { decodeEventLog, erc20Abi } from 'viem';
 /**
  * Watches for ERC-20 Approval events in real-time.
  * Automatically decodes Approval events and provides type-safe callbacks.
@@ -68,7 +67,7 @@ export function watchApproval(client, params) {
         args.spender = params.spender;
     return client.watchContractEvent({
         address: params.address,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         eventName: 'Approval',
         args: Object.keys(args).length > 0 ? args : undefined,
         onLogs: (logs) => {
@@ -77,7 +76,7 @@ export function watchApproval(client, params) {
                 .map((log) => {
                 try {
                     const decoded = decodeEventLog({
-                        abi: ERC20_ABI,
+                        abi: erc20Abi,
                         data: log.data,
                         topics: log.topics,
                     });

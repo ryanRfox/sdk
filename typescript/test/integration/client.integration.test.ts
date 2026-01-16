@@ -12,8 +12,8 @@
  */
 
 import {
-	createPrivateKeySigner,
 	createRadiusClient,
+	privateKeyToAccount,
 	type RadiusClient,
 	radiusTestnet,
 } from '@radiustechsystems/sdk';
@@ -59,7 +59,7 @@ describe('RadiusClient Integration Tests', () => {
 
 		// Create signer only if private key is available
 		if (hasPrivateKey && RADIUS_PRIVATE_KEY) {
-			signer = createPrivateKeySigner(RADIUS_PRIVATE_KEY);
+			signer = privateKeyToAccount(RADIUS_PRIVATE_KEY);
 		}
 	});
 

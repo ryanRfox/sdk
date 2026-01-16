@@ -1,5 +1,4 @@
-import { decodeEventLog } from 'viem';
-import { ERC20_ABI } from '../contracts/erc20';
+import { decodeEventLog, erc20Abi } from 'viem';
 /**
  * Watches for ERC-20 Transfer events in real-time.
  * Automatically decodes Transfer events and provides type-safe callbacks.
@@ -58,7 +57,7 @@ export function watchTransfer(client, params) {
         args.to = params.to;
     return client.watchContractEvent({
         address: params.address,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         eventName: 'Transfer',
         args: Object.keys(args).length > 0 ? args : undefined,
         onLogs: (logs) => {
@@ -67,7 +66,7 @@ export function watchTransfer(client, params) {
                 .map((log) => {
                 try {
                     const decoded = decodeEventLog({
-                        abi: ERC20_ABI,
+                        abi: erc20Abi,
                         data: log.data,
                         topics: log.topics,
                     });

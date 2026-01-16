@@ -3,8 +3,7 @@
  * Provides convenient wrappers for watching Transfer events in real-time.
  */
 import type { Address, Log, PublicClient, WatchContractEventReturnType } from 'viem';
-import { type DecodeEventLogReturnType, decodeEventLog } from 'viem';
-import { ERC20_ABI } from '../contracts/erc20';
+import { type DecodeEventLogReturnType, decodeEventLog, erc20Abi } from 'viem';
 
 /**
  * Decoded Transfer event data.
@@ -100,7 +99,7 @@ export function watchTransfer(
 
 	return client.watchContractEvent({
 		address: params.address,
-		abi: ERC20_ABI,
+		abi: erc20Abi,
 		eventName: 'Transfer',
 		args: Object.keys(args).length > 0 ? args : undefined,
 		onLogs: (logs) => {
@@ -109,10 +108,10 @@ export function watchTransfer(
 				.map((log) => {
 					try {
 						const decoded = decodeEventLog({
-							abi: ERC20_ABI,
+							abi: erc20Abi,
 							data: log.data,
 							topics: log.topics,
-						}) as DecodeEventLogReturnType<typeof ERC20_ABI, 'Transfer'>;
+						}) as DecodeEventLogReturnType<typeof erc20Abi, 'Transfer'>;
 
 						return {
 							from: decoded.args.from,

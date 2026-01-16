@@ -1,8 +1,7 @@
 'use client';
 
-import type { Address, Hash, TransactionReceipt } from 'viem';
+import { erc20Abi, type Address, type Hash, type TransactionReceipt } from 'viem';
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { ERC20_ABI } from '../../contracts/index.js';
 
 // ============================================================================
 // useERC20Balance
@@ -19,7 +18,7 @@ export function useERC20Balance({ token, address }: UseERC20BalanceParams) {
 
 	return useReadContract({
 		address: token,
-		abi: ERC20_ABI,
+		abi: erc20Abi,
 		functionName: 'balanceOf',
 		args: owner ? [owner] : undefined,
 		query: {
@@ -44,7 +43,7 @@ export function useERC20Allowance({ token, owner, spender }: UseERC20AllowancePa
 
 	return useReadContract({
 		address: token,
-		abi: ERC20_ABI,
+		abi: erc20Abi,
 		functionName: 'allowance',
 		args: ownerAddress ? [ownerAddress, spender] : undefined,
 		query: {
@@ -64,25 +63,25 @@ export type UseERC20MetadataParams = {
 export function useERC20Metadata({ token }: UseERC20MetadataParams) {
 	const name = useReadContract({
 		address: token,
-		abi: ERC20_ABI,
+		abi: erc20Abi,
 		functionName: 'name',
 	});
 
 	const symbol = useReadContract({
 		address: token,
-		abi: ERC20_ABI,
+		abi: erc20Abi,
 		functionName: 'symbol',
 	});
 
 	const decimals = useReadContract({
 		address: token,
-		abi: ERC20_ABI,
+		abi: erc20Abi,
 		functionName: 'decimals',
 	});
 
 	const totalSupply = useReadContract({
 		address: token,
-		abi: ERC20_ABI,
+		abi: erc20Abi,
 		functionName: 'totalSupply',
 	});
 
@@ -131,7 +130,7 @@ export function useERC20Transfer({ token }: UseERC20TransferParams): UseERC20Tra
 	const transfer = (to: Address, amount: bigint) => {
 		writeContract({
 			address: token,
-			abi: ERC20_ABI,
+			abi: erc20Abi,
 			functionName: 'transfer',
 			args: [to, amount],
 		});
@@ -182,7 +181,7 @@ export function useERC20Approve({ token }: UseERC20ApproveParams): UseERC20Appro
 	const approve = (spender: Address, amount: bigint) => {
 		writeContract({
 			address: token,
-			abi: ERC20_ABI,
+			abi: erc20Abi,
 			functionName: 'approve',
 			args: [spender, amount],
 		});

@@ -34,7 +34,7 @@ const STALE_PATTERNS = [
   { pattern: /ClefSigner/g, message: 'Reference to removed ClefSigner class' },
   { pattern: /createClefSigner/g, message: 'Reference to removed createClefSigner function' },
   { pattern: /ClefSignerConfig/g, message: 'Reference to removed ClefSignerConfig type' },
-  { pattern: /createPrivateKeySigner\([^)]+,\s*\w+\.id\)/g, message: 'createPrivateKeySigner no longer takes chainId parameter' },
+  { pattern: /createPrivateKeySigner/g, message: 'Reference to removed createPrivateKeySigner - use privateKeyToAccount from viem' },
   { pattern: /@aspect-build\/radius-sdk/g, message: 'Reference to old package name' },
 ];
 

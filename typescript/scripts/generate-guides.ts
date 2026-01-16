@@ -65,9 +65,9 @@ const client = createRadiusClient({
 ### Create an Account
 
 \`\`\`typescript
-import { createPrivateKeySigner } from '@radiustechsystems/sdk';
+import { privateKeyToAccount } from '@radiustechsystems/sdk';
 
-const account = createPrivateKeySigner('0x...');
+const account = privateKeyToAccount('0x...');
 console.log('Address:', account.address);
 \`\`\`
 
@@ -501,17 +501,17 @@ This guide helps you migrate from Radius SDK V1 to V2.
 
 **V1:**
 \`\`\`typescript
-import { createPrivateKeySigner } from '@aspect-build/radius-sdk';
+import { privateKeyToAccount } from '@aspect-build/radius-sdk';
 
-const signer = createPrivateKeySigner(privateKey, chainId);
+const signer = privateKeyToAccount(privateKey, chainId);
 \`\`\`
 
 **V2:**
 \`\`\`typescript
-import { createPrivateKeySigner } from '@radiustechsystems/sdk';
+import { privateKeyToAccount } from '@radiustechsystems/sdk';
 
 // Chain ID is no longer required - determined by the client
-const account = createPrivateKeySigner(privateKey);
+const account = privateKeyToAccount(privateKey);
 \`\`\`
 
 ### Package Name
@@ -542,8 +542,8 @@ interface RadiusSigner {
 \`\`\`typescript
 import type { LocalAccount } from 'viem';
 
-// createPrivateKeySigner returns a viem LocalAccount
-const account: LocalAccount = createPrivateKeySigner(privateKey);
+// privateKeyToAccount returns a viem LocalAccount
+const account: LocalAccount = privateKeyToAccount(privateKey);
 \`\`\`
 
 ### ClefSigner Removed
@@ -557,7 +557,7 @@ V2 uses subpath exports for better tree-shaking:
 
 \`\`\`typescript
 // Main exports
-import { createRadiusClient, createPrivateKeySigner } from '@radiustechsystems/sdk';
+import { createRadiusClient, privateKeyToAccount } from '@radiustechsystems/sdk';
 
 // Chain definitions
 import { radiusTestnet, radiusMainnet } from '@radiustechsystems/sdk/chains';
@@ -596,10 +596,10 @@ import { privateKeyConnector } from '@radiustechsystems/sdk/wagmi';
 3. **Update account creation:**
    \`\`\`typescript
    // Old
-   const signer = createPrivateKeySigner(privateKey, chainId);
+   const signer = privateKeyToAccount(privateKey, chainId);
 
    // New
-   const account = createPrivateKeySigner(privateKey);
+   const account = privateKeyToAccount(privateKey);
    \`\`\`
 
 4. **Update type imports:**

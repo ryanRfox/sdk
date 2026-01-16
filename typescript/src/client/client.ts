@@ -199,7 +199,7 @@ export interface ContractInstance {
  *
  * @example
  * ```typescript
- * import { createRadiusClient, createPrivateKeySigner } from '@radiustechsystems/sdk';
+ * import { createRadiusClient, privateKeyToAccount } from '@radiustechsystems/sdk';
  * import { radiusTestnet } from '@radiustechsystems/sdk/chains';
  * import { http } from 'viem';
  *
@@ -212,7 +212,7 @@ export interface ContractInstance {
  * const balance = await client.getBalance({ address: '0x...' });
  *
  * // Send transaction and wait for receipt
- * const account = createPrivateKeySigner('0x...privateKey');
+ * const account = privateKeyToAccount('0x...privateKey');
  * const receipt = await client.sendAndWait(account, '0x...recipient', 1000000000000000000n);
  * ```
  */

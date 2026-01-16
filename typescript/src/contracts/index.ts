@@ -1,9 +1,4 @@
 /**
- * The contracts module provides functionality for interacting with smart contracts on the Radius platform.
- * It includes tools for creating contract instances, encoding/decoding method calls, and executing
- * transactions on Radius contracts.
+ * The contracts module provides typed contract utilities for the Radius SDK.
  */
-export * from './contract';
-export * from './erc20';
 export * from './typedContract';
-export * from './types';

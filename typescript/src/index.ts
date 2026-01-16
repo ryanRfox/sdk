@@ -6,22 +6,21 @@
  * @packageDocumentation
  */
 
-// Re-export common viem types for convenience
+// Re-export common viem types and functions for convenience
 export type {
 	Abi,
 	Address,
 	Chain,
 	Hash,
 	Hex,
+	LocalAccount,
 	TransactionReceipt,
 	Transport,
 } from 'viem';
-// Accounts
-export * from './accounts';
 
-// Auth / Accounts
-export { createPrivateKeySigner } from './auth';
-export type { LocalAccount } from 'viem';
+// Re-export viem account utilities
+export { privateKeyToAccount } from 'viem/accounts';
+
 // Chains
 export {
 	radiusMainnet,
@@ -29,6 +28,7 @@ export {
 	RADIUS_MAINNET_CONTRACTS,
 	RADIUS_TESTNET_CONTRACTS,
 } from './chains';
+
 // Client - main entry point
 export {
 	type ContractInstance,
@@ -38,13 +38,12 @@ export {
 	type RadiusClientConfig,
 	type RadiusReceipt,
 } from './client';
-// Common utilities
-export * from './common';
-// Contracts
+
+// Contracts (typed contract helper)
 export * from './contracts';
-// Crypto
-export * from './crypto';
+
 // Errors
 export * from './errors';
+
 // Transport
 export * from './transport';

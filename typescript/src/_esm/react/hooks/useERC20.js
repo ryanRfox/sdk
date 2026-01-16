@@ -1,12 +1,12 @@
 'use client';
+import { erc20Abi } from 'viem';
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { ERC20_ABI } from '../../contracts/index.js';
 export function useERC20Balance({ token, address }) {
     const { address: connectedAddress } = useAccount();
     const owner = address ?? connectedAddress;
     return useReadContract({
         address: token,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: 'balanceOf',
         args: owner ? [owner] : undefined,
         query: {
@@ -19,7 +19,7 @@ export function useERC20Allowance({ token, owner, spender }) {
     const ownerAddress = owner ?? connectedAddress;
     return useReadContract({
         address: token,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: 'allowance',
         args: ownerAddress ? [ownerAddress, spender] : undefined,
         query: {
@@ -30,22 +30,22 @@ export function useERC20Allowance({ token, owner, spender }) {
 export function useERC20Metadata({ token }) {
     const name = useReadContract({
         address: token,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: 'name',
     });
     const symbol = useReadContract({
         address: token,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: 'symbol',
     });
     const decimals = useReadContract({
         address: token,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: 'decimals',
     });
     const totalSupply = useReadContract({
         address: token,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: 'totalSupply',
     });
     return {
@@ -66,7 +66,7 @@ export function useERC20Transfer({ token }) {
     const transfer = (to, amount) => {
         writeContract({
             address: token,
-            abi: ERC20_ABI,
+            abi: erc20Abi,
             functionName: 'transfer',
             args: [to, amount],
         });
@@ -90,7 +90,7 @@ export function useERC20Approve({ token }) {
     const approve = (spender, amount) => {
         writeContract({
             address: token,
-            abi: ERC20_ABI,
+            abi: erc20Abi,
             functionName: 'approve',
             args: [spender, amount],
         });
