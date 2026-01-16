@@ -22,6 +22,11 @@ import {
 	type Transport,
 	type Address as ViemAddress,
 } from 'viem';
+import {
+	getContract,
+	type GetContractParameters,
+	type TypedContract,
+} from '../contracts/typedContract.js';
 
 /**
  * Parameters for getBalance method (matches viem).
@@ -371,6 +376,43 @@ export interface RadiusClient {
 	extend<TExtension extends Record<string, unknown>>(
 		extender: (client: RadiusClient) => TExtension,
 	): RadiusClient & TExtension;
+
+	/**
+	 * Get a typed contract instance with autocomplete support for contract methods.
+	 *
+	 * @param params - The contract address and ABI
+	 * @returns A typed contract with read and write namespaces
+	 *
+	 * @example
+	 * ```typescript
+	 * const erc20Abi = [
+	 *   { type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ type: 'uint256' }] },
+	 *   { type: 'function', name: 'transfer', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ type: 'bool' }] },
+	 * ] as const;
+	 *
+	 * const token = client.getContract({
+	 *   address: '0x...',
+	 *   abi: erc20Abi,
+	 * });
+	 *
+	 * // Read methods - autocomplete shows balanceOf
+	 * const balance = await token.read.balanceOf(['0x...']);
+	 *
+	 * // Write methods - autocomplete shows transfer
+	 * const receipt = await token.write.transfer({
+	 *   args: ['0x...', 1000000n],
+	 *   signer: account,
+	 * });
+	 *
+	 * // Write without waiting for receipt
+	 * const hash = await token.write.transfer({
+	 *   args: ['0x...', 1000000n],
+	 *   signer: account,
+	 *   options: { wait: false },
+	 * });
+	 * ```
+	 */
+	getContract<TAbi extends Abi>(params: GetContractParameters<TAbi>): TypedContract<TAbi>;
 }
 
 /**
@@ -857,6 +899,10 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 		): RadiusClient & TExtension {
 			const extension = extender(this as RadiusClient);
 			return Object.assign(Object.create(this), extension) as RadiusClient & TExtension;
+		},
+
+		getContract<TAbi extends Abi>(params: GetContractParameters<TAbi>): TypedContract<TAbi> {
+			return getContract(this as RadiusClient, params);
 		},
 	} as RadiusClient;
 }

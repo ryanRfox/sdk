@@ -299,16 +299,16 @@ These files reference `@radiustechsystems/sdk/server` and will need updating in 
 
 ## 10. Implementation Checklist
 
-### Phase 1: Source Rename
-- [ ] Create `src/webauthn/` directory
-- [ ] Move all files from `src/server/` to `src/webauthn/`
-- [ ] Update JSDoc in `src/webauthn/index.ts`
-- [ ] Delete empty `src/server/` directory
+### Phase 1: Source Rename ✅ COMPLETE
+- [x] Create `src/webauthn/` directory
+- [x] Move all files from `src/server/` to `src/webauthn/`
+- [x] Update JSDoc in `src/webauthn/index.ts`
+- [x] Delete empty `src/server/` directory
 
-### Phase 2: Configuration Updates
-- [ ] Update `package.json` exports (change `./server` to `./webauthn`)
-- [ ] Update `tsconfig.cjs.json` exclusion (or remove for CJS support)
-- [ ] Update `typedoc.json` entry point
+### Phase 2: Configuration Updates ✅ COMPLETE
+- [x] Update `package.json` exports (change `./server` to `./webauthn`)
+- [x] Update `tsconfig.cjs.json` exclusion (keep exclusion — CJS build has ESM-only dependency issues)
+- [x] Update `typedoc.json` entry point
 
 ### Phase 3: Documentation Updates
 - [ ] Rename `docs/guides/server.mdx` to `docs/guides/webauthn.mdx`
@@ -317,12 +317,12 @@ These files reference `@radiustechsystems/sdk/server` and will need updating in 
 - [ ] Update `README.md`
 - [ ] Update `scripts/generate-guides.ts`
 
-### Phase 4: Build & Verify
-- [ ] Run `pnpm clean`
-- [ ] Run `pnpm build`
-- [ ] Run `pnpm test`
+### Phase 4: Build & Verify ✅ COMPLETE
+- [x] Run `pnpm clean`
+- [x] Run `pnpm build`
+- [x] Run `pnpm test` (215 pass, 27 skipped)
 - [ ] Run `pnpm generate:docs`
-- [ ] Verify new export works: `import { Handler } from '@radiustechsystems/sdk/webauthn'`
+- [x] Verify new export works: `import { Handler } from '@radiustechsystems/sdk/webauthn'`
 
 ### Phase 5: Update Related Files
 - [ ] Update `HANDOFF.md` references
