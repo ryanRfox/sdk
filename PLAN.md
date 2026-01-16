@@ -248,8 +248,8 @@ These are intentional improvements over viem, not deviations:
 
 ### Phase 3: Final ✅ COMPLETE
 - [x] Execute webauthn rename (`/server` → `/webauthn`)
-- [ ] Add CJS export for webauthn (deferred — @remix-run/fetch-router has ESM-only issues)
-- [x] Build and test (215 tests pass, ESM + CJS builds succeed)
+- [x] ~~Add CJS export for webauthn~~ → Won't fix (see C3, Phase 5)
+- [x] Build and test (233 tests pass, ESM-only build)
 - [x] Update any affected imports in integration tests
 
 ### Phase 4: P1 Features ✅ ALL COMPLETE
