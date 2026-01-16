@@ -1,111 +1,117 @@
-# Claude Instructions: Radius SDK Development
+# Claude Instructions: Radius SDK Audit
 
-## Current Priority: Developer Feedback
+## Your Role: Audit Coordinator
 
-**Read `HANDOFF.md` first.** It contains prioritized feedback from a developer evaluation of the TypeScript SDK V2-alpha.
+You are an **audit coordinator** for the Radius TypeScript SDK. Your job is to ensure this SDK is production-ready and provides an excellent developer experience for viem/wagmi developers.
 
-The evaluation project with full reports and working examples is at:
-```
-/Users/fox/Getting Started/radius-first-contact
+**Read `HANDOFF.md` first** for context on what's been done and what needs auditing.
+
+---
+
+## Your Mission
+
+Perform a comprehensive audit of the SDK by coordinating subagents to:
+
+1. **Pattern Compliance Audit** — Compare against reference implementations
+2. **Code Quality Audit** — Find technical debt, shortcuts, fake tests
+3. **Completeness Audit** — Find orphan files, missing exports, dead code
+4. **DX Audit** — Ensure it's awesome for viem/wagmi developers
+
+---
+
+## Reference Repositories (Local)
+
+These repos are available locally for comparison:
+
+| Repo | Location | Use For |
+|------|----------|---------|
+| viem | `/tmp/viem` | Core patterns, types, client structure |
+| wagmi | `/tmp/wagmi` | React hooks, connectors |
+| tempo-ts | `/tmp/tempo-ts` | How to extend viem for a custom chain |
+
+If these don't exist, clone them first:
+```bash
+git clone --depth 1 https://github.com/wevm/viem.git /tmp/viem
+git clone --depth 1 https://github.com/wevm/wagmi.git /tmp/wagmi
+git clone --depth 1 https://github.com/aspect-build/tempo-ts.git /tmp/tempo-ts
 ```
 
 ---
 
-## Project Structure
+## Audit Checklist
+
+### 1. Pattern Compliance
+- [ ] Does `RadiusClient` follow viem's client patterns?
+- [ ] Do React hooks follow wagmi patterns?
+- [ ] Does `getContract()` match viem's `getContract()`?
+- [ ] Are types re-exported correctly from viem?
+- [ ] Is the wagmi connector standard?
+
+### 2. Code Quality
+- [ ] No fake tests that just pass without testing anything
+- [ ] No `// TODO` comments left unaddressed
+- [ ] No commented-out code
+- [ ] No overly complex abstractions
+- [ ] Error messages are helpful (not just "Invalid params")
+- [ ] No hardcoded values that should be configurable
+
+### 3. Completeness
+- [ ] No orphan files (files not imported anywhere)
+- [ ] No orphan exports (exports not used)
+- [ ] No missing exports (internal functions that should be public)
+- [ ] All public APIs have JSDoc comments
+- [ ] Tests exist for all public APIs
+
+### 4. Developer Experience
+- [ ] A viem developer can use this without learning new patterns
+- [ ] TypeScript autocomplete works correctly
+- [ ] Error messages tell you what went wrong AND how to fix it
+- [ ] No surprising behavior vs viem
+
+---
+
+## How to Conduct the Audit
+
+Use subagents to parallelize the work:
 
 ```
-radius-sdk/
-├── typescript/     ← V2-alpha SDK (primary focus of feedback)
-├── go/             ← Go SDK
-├── python/         ← Python SDK
-├── rust/           ← Rust SDK
-└── contracts/      ← Shared contract ABIs
+1. Spawn an "Explore" agent to map the SDK structure
+2. Spawn agents to review each module against viem/wagmi patterns
+3. Spawn an agent to find orphan code and dead exports
+4. Spawn an agent to audit test quality
+5. Compile findings into a prioritized report
 ```
 
 ---
 
-## TypeScript SDK Location
+## Output Format
+
+Create a report with:
+
+1. **Critical Issues** — Must fix before release
+2. **Major Issues** — Should fix before release
+3. **Minor Issues** — Nice to fix
+4. **Observations** — Not issues, but worth noting
+
+For each issue:
+- What's wrong
+- Where it is (file:line)
+- Why it matters
+- How to fix it
+
+---
+
+## Be Brutally Honest
+
+We want a great SDK. Don't sugar-coat problems. If something sucks, say it sucks and explain why. The goal is to ship something developers will love, not to protect feelings.
+
+---
+
+## SDK Location
 
 ```
 /Users/fox/Getting Started/radius-sdk/typescript
 ```
-
-Key files for addressing feedback:
-- `src/client/client.ts` — Main client, error handling, API methods
-- `src/react/hooks/` — React hooks
-- `src/server/` — Server handlers (WebAuthn)
-- `src/wagmi/` — Wagmi connector
-- `package.json` — Exports configuration
-
----
-
-## Action Items from Evaluation
-
-### Priority 0 (Must Fix)
-1. **P0-1:** Add helpful error messages with suggestions
-   - Location: `typescript/src/client/client.ts`
-   - Issue: Errors say "Invalid params" with no context
-
-2. **P0-2:** Match viem API or document differences
-   - Location: `typescript/src/client/client.ts` (getBalance, getCode, getNonce)
-   - Issue: Takes address directly vs viem's `{ address }` object
-
-### Priority 1 (Should Fix)
-3. **P1-1:** Add typed contract helper for autocomplete
-4. **P1-2:** Add event decoding utility
-5. **P1-3:** Rename/clarify server module (it's WebAuthn, not general server)
-6. **P1-4:** Add CJS export for server module
-
-### Priority 2 (Nice to Have)
-7. **P2-1:** Use multicall in useERC20Metadata
-8. **P2-2:** Add generic useContract hook
-9. **P2-3:** Fix Handler.compose() routing bug
-10. **P2-4:** Clean up peer dependency warnings
-
----
-
-## Developer Expectations
-
-The evaluator is experienced with:
-- **viem** — Expects matching API patterns
-- **wagmi** — Expects standard hook patterns
-- **Tempo SDK** — Your code references this; match its error message quality
-
-Key expectation: **Don't surprise viem developers.** If you deviate from viem patterns, document it loudly or support both syntaxes.
-
----
-
-## Reference Materials
-
-### Evaluation Reports
-| Report | Location |
-|--------|----------|
-| Final summary | `/Users/fox/Getting Started/radius-first-contact/REPORT.md` |
-| All phase reports | `/Users/fox/Getting Started/radius-first-contact/reports/` |
-
-### Working Examples
-| Script | Shows |
-|--------|-------|
-| `01-connect.ts` | Basic client usage |
-| `02-send.ts` | Transaction flow |
-| `03-deploy.ts` | Contract deployment |
-| `04-deploy-erc20.ts` | ERC-20 deployment |
-| `05-transfer-erc20.ts` | Token transfers |
-| `06-server.ts` | Server handlers |
-
-Path: `/Users/fox/Getting Started/radius-first-contact/src/`
-
----
-
-## When Working on This SDK
-
-1. **Read HANDOFF.md** for full context on each issue
-2. **Check the example scripts** to see how developers use the SDK
-3. **Read phase reports** for detailed DX feedback per feature
-4. **Match viem patterns** unless there's a strong reason not to
-5. **Test changes** against the evaluation project's scripts
-
----
 
 ## Build & Test
 
@@ -115,10 +121,4 @@ pnpm install
 pnpm build
 pnpm test
 pnpm check:types
-```
-
-To test against the evaluation project:
-```bash
-cd /Users/fox/Getting\ Started/radius-first-contact
-npx tsx src/01-connect.ts  # etc.
 ```
