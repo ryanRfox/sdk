@@ -161,15 +161,18 @@ Provides autocomplete for contract methods. Implemented in `typescript/src/contr
 
 ---
 
-### P1-4: Event Decoding Utility
+### P1-4: Event Decoding Utility ✅ COMPLETE
 
 ```typescript
-decodeEventLogs({ abi: Abi; logs: Log[] }): DecodedEvent[]
+decodeEventLogs({ abi, logs, strict? }): DecodedEventLog[]
+filterEventLogs({ abi, logs, eventName }): DecodedEventLog[]
 ```
 
-Convenience wrapper around viem's `decodeEventLog`.
+Convenience wrappers around viem's `decodeEventLog`:
+- `decodeEventLogs` - Decodes all logs, with strict/non-strict modes
+- `filterEventLogs` - Filters and decodes logs for a specific event type
 
-**File:** `typescript/src/client/client.ts` or `typescript/src/events/decoder.ts`
+**File:** `typescript/src/events/decodeEventLogs.ts`
 
 ---
 
@@ -244,11 +247,11 @@ These are intentional improvements over viem, not deviations:
 - [x] Build and test (215 tests pass, ESM + CJS builds succeed)
 - [x] Update any affected imports in integration tests
 
-### Phase 4: P1 Features ✅ MOSTLY COMPLETE
+### Phase 4: P1 Features ✅ ALL COMPLETE
 - [x] **P1-1:** Add readContract alias (wraps call)
 - [x] **P1-2:** Add writeContract alias (wraps execute)
 - [x] **P1-3:** Typed Contract Helper — `client.getContract({ address, abi })` with read/write namespaces
-- [ ] **P1-4:** Event decoding utility
+- [x] **P1-4:** Event decoding utility — `decodeEventLogs()` and `filterEventLogs()`
 
 ---
 

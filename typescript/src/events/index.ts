@@ -13,6 +13,15 @@ export {
 	createWebSocketTransport,
 	type WebSocketTransportConfig,
 } from '../transport/websocket';
+// Event decoding utilities
+export {
+	type DecodeEventLogsParameters,
+	type DecodeEventLogsResult,
+	type DecodedEventLog,
+	decodeEventLogs,
+	type FilterEventLogsParameters,
+	filterEventLogs,
+} from './decodeEventLogs';
 // Historical log queries
 export {
 	type GetLogsAdaptiveParams,
