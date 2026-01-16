@@ -111,7 +111,7 @@ waitForTransactionReceipt(params: { hash: Hash }): Promise<RadiusReceipt>
 
 These provide familiar entry points for viem developers while keeping Radius conveniences.
 
-### P1-1: Add readContract (wraps call)
+### P1-1: Add readContract (wraps call) ✅ COMPLETE
 
 ```typescript
 readContract<TAbi extends Abi>({
@@ -128,7 +128,7 @@ Internally delegates to existing `call()` method.
 
 ---
 
-### P1-2: Add writeContract (wraps execute)
+### P1-2: Add writeContract (wraps execute) ✅ COMPLETE
 
 ```typescript
 writeContract<TAbi extends Abi>({
@@ -244,10 +244,10 @@ These are intentional improvements over viem, not deviations:
 - [x] Build and test (215 tests pass, ESM + CJS builds succeed)
 - [x] Update any affected imports in integration tests
 
-### Phase 4: P1 Features
+### Phase 4: P1 Features ✅ MOSTLY COMPLETE
+- [x] **P1-1:** Add readContract alias (wraps call)
+- [x] **P1-2:** Add writeContract alias (wraps execute)
 - [x] **P1-3:** Typed Contract Helper — `client.getContract({ address, abi })` with read/write namespaces
-- [ ] **P1-1:** Add readContract alias (wraps call)
-- [ ] **P1-2:** Add writeContract alias (wraps execute)
 - [ ] **P1-4:** Event decoding utility
 
 ---

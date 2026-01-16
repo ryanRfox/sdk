@@ -81,6 +81,40 @@ export interface WaitForTransactionReceiptParameters {
 }
 
 /**
+ * Parameters for readContract method (matches viem).
+ */
+export interface ReadContractParameters {
+	/** The contract address */
+	address: ViemAddress;
+	/** The contract ABI */
+	abi: Abi;
+	/** The function name to call */
+	functionName: string;
+	/** Arguments to pass to the function */
+	args?: readonly unknown[];
+	/** The block number to read at */
+	blockNumber?: bigint;
+	/** The block tag to read at (default: 'latest') */
+	blockTag?: BlockTag;
+}
+
+/**
+ * Parameters for writeContract method (matches viem).
+ */
+export interface WriteContractParameters {
+	/** The contract address */
+	address: ViemAddress;
+	/** The contract ABI */
+	abi: Abi;
+	/** The function name to call */
+	functionName: string;
+	/** Arguments to pass to the function */
+	args?: readonly unknown[];
+	/** The account to sign the transaction */
+	account: LocalAccount;
+}
+
+/**
  * ABI constructor type definition.
  */
 type AbiConstructor = {
@@ -354,6 +388,44 @@ export interface RadiusClient {
 	 * ```
 	 */
 	waitForTransactionReceipt(params: WaitForTransactionReceiptParameters): Promise<RadiusReceipt>;
+
+	/**
+	 * Read data from a contract (viem-compatible alias for call).
+	 *
+	 * @param params - The parameters for the contract read
+	 * @returns The decoded return value from the contract function
+	 *
+	 * @example
+	 * ```typescript
+	 * const balance = await client.readContract({
+	 *   address: '0x...',
+	 *   abi: erc20Abi,
+	 *   functionName: 'balanceOf',
+	 *   args: ['0x...'],
+	 * });
+	 * ```
+	 */
+	readContract<T = unknown>(params: ReadContractParameters): Promise<T>;
+
+	/**
+	 * Execute a write operation on a contract (viem-compatible alias for execute).
+	 * Returns the transaction hash immediately without waiting for confirmation.
+	 *
+	 * @param params - The parameters for the contract write
+	 * @returns The transaction hash
+	 *
+	 * @example
+	 * ```typescript
+	 * const hash = await client.writeContract({
+	 *   address: '0x...',
+	 *   abi: erc20Abi,
+	 *   functionName: 'transfer',
+	 *   args: ['0x...', 1000n],
+	 *   account: signer,
+	 * });
+	 * ```
+	 */
+	writeContract(params: WriteContractParameters): Promise<Hash>;
 
 	/**
 	 * Extend the client with custom actions.
@@ -892,6 +964,18 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 
 			const receipt = await publicClient.waitForTransactionReceipt({ hash: params.hash });
 			return toRadiusReceipt(receipt);
+		},
+
+		async readContract<T = unknown>(params: ReadContractParameters): Promise<T> {
+			const { address, abi, functionName, args = [] } = params;
+			const contract = { address, abi };
+			return this.call<T>(contract, functionName, ...args);
+		},
+
+		async writeContract(params: WriteContractParameters): Promise<Hash> {
+			const { address, abi, functionName, args = [], account } = params;
+			const contract = { address, abi };
+			return this.execute(contract, account, functionName, ...args);
 		},
 
 		extend<TExtension extends Record<string, unknown>>(
