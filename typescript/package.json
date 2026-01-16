@@ -71,27 +71,33 @@
 	"exports": {
 		".": {
 			"types": "./src/_types/index.d.ts",
-			"import": "./src/_esm/index.js"
+			"import": "./src/_esm/index.js",
+			"default": "./src/_esm/index.js"
 		},
 		"./react": {
 			"types": "./src/_types/react/index.d.ts",
-			"import": "./src/_esm/react/index.js"
+			"import": "./src/_esm/react/index.js",
+			"default": "./src/_esm/react/index.js"
 		},
 		"./chains": {
 			"types": "./src/_types/chains/index.d.ts",
-			"import": "./src/_esm/chains/index.js"
+			"import": "./src/_esm/chains/index.js",
+			"default": "./src/_esm/chains/index.js"
 		},
 		"./events": {
 			"types": "./src/_types/events/index.d.ts",
-			"import": "./src/_esm/events/index.js"
+			"import": "./src/_esm/events/index.js",
+			"default": "./src/_esm/events/index.js"
 		},
 		"./webauthn": {
 			"types": "./src/_types/webauthn/index.d.ts",
-			"import": "./src/_esm/webauthn/index.js"
+			"import": "./src/_esm/webauthn/index.js",
+			"default": "./src/_esm/webauthn/index.js"
 		},
 		"./wagmi": {
 			"types": "./src/_types/wagmi/index.d.ts",
-			"import": "./src/_esm/wagmi/index.js"
+			"import": "./src/_esm/wagmi/index.js",
+			"default": "./src/_esm/wagmi/index.js"
 		}
 	},
 	"files": [
