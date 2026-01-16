@@ -1,6 +1,6 @@
 # Radius TypeScript SDK
 
-[![Version](https://img.shields.io/badge/version-2.0.0--alpha.4-blue)](package.json)
+[![Version](https://img.shields.io/badge/version-2.0.0--alpha.5-blue)](package.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 
 The official TypeScript SDK for [Radius](https://radiustech.xyz/). Built on [viem](https://viem.sh/) for seamless EVM compatibility.
