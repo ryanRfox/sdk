@@ -8,6 +8,7 @@
  * @module events
  */
 export { createWebSocketTransport, type WebSocketTransportConfig, } from '../transport/websocket';
+export { type DecodeEventLogsParameters, type DecodeEventLogsResult, type DecodedEventLog, decodeEventLogs, type FilterEventLogsParameters, filterEventLogs, } from './decodeEventLogs';
 export { type GetLogsAdaptiveParams, type GetLogsParams, getLogs, getLogsAdaptive, } from './getLogs';
 export { type ApprovalEvent, type WatchApprovalForAddressParameters, type WatchApprovalParameters, watchApproval, watchApprovalForAddress, } from './watchApproval';
 export { DEFAULT_POLLING_INTERVAL_MS, type WatchBlockNumberParams, type WatchBlocksParams, type WatchPendingTransactionsParams, watchBlockNumber, watchBlocks, watchPendingTransactions, } from './watchBlock';

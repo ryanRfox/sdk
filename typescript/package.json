@@ -8,13 +8,12 @@
 	},
 	"type": "module",
 	"scripts": {
-		"build": "pnpm clean && pnpm build:cjs && pnpm build:esm && pnpm build:types",
+		"build": "pnpm clean && pnpm build:esm && pnpm build:types",
 		"build:esm": "tsc --project ./tsconfig.build.json --module esnext --moduleResolution bundler --outDir ./src/_esm && printf '{\"type\": \"module\",\"sideEffects\":false}' > ./src/_esm/package.json",
-		"build:cjs": "tsc --project ./tsconfig.cjs.json --outDir ./src/_cjs --removeComments --verbatimModuleSyntax false && printf '{\"type\":\"commonjs\"}' > ./src/_cjs/package.json",
 		"build:types": "tsc --project ./tsconfig.build.json --module esnext --moduleResolution bundler --declarationDir ./src/_types --emitDeclarationOnly --declaration --declarationMap",
 		"check": "biome check . --fix --unsafe",
 		"check:types": "tsc --noEmit",
-		"clean": "rimraf src/_types src/_esm src/_cjs ./tsconfig.build.tsbuildinfo src/tsconfig.build.tsbuildinfo",
+		"clean": "rimraf src/_types src/_esm ./tsconfig.build.tsbuildinfo src/tsconfig.build.tsbuildinfo",
 		"format": "biome format --write",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
@@ -66,29 +65,25 @@
 	},
 	"license": "MIT",
 	"packageManager": "pnpm@9.14.2",
-	"main": "./src/_cjs/index.js",
+	"main": "./src/_esm/index.js",
 	"module": "./src/_esm/index.js",
 	"types": "./src/_types/index.d.ts",
 	"exports": {
 		".": {
 			"types": "./src/_types/index.d.ts",
-			"import": "./src/_esm/index.js",
-			"default": "./src/_cjs/index.js"
+			"import": "./src/_esm/index.js"
 		},
 		"./react": {
 			"types": "./src/_types/react/index.d.ts",
-			"import": "./src/_esm/react/index.js",
-			"default": "./src/_cjs/react/index.js"
+			"import": "./src/_esm/react/index.js"
 		},
 		"./chains": {
 			"types": "./src/_types/chains/index.d.ts",
-			"import": "./src/_esm/chains/index.js",
-			"default": "./src/_cjs/chains/index.js"
+			"import": "./src/_esm/chains/index.js"
 		},
 		"./events": {
 			"types": "./src/_types/events/index.d.ts",
-			"import": "./src/_esm/events/index.js",
-			"default": "./src/_cjs/events/index.js"
+			"import": "./src/_esm/events/index.js"
 		},
 		"./webauthn": {
 			"types": "./src/_types/webauthn/index.d.ts",
@@ -96,12 +91,10 @@
 		},
 		"./wagmi": {
 			"types": "./src/_types/wagmi/index.d.ts",
-			"import": "./src/_esm/wagmi/index.js",
-			"default": "./src/_cjs/wagmi/index.js"
+			"import": "./src/_esm/wagmi/index.js"
 		}
 	},
 	"files": [
-		"src/_cjs",
 		"src/_esm",
 		"src/_types"
 	],

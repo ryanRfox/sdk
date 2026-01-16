@@ -204,15 +204,20 @@ Remove from interface and implementation:
 
 ---
 
-### C3: Add CJS Export for WebAuthn Module ⏸️ DEFERRED
+### C3: Add CJS Export for WebAuthn Module ❌ WON'T FIX
 
 **Problem:** Server module is ESM-only, breaks CommonJS projects.
 
-**Solution:** Add CJS build output for webauthn module.
+**Decision:** Won't fix. The SDK will be **ESM-only**, matching Tempo SDK's approach.
 
-**Status:** Deferred — `@remix-run/fetch-router` has ESM-only issues with `moduleResolution: node`
+**Rationale:**
+- `@remix-run/fetch-router` is ESM-only (used by both Tempo and Radius)
+- Tempo SDK is ESM-only (`"type": "module"`, no CJS exports)
+- ESM is the modern standard; CJS is legacy
+- Simplifies build process and reduces maintenance burden
+- Node.js 22+ (our minimum) has excellent ESM support
 
-**File:** `typescript/package.json`
+**Action:** Remove all CJS builds from SDK V2 (see Phase 5)
 
 ---
 
@@ -252,6 +257,15 @@ These are intentional improvements over viem, not deviations:
 - [x] **P1-2:** Add writeContract alias (wraps execute)
 - [x] **P1-3:** Typed Contract Helper — `client.getContract({ address, abi })` with read/write namespaces
 - [x] **P1-4:** Event decoding utility — `decodeEventLogs()` and `filterEventLogs()`
+
+### Phase 5: ESM-Only Refactor ✅ COMPLETE
+- [x] Remove `build:cjs` script from package.json
+- [x] Remove `tsconfig.cjs.json`
+- [x] Update package.json exports to remove CJS fallbacks
+- [x] Update README to document ESM-only requirement
+- [x] Verify build succeeds with ESM-only output (233 tests pass)
+
+**Rationale:** Following Tempo SDK's approach. Both SDKs use `@remix-run/fetch-router` which is ESM-only. ESM is the modern standard; CJS is legacy. Node.js 22+ (our minimum) has excellent ESM support.
 
 ---
 

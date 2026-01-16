@@ -5,6 +5,7 @@
  * sending transactions, deploying contracts, and interacting with smart contracts.
  */
 import { type Abi, type BlockTag, type Chain, type Hash, type Hex, type LocalAccount, type PublicClient, type TransactionReceipt, type TransactionRequest, type Transport, type Address as ViemAddress } from 'viem';
+import { type GetContractParameters, type TypedContract } from '../contracts/typedContract.js';
 /**
  * Parameters for getBalance method (matches viem).
  */
@@ -51,6 +52,38 @@ export interface SendRawTransactionParameters {
 export interface WaitForTransactionReceiptParameters {
     /** The transaction hash to wait for */
     hash: Hash;
+}
+/**
+ * Parameters for readContract method (matches viem).
+ */
+export interface ReadContractParameters {
+    /** The contract address */
+    address: ViemAddress;
+    /** The contract ABI */
+    abi: Abi;
+    /** The function name to call */
+    functionName: string;
+    /** Arguments to pass to the function */
+    args?: readonly unknown[];
+    /** The block number to read at */
+    blockNumber?: bigint;
+    /** The block tag to read at (default: 'latest') */
+    blockTag?: BlockTag;
+}
+/**
+ * Parameters for writeContract method (matches viem).
+ */
+export interface WriteContractParameters {
+    /** The contract address */
+    address: ViemAddress;
+    /** The contract ABI */
+    abi: Abi;
+    /** The function name to call */
+    functionName: string;
+    /** Arguments to pass to the function */
+    args?: readonly unknown[];
+    /** The account to sign the transaction */
+    account: LocalAccount;
 }
 import { type Interceptor, type Logf } from '../transport';
 /**
@@ -278,6 +311,42 @@ export interface RadiusClient {
      */
     waitForTransactionReceipt(params: WaitForTransactionReceiptParameters): Promise<RadiusReceipt>;
     /**
+     * Read data from a contract (viem-compatible alias for call).
+     *
+     * @param params - The parameters for the contract read
+     * @returns The decoded return value from the contract function
+     *
+     * @example
+     * ```typescript
+     * const balance = await client.readContract({
+     *   address: '0x...',
+     *   abi: erc20Abi,
+     *   functionName: 'balanceOf',
+     *   args: ['0x...'],
+     * });
+     * ```
+     */
+    readContract<T = unknown>(params: ReadContractParameters): Promise<T>;
+    /**
+     * Execute a write operation on a contract (viem-compatible alias for execute).
+     * Returns the transaction hash immediately without waiting for confirmation.
+     *
+     * @param params - The parameters for the contract write
+     * @returns The transaction hash
+     *
+     * @example
+     * ```typescript
+     * const hash = await client.writeContract({
+     *   address: '0x...',
+     *   abi: erc20Abi,
+     *   functionName: 'transfer',
+     *   args: ['0x...', 1000n],
+     *   account: signer,
+     * });
+     * ```
+     */
+    writeContract(params: WriteContractParameters): Promise<Hash>;
+    /**
      * Extend the client with custom actions.
      *
      * @param extender - A function that receives the base client and returns custom actions
@@ -296,6 +365,42 @@ export interface RadiusClient {
      * ```
      */
     extend<TExtension extends Record<string, unknown>>(extender: (client: RadiusClient) => TExtension): RadiusClient & TExtension;
+    /**
+     * Get a typed contract instance with autocomplete support for contract methods.
+     *
+     * @param params - The contract address and ABI
+     * @returns A typed contract with read and write namespaces
+     *
+     * @example
+     * ```typescript
+     * const erc20Abi = [
+     *   { type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ type: 'uint256' }] },
+     *   { type: 'function', name: 'transfer', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ type: 'bool' }] },
+     * ] as const;
+     *
+     * const token = client.getContract({
+     *   address: '0x...',
+     *   abi: erc20Abi,
+     * });
+     *
+     * // Read methods - autocomplete shows balanceOf
+     * const balance = await token.read.balanceOf(['0x...']);
+     *
+     * // Write methods - autocomplete shows transfer
+     * const receipt = await token.write.transfer({
+     *   args: ['0x...', 1000000n],
+     *   signer: account,
+     * });
+     *
+     * // Write without waiting for receipt
+     * const hash = await token.write.transfer({
+     *   args: ['0x...', 1000000n],
+     *   signer: account,
+     *   options: { wait: false },
+     * });
+     * ```
+     */
+    getContract<TAbi extends Abi>(params: GetContractParameters<TAbi>): TypedContract<TAbi>;
 }
 export declare function createRadiusClient(config: RadiusClientConfig): RadiusClient;
 export type { Chain, Transport, Abi, Hash, Hex, TransactionReceipt };

@@ -5,6 +5,7 @@
  * sending transactions, deploying contracts, and interacting with smart contracts.
  */
 import { createPublicClient, decodeFunctionResult, encodeAbiParameters, encodeFunctionData, } from 'viem';
+import { getContract, } from '../contracts/typedContract.js';
 import { createInterceptingTransport } from '../transport';
 import { AbiError, ContractCallError, ContractDeploymentError, MissingAbiError, RadiusError, TransactionRevertedError, } from '../errors';
 /**
@@ -424,9 +425,22 @@ export function createRadiusClient(config) {
             const receipt = await publicClient.waitForTransactionReceipt({ hash: params.hash });
             return toRadiusReceipt(receipt);
         },
+        async readContract(params) {
+            const { address, abi, functionName, args = [] } = params;
+            const contract = { address, abi };
+            return this.call(contract, functionName, ...args);
+        },
+        async writeContract(params) {
+            const { address, abi, functionName, args = [], account } = params;
+            const contract = { address, abi };
+            return this.execute(contract, account, functionName, ...args);
+        },
         extend(extender) {
             const extension = extender(this);
             return Object.assign(Object.create(this), extension);
+        },
+        getContract(params) {
+            return getContract(this, params);
         },
     };
 }

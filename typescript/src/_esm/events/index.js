@@ -9,6 +9,8 @@
  */
 // WebSocket transport
 export { createWebSocketTransport, } from '../transport/websocket';
+// Event decoding utilities
+export { decodeEventLogs, filterEventLogs, } from './decodeEventLogs';
 // Historical log queries
 export { getLogs, getLogsAdaptive, } from './getLogs';
 // ERC-20 Approval events

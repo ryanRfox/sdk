@@ -1,11 +1,13 @@
 # Radius TypeScript SDK
 
-[![Version](https://img.shields.io/badge/version-2.0.0--alpha.1-blue)](package.json)
+[![Version](https://img.shields.io/badge/version-2.0.0--alpha.4-blue)](package.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 
 The official TypeScript SDK for [Radius](https://radiustech.xyz/). Built on [viem](https://viem.sh/) for seamless EVM compatibility.
 
 > **V2 Alpha Notice:** This SDK is in pre-release and not yet published to npm. You must build and link locally to use it.
+
+> **ESM Only:** This SDK is published as ES Modules only. CommonJS (`require()`) is not supported. Your project must use `"type": "module"` in package.json or use `.mjs` extensions.
 
 ## Local Installation
 
@@ -43,8 +45,8 @@ const client = createRadiusClient({ chain: radiusTestnet });
 // Create account from private key
 const account = createPrivateKeySigner('0x...');
 
-// Check balance
-const balance = await client.getBalance(account.address);
+// Check balance (viem-compatible API)
+const balance = await client.getBalance({ address: account.address });
 
 // Send transaction
 const receipt = await client.sendAndWait(
@@ -68,8 +70,8 @@ const receipt = await client.sendAndWait(
 import { createRadiusClient } from '@radiustechsystems/sdk';
 import { radiusTestnet } from '@radiustechsystems/sdk/chains';
 import { useRadiusBalance } from '@radiustechsystems/sdk/react';
-import { watchTransfer } from '@radiustechsystems/sdk/events';
-import { Handler, Kv } from '@radiustechsystems/sdk/server';
+import { decodeEventLogs, filterEventLogs } from '@radiustechsystems/sdk/events';
+import { Handler, Kv } from '@radiustechsystems/sdk/webauthn';
 import { privateKeyConnector } from '@radiustechsystems/sdk/wagmi';
 ```
 
@@ -86,6 +88,7 @@ import { privateKeyConnector } from '@radiustechsystems/sdk/wagmi';
 ## Requirements
 
 - Node.js >= 22
+- ESM project (`"type": "module"` in package.json)
 - pnpm (for local development)
 - [Testnet Access](https://docs.radiustech.xyz/radius-testnet-access)
 
