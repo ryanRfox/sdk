@@ -94,8 +94,8 @@ describe('ERC20 Integration Tests', () => {
 		for (const addr of addresses) {
 			try {
 				// Check if contract has code
-				const code = await client.getCode(addr);
-				if (code !== '0x' && code.length > 2) {
+				const code = await client.getCode({ address: addr });
+				if (code && code !== '0x' && code.length > 2) {
 					// Try to instantiate and call a view function
 					const testToken = createERC20(addr, client.publicClient);
 					await testToken.name(); // Will throw if not a valid ERC20
@@ -370,9 +370,9 @@ describe('ERC20 Factory Function', () => {
 		const client = createRadiusClient({ chain: testChain });
 
 		// Check if token exists before creating instance
-		const code = await client.getCode(TESTNET_ERC20_ADDRESS);
+		const code = await client.getCode({ address: TESTNET_ERC20_ADDRESS });
 
-		if (code === '0x') {
+		if (!code || code === '0x') {
 			console.log('Skipping factory test: no contract at test address');
 			return;
 		}
@@ -391,9 +391,9 @@ describe('ERC20 with RadiusClient.call', () => {
 		const client = createRadiusClient({ chain: testChain });
 
 		// Check if token exists
-		const code = await client.getCode(TESTNET_ERC20_ADDRESS);
+		const code = await client.getCode({ address: TESTNET_ERC20_ADDRESS });
 
-		if (code === '0x') {
+		if (!code || code === '0x') {
 			console.log('Skipping RadiusClient.call test: no contract at test address');
 			return;
 		}

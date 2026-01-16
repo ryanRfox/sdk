@@ -90,9 +90,9 @@
 			"import": "./src/_esm/events/index.js",
 			"default": "./src/_cjs/events/index.js"
 		},
-		"./server": {
-			"types": "./src/_types/server/index.d.ts",
-			"import": "./src/_esm/server/index.js"
+		"./webauthn": {
+			"types": "./src/_types/webauthn/index.d.ts",
+			"import": "./src/_esm/webauthn/index.js"
 		},
 		"./wagmi": {
 			"types": "./src/_types/wagmi/index.d.ts",

@@ -19,6 +19,8 @@ export interface RadiusErrorOptions {
 	cause?: Error | unknown;
 	/** Additional metadata about the error */
 	meta?: Record<string, unknown>;
+	/** Additional hint messages to help resolve the error */
+	metaMessages?: string[];
 }
 
 /**
@@ -54,15 +56,26 @@ export class RadiusError extends Error {
 	override readonly cause?: Error | unknown;
 	/** Additional metadata */
 	readonly meta?: Record<string, unknown>;
+	/** Additional hint messages to help resolve the error */
+	readonly metaMessages?: string[];
 
 	constructor(message: string, options: RadiusErrorOptions = {}) {
-		super(message);
+		// Build the full error message with metaMessages
+		const fullMessage = [
+			message,
+			'',
+			...(options.metaMessages ? [...options.metaMessages, ''] : []),
+			...(options.details ? [`Details: ${options.details}`] : []),
+		].join('\n');
+
+		super(fullMessage);
 		this.name = 'RadiusError';
 		this.shortMessage = options.shortMessage ?? message;
 		this.details = options.details;
 		this.docsPath = options.docsPath;
 		this.cause = options.cause;
 		this.meta = options.meta;
+		this.metaMessages = options.metaMessages;
 
 		// Maintain proper prototype chain
 		Object.setPrototypeOf(this, new.target.prototype);

@@ -12,6 +12,6 @@
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "test/**/*",
-    "src/server/**/*"
+    "src/webauthn/**/*"
   ]
 }

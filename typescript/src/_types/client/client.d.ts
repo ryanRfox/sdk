@@ -4,7 +4,54 @@
  * This module provides the primary interface for reading blockchain state,
  * sending transactions, deploying contracts, and interacting with smart contracts.
  */
-import { type Abi, type Chain, type Hash, type Hex, type LocalAccount, type PublicClient, type TransactionReceipt, type TransactionRequest, type Transport, type Address as ViemAddress } from 'viem';
+import { type Abi, type BlockTag, type Chain, type Hash, type Hex, type LocalAccount, type PublicClient, type TransactionReceipt, type TransactionRequest, type Transport, type Address as ViemAddress } from 'viem';
+/**
+ * Parameters for getBalance method (matches viem).
+ */
+export interface GetBalanceParameters {
+    /** The address to get the balance of */
+    address: ViemAddress;
+    /** The block number to get the balance at */
+    blockNumber?: bigint;
+    /** The block tag to get the balance at (default: 'latest') */
+    blockTag?: BlockTag;
+}
+/**
+ * Parameters for getCode method (matches viem).
+ */
+export interface GetCodeParameters {
+    /** The address to get the code at */
+    address: ViemAddress;
+    /** The block number to get the code at */
+    blockNumber?: bigint;
+    /** The block tag to get the code at (default: 'latest') */
+    blockTag?: BlockTag;
+}
+/**
+ * Parameters for getTransactionCount method (matches viem).
+ */
+export interface GetTransactionCountParameters {
+    /** The address to get the transaction count for */
+    address: ViemAddress;
+    /** The block number to get the count at */
+    blockNumber?: bigint;
+    /** The block tag to get the count at (default: 'pending') */
+    blockTag?: BlockTag;
+}
+/**
+ * Parameters for sendRawTransaction method (matches viem).
+ */
+export interface SendRawTransactionParameters {
+    /** The signed serialized transaction */
+    serializedTransaction: Hex;
+}
+/**
+ * Parameters for waitForTransactionReceipt method (matches viem).
+ */
+export interface WaitForTransactionReceiptParameters {
+    /** The transaction hash to wait for */
+    hash: Hash;
+}
 import { type Interceptor, type Logf } from '../transport';
 /**
  * Maximum gas limit for transactions.
@@ -77,8 +124,8 @@ export interface ContractInstance {
  *   transport: http(),
  * });
  *
- * // Get balance
- * const balance = await client.getBalance('0x...');
+ * // Get balance (viem-compatible syntax)
+ * const balance = await client.getBalance({ address: '0x...' });
  *
  * // Send transaction and wait for receipt
  * const account = createPrivateKeySigner('0x...privateKey');
@@ -97,22 +144,49 @@ export interface RadiusClient {
     getChainId(): Promise<bigint>;
     /**
      * Get the balance of an address in wei.
-     * @param address - The address to check
+     *
+     * @param params - The parameters for the balance query
+     * @param params.address - The address to check
+     * @param params.blockTag - Optional block tag (default: 'latest')
+     * @param params.blockNumber - Optional block number
      * @returns The balance in wei
+     *
+     * @example
+     * ```typescript
+     * const balance = await client.getBalance({ address: '0x...' });
+     * ```
      */
-    getBalance(address: ViemAddress): Promise<bigint>;
+    getBalance(params: GetBalanceParameters): Promise<bigint>;
     /**
      * Get the bytecode deployed at an address.
-     * @param address - The contract address
-     * @returns The bytecode as a hex string, or '0x' if no code
+     *
+     * @param params - The parameters for the code query
+     * @param params.address - The contract address
+     * @param params.blockTag - Optional block tag (default: 'latest')
+     * @param params.blockNumber - Optional block number
+     * @returns The bytecode as a hex string, or undefined if no code
+     *
+     * @example
+     * ```typescript
+     * const code = await client.getCode({ address: '0x...' });
+     * ```
      */
-    getCode(address: ViemAddress): Promise<Hex>;
+    getCode(params: GetCodeParameters): Promise<Hex | undefined>;
     /**
-     * Get the pending nonce for an address.
-     * @param address - The address to check
-     * @returns The next nonce to use
+     * Get the transaction count (nonce) for an address.
+     *
+     * @param params - The parameters for the transaction count query
+     * @param params.address - The address to check
+     * @param params.blockTag - Optional block tag (default: 'pending')
+     * @param params.blockNumber - Optional block number
+     * @returns The transaction count
+     *
+     * @example
+     * ```typescript
+     * const nonce = await client.getTransactionCount({ address: '0x...' });
+     * ```
      */
-    getNonce(address: ViemAddress): Promise<number>;
+    getTransactionCount(params: GetTransactionCountParameters): Promise<number>;
     /**
      * Estimate gas for a transaction.
      * Applies a 20% safety margin and caps at MAX_GAS.
@@ -148,10 +222,6 @@ export interface RadiusClient {
      */
     executeAndWait(contract: ContractInstance, signer: LocalAccount, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
     /**
-     * @deprecated Use executeAndWait instead
-     */
-    executeSync(contract: ContractInstance, signer: LocalAccount, method: string, ...args: unknown[]): Promise<RadiusReceipt>;
-    /**
      * Send native currency to an address.
      * Returns immediately after the transaction is sent (does not wait for receipt).
      * @param signer - The signer to sign the transaction
@@ -169,10 +239,6 @@ export interface RadiusClient {
      */
     sendAndWait(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
     /**
-     * @deprecated Use sendAndWait instead
-     */
-    sendSync(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
-    /**
      * Deploy a smart contract.
      * @param signer - The signer to sign the deployment transaction
      * @param bytecode - The contract bytecode
@@ -187,16 +253,30 @@ export interface RadiusClient {
     /**
      * Send a raw signed transaction.
      * Returns immediately after the transaction is sent.
-     * @param signedTx - The signed transaction as a hex string
+     *
+     * @param params - The parameters for the raw transaction
+     * @param params.serializedTransaction - The signed serialized transaction
      * @returns The transaction hash
+     *
+     * @example
+     * ```typescript
+     * const hash = await client.sendRawTransaction({ serializedTransaction: '0x...' });
+     * ```
      */
-    sendRawTransaction(signedTx: Hex): Promise<Hash>;
+    sendRawTransaction(params: SendRawTransactionParameters): Promise<Hash>;
     /**
      * Wait for a transaction receipt.
-     * @param hash - The transaction hash to wait for
+     *
+     * @param params - The parameters for the receipt query
+     * @param params.hash - The transaction hash to wait for
      * @returns The transaction receipt
+     *
+     * @example
+     * ```typescript
+     * const receipt = await client.waitForTransactionReceipt({ hash: '0x...' });
+     * ```
      */
-    waitForReceipt(hash: Hash): Promise<RadiusReceipt>;
+    waitForTransactionReceipt(params: WaitForTransactionReceiptParameters): Promise<RadiusReceipt>;
     /**
      * Extend the client with custom actions.
      *
@@ -207,7 +287,7 @@ export interface RadiusClient {
      * ```typescript
      * const client = createRadiusClient({ chain: radiusTestnet }).extend((base) => ({
      *   async getBalanceFormatted(address: Address) {
-     *     const balance = await base.getBalance(address);
+     *     const balance = await base.getBalance({ address });
      *     return formatEther(balance);
      *   },
      * }));

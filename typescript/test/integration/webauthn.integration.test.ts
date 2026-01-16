@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import * as Handler from '../../src/server/Handler.js';
-import * as Kv from '../../src/server/Kv.js';
+import * as Handler from '../../src/webauthn/Handler.js';
+import * as Kv from '../../src/webauthn/Kv.js';
 
 /**
  * Creates test WebAuthn credential data for testing.

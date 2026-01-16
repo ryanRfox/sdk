@@ -2,7 +2,7 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": [
     "src/index.ts",
-    "src/server/index.ts",
+    "src/webauthn/index.ts",
     "src/react/index.ts",
     "src/events/index.ts",
     "src/wagmi/index.ts",

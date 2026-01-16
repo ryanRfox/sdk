@@ -7,6 +7,7 @@
 import {
 	type Abi,
 	type AbiParameter,
+	type BlockTag,
 	type Chain,
 	createPublicClient,
 	decodeFunctionResult,
@@ -21,6 +22,58 @@ import {
 	type Transport,
 	type Address as ViemAddress,
 } from 'viem';
+
+/**
+ * Parameters for getBalance method (matches viem).
+ */
+export interface GetBalanceParameters {
+	/** The address to get the balance of */
+	address: ViemAddress;
+	/** The block number to get the balance at */
+	blockNumber?: bigint;
+	/** The block tag to get the balance at (default: 'latest') */
+	blockTag?: BlockTag;
+}
+
+/**
+ * Parameters for getCode method (matches viem).
+ */
+export interface GetCodeParameters {
+	/** The address to get the code at */
+	address: ViemAddress;
+	/** The block number to get the code at */
+	blockNumber?: bigint;
+	/** The block tag to get the code at (default: 'latest') */
+	blockTag?: BlockTag;
+}
+
+/**
+ * Parameters for getTransactionCount method (matches viem).
+ */
+export interface GetTransactionCountParameters {
+	/** The address to get the transaction count for */
+	address: ViemAddress;
+	/** The block number to get the count at */
+	blockNumber?: bigint;
+	/** The block tag to get the count at (default: 'pending') */
+	blockTag?: BlockTag;
+}
+
+/**
+ * Parameters for sendRawTransaction method (matches viem).
+ */
+export interface SendRawTransactionParameters {
+	/** The signed serialized transaction */
+	serializedTransaction: Hex;
+}
+
+/**
+ * Parameters for waitForTransactionReceipt method (matches viem).
+ */
+export interface WaitForTransactionReceiptParameters {
+	/** The transaction hash to wait for */
+	hash: Hash;
+}
 
 /**
  * ABI constructor type definition.
@@ -116,8 +169,8 @@ export interface ContractInstance {
  *   transport: http(),
  * });
  *
- * // Get balance
- * const balance = await client.getBalance('0x...');
+ * // Get balance (viem-compatible syntax)
+ * const balance = await client.getBalance({ address: '0x...' });
  *
  * // Send transaction and wait for receipt
  * const account = createPrivateKeySigner('0x...privateKey');
@@ -138,24 +191,51 @@ export interface RadiusClient {
 
 	/**
 	 * Get the balance of an address in wei.
-	 * @param address - The address to check
+	 *
+	 * @param params - The parameters for the balance query
+	 * @param params.address - The address to check
+	 * @param params.blockTag - Optional block tag (default: 'latest')
+	 * @param params.blockNumber - Optional block number
 	 * @returns The balance in wei
+	 *
+	 * @example
+	 * ```typescript
+	 * const balance = await client.getBalance({ address: '0x...' });
+	 * ```
 	 */
-	getBalance(address: ViemAddress): Promise<bigint>;
+	getBalance(params: GetBalanceParameters): Promise<bigint>;
 
 	/**
 	 * Get the bytecode deployed at an address.
-	 * @param address - The contract address
-	 * @returns The bytecode as a hex string, or '0x' if no code
+	 *
+	 * @param params - The parameters for the code query
+	 * @param params.address - The contract address
+	 * @param params.blockTag - Optional block tag (default: 'latest')
+	 * @param params.blockNumber - Optional block number
+	 * @returns The bytecode as a hex string, or undefined if no code
+	 *
+	 * @example
+	 * ```typescript
+	 * const code = await client.getCode({ address: '0x...' });
+	 * ```
 	 */
-	getCode(address: ViemAddress): Promise<Hex>;
+	getCode(params: GetCodeParameters): Promise<Hex | undefined>;
 
 	/**
-	 * Get the pending nonce for an address.
-	 * @param address - The address to check
-	 * @returns The next nonce to use
+	 * Get the transaction count (nonce) for an address.
+	 *
+	 * @param params - The parameters for the transaction count query
+	 * @param params.address - The address to check
+	 * @param params.blockTag - Optional block tag (default: 'pending')
+	 * @param params.blockNumber - Optional block number
+	 * @returns The transaction count
+	 *
+	 * @example
+	 * ```typescript
+	 * const nonce = await client.getTransactionCount({ address: '0x...' });
+	 * ```
 	 */
-	getNonce(address: ViemAddress): Promise<number>;
+	getTransactionCount(params: GetTransactionCountParameters): Promise<number>;
 
 	/**
 	 * Estimate gas for a transaction.
@@ -205,15 +285,6 @@ export interface RadiusClient {
 		...args: unknown[]
 	): Promise<RadiusReceipt>;
 
-	/**
-	 * @deprecated Use executeAndWait instead
-	 */
-	executeSync(
-		contract: ContractInstance,
-		signer: LocalAccount,
-		method: string,
-		...args: unknown[]
-	): Promise<RadiusReceipt>;
 
 	/**
 	 * Send native currency to an address.
@@ -234,10 +305,6 @@ export interface RadiusClient {
 	 */
 	sendAndWait(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
 
-	/**
-	 * @deprecated Use sendAndWait instead
-	 */
-	sendSync(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
 
 	/**
 	 * Deploy a smart contract.
@@ -257,17 +324,31 @@ export interface RadiusClient {
 	/**
 	 * Send a raw signed transaction.
 	 * Returns immediately after the transaction is sent.
-	 * @param signedTx - The signed transaction as a hex string
+	 *
+	 * @param params - The parameters for the raw transaction
+	 * @param params.serializedTransaction - The signed serialized transaction
 	 * @returns The transaction hash
+	 *
+	 * @example
+	 * ```typescript
+	 * const hash = await client.sendRawTransaction({ serializedTransaction: '0x...' });
+	 * ```
 	 */
-	sendRawTransaction(signedTx: Hex): Promise<Hash>;
+	sendRawTransaction(params: SendRawTransactionParameters): Promise<Hash>;
 
 	/**
 	 * Wait for a transaction receipt.
-	 * @param hash - The transaction hash to wait for
+	 *
+	 * @param params - The parameters for the receipt query
+	 * @param params.hash - The transaction hash to wait for
 	 * @returns The transaction receipt
+	 *
+	 * @example
+	 * ```typescript
+	 * const receipt = await client.waitForTransactionReceipt({ hash: '0x...' });
+	 * ```
 	 */
-	waitForReceipt(hash: Hash): Promise<RadiusReceipt>;
+	waitForTransactionReceipt(params: WaitForTransactionReceiptParameters): Promise<RadiusReceipt>;
 
 	/**
 	 * Extend the client with custom actions.
@@ -279,7 +360,7 @@ export interface RadiusClient {
 	 * ```typescript
 	 * const client = createRadiusClient({ chain: radiusTestnet }).extend((base) => ({
 	 *   async getBalanceFormatted(address: Address) {
-	 *     const balance = await base.getBalance(address);
+	 *     const balance = await base.getBalance({ address });
 	 *     return formatEther(balance);
 	 *   },
 	 * }));
@@ -455,20 +536,85 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			return BigInt(publicClient.chain?.id ?? (await publicClient.getChainId()));
 		},
 
-		async getBalance(address: ViemAddress): Promise<bigint> {
-			return publicClient.getBalance({ address });
+		async getBalance(params: GetBalanceParameters): Promise<bigint> {
+			// Validate params - detect common mistakes
+			if (typeof params === 'string') {
+				throw new RadiusError('getBalance expects an object parameter', {
+					metaMessages: [
+						'You passed a string directly.',
+						'Use client.getBalance({ address }) instead of client.getBalance(address)',
+					],
+					details: `Received: ${typeof params}`,
+				});
+			}
+			if (!params || typeof params !== 'object' || !('address' in params)) {
+				throw new RadiusError('getBalance expects an object with an address property', {
+					metaMessages: [
+						'Example: client.getBalance({ address: "0x..." })',
+					],
+					details: `Received: ${JSON.stringify(params)}`,
+				});
+			}
+
+			const { address, blockNumber, blockTag = 'latest' } = params;
+			if (blockNumber !== undefined) {
+				return publicClient.getBalance({ address, blockNumber });
+			}
+			return publicClient.getBalance({ address, blockTag });
 		},
 
-		async getCode(address: ViemAddress): Promise<Hex> {
-			const code = await publicClient.getCode({ address });
-			return code ?? '0x';
+		async getCode(params: GetCodeParameters): Promise<Hex | undefined> {
+			// Validate params - detect common mistakes
+			if (typeof params === 'string') {
+				throw new RadiusError('getCode expects an object parameter', {
+					metaMessages: [
+						'You passed a string directly.',
+						'Use client.getCode({ address }) instead of client.getCode(address)',
+					],
+					details: `Received: ${typeof params}`,
+				});
+			}
+			if (!params || typeof params !== 'object' || !('address' in params)) {
+				throw new RadiusError('getCode expects an object with an address property', {
+					metaMessages: [
+						'Example: client.getCode({ address: "0x..." })',
+					],
+					details: `Received: ${JSON.stringify(params)}`,
+				});
+			}
+
+			const { address, blockNumber, blockTag = 'latest' } = params;
+			if (blockNumber !== undefined) {
+				return publicClient.getCode({ address, blockNumber });
+			}
+			return publicClient.getCode({ address, blockTag });
 		},
 
-		async getNonce(address: ViemAddress): Promise<number> {
-			return publicClient.getTransactionCount({
-				address,
-				blockTag: 'pending',
-			});
+		async getTransactionCount(params: GetTransactionCountParameters): Promise<number> {
+			// Validate params - detect common mistakes
+			if (typeof params === 'string') {
+				throw new RadiusError('getTransactionCount expects an object parameter', {
+					metaMessages: [
+						'You passed a string directly.',
+						'Use client.getTransactionCount({ address }) instead of client.getTransactionCount(address)',
+					],
+					details: `Received: ${typeof params}`,
+				});
+			}
+			if (!params || typeof params !== 'object' || !('address' in params)) {
+				throw new RadiusError('getTransactionCount expects an object with an address property', {
+					metaMessages: [
+						'Example: client.getTransactionCount({ address: "0x..." })',
+					],
+					details: `Received: ${JSON.stringify(params)}`,
+				});
+			}
+
+			const { address, blockNumber, blockTag = 'pending' } = params;
+			if (blockNumber !== undefined) {
+				return publicClient.getTransactionCount({ address, blockNumber });
+			}
+			return publicClient.getTransactionCount({ address, blockTag });
 		},
 
 		async estimateGas(tx: TransactionRequest): Promise<bigint> {
@@ -584,17 +730,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			...args: unknown[]
 		): Promise<RadiusReceipt> {
 			const hash = await this.execute(contract, signer, method, ...args);
-			return this.waitForReceipt(hash);
-		},
-
-		/** @deprecated Use executeAndWait instead */
-		async executeSync(
-			contract: ContractInstance,
-			signer: LocalAccount,
-			method: string,
-			...args: unknown[]
-		): Promise<RadiusReceipt> {
-			return this.executeAndWait(contract, signer, method, ...args);
+			return this.waitForTransactionReceipt({ hash });
 		},
 
 		async send(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<Hash> {
@@ -606,12 +742,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 
 		async sendAndWait(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
 			const hash = await this.send(signer, to, value);
-			return this.waitForReceipt(hash);
-		},
-
-		/** @deprecated Use sendAndWait instead */
-		async sendSync(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
-			return this.sendAndWait(signer, to, value);
+			return this.waitForTransactionReceipt({ hash });
 		},
 
 		async deployContract(
@@ -651,7 +782,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			});
 
 			// Wait for receipt
-			const receipt = await this.waitForReceipt(hash);
+			const receipt = await this.waitForTransactionReceipt({ hash });
 
 			if (!receipt.contractAddress) {
 				throw new ContractDeploymentError('Contract deployment failed: no contract address in receipt', {
@@ -672,14 +803,52 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 			};
 		},
 
-		async sendRawTransaction(signedTx: Hex): Promise<Hash> {
+		async sendRawTransaction(params: SendRawTransactionParameters): Promise<Hash> {
+			// Validate params
+			if (typeof params === 'string') {
+				throw new RadiusError('sendRawTransaction expects an object parameter', {
+					metaMessages: [
+						'You passed a string directly.',
+						'Use client.sendRawTransaction({ serializedTransaction }) instead of client.sendRawTransaction(signedTx)',
+					],
+					details: `Received: ${typeof params}`,
+				});
+			}
+			if (!params || typeof params !== 'object' || !('serializedTransaction' in params)) {
+				throw new RadiusError('sendRawTransaction expects an object with a serializedTransaction property', {
+					metaMessages: [
+						'Example: client.sendRawTransaction({ serializedTransaction: "0x..." })',
+					],
+					details: `Received: ${JSON.stringify(params)}`,
+				});
+			}
+
 			return publicClient.sendRawTransaction({
-				serializedTransaction: signedTx,
+				serializedTransaction: params.serializedTransaction,
 			});
 		},
 
-		async waitForReceipt(hash: Hash): Promise<RadiusReceipt> {
-			const receipt = await publicClient.waitForTransactionReceipt({ hash });
+		async waitForTransactionReceipt(params: WaitForTransactionReceiptParameters): Promise<RadiusReceipt> {
+			// Validate params
+			if (typeof params === 'string') {
+				throw new RadiusError('waitForTransactionReceipt expects an object parameter', {
+					metaMessages: [
+						'You passed a string directly.',
+						'Use client.waitForTransactionReceipt({ hash }) instead of client.waitForTransactionReceipt(hash)',
+					],
+					details: `Received: ${typeof params}`,
+				});
+			}
+			if (!params || typeof params !== 'object' || !('hash' in params)) {
+				throw new RadiusError('waitForTransactionReceipt expects an object with a hash property', {
+					metaMessages: [
+						'Example: client.waitForTransactionReceipt({ hash: "0x..." })',
+					],
+					details: `Received: ${JSON.stringify(params)}`,
+				});
+			}
+
+			const receipt = await publicClient.waitForTransactionReceipt({ hash: params.hash });
 			return toRadiusReceipt(receipt);
 		},
 

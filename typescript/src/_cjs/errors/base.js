@@ -7,14 +7,22 @@ class RadiusError extends Error {
     docsPath;
     cause;
     meta;
+    metaMessages;
     constructor(message, options = {}) {
-        super(message);
+        const fullMessage = [
+            message,
+            '',
+            ...(options.metaMessages ? [...options.metaMessages, ''] : []),
+            ...(options.details ? [`Details: ${options.details}`] : []),
+        ].join('\n');
+        super(fullMessage);
         this.name = 'RadiusError';
         this.shortMessage = options.shortMessage ?? message;
         this.details = options.details;
         this.docsPath = options.docsPath;
         this.cause = options.cause;
         this.meta = options.meta;
+        this.metaMessages = options.metaMessages;
         Object.setPrototypeOf(this, new.target.prototype);
     }
     walk(fn) {

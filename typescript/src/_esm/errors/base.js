@@ -37,14 +37,24 @@ export class RadiusError extends Error {
     cause;
     /** Additional metadata */
     meta;
+    /** Additional hint messages to help resolve the error */
+    metaMessages;
     constructor(message, options = {}) {
-        super(message);
+        // Build the full error message with metaMessages
+        const fullMessage = [
+            message,
+            '',
+            ...(options.metaMessages ? [...options.metaMessages, ''] : []),
+            ...(options.details ? [`Details: ${options.details}`] : []),
+        ].join('\n');
+        super(fullMessage);
         this.name = 'RadiusError';
         this.shortMessage = options.shortMessage ?? message;
         this.details = options.details;
         this.docsPath = options.docsPath;
         this.cause = options.cause;
         this.meta = options.meta;
+        this.metaMessages = options.metaMessages;
         // Maintain proper prototype chain
         Object.setPrototypeOf(this, new.target.prototype);
     }

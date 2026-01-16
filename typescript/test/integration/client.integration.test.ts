@@ -100,7 +100,7 @@ describe('RadiusClient Integration Tests', () => {
 		it('should get balance of a known address', async () => {
 			// Use a well-known address (zero address for simplicity)
 			const zeroAddress = '0x0000000000000000000000000000000000000000' as const;
-			const balance = await client.getBalance(zeroAddress);
+			const balance = await client.getBalance({ address: zeroAddress });
 
 			expect(balance).toBeDefined();
 			expect(typeof balance).toBe('bigint');
@@ -111,17 +111,15 @@ describe('RadiusClient Integration Tests', () => {
 		it('should get code at an address', async () => {
 			// Query code at zero address (should be empty)
 			const zeroAddress = '0x0000000000000000000000000000000000000000' as const;
-			const code = await client.getCode(zeroAddress);
+			const code = await client.getCode({ address: zeroAddress });
 
-			expect(code).toBeDefined();
-			expect(typeof code).toBe('string');
-			// Zero address should not have code
-			expect(code).toBe('0x');
+			// Zero address should not have code - returns undefined or '0x'
+			expect(code === undefined || code === '0x').toBe(true);
 		});
 
 		it('should get nonce for an address', async () => {
 			const zeroAddress = '0x0000000000000000000000000000000000000000' as const;
-			const nonce = await client.getNonce(zeroAddress);
+			const nonce = await client.getTransactionCount({ address: zeroAddress });
 
 			expect(nonce).toBeDefined();
 			expect(typeof nonce).toBe('number');
@@ -159,7 +157,7 @@ describe('RadiusClient Integration Tests', () => {
 
 			it('should get balance of signer address', async () => {
 				const s = getSigner();
-				const balance = await client.getBalance(s.address);
+				const balance = await client.getBalance({ address: s.address });
 
 				expect(balance).toBeDefined();
 				expect(typeof balance).toBe('bigint');
@@ -169,7 +167,7 @@ describe('RadiusClient Integration Tests', () => {
 
 			it('should get nonce for signer address', async () => {
 				const s = getSigner();
-				const nonce = await client.getNonce(s.address);
+				const nonce = await client.getTransactionCount({ address: s.address });
 
 				expect(nonce).toBeDefined();
 				expect(typeof nonce).toBe('number');
@@ -179,7 +177,7 @@ describe('RadiusClient Integration Tests', () => {
 			it('should send a self-transfer transaction', async () => {
 				const s = getSigner();
 				// Check balance first
-				const balance = await client.getBalance(s.address);
+				const balance = await client.getBalance({ address: s.address });
 
 				// Skip if balance is too low (need at least 1 wei)
 				if (balance < 1n) {
@@ -200,7 +198,7 @@ describe('RadiusClient Integration Tests', () => {
 			it('should send a self-transfer and wait for receipt', async () => {
 				const s = getSigner();
 				// Check balance first
-				const balance = await client.getBalance(s.address);
+				const balance = await client.getBalance({ address: s.address });
 
 				// Skip if balance is too low
 				if (balance < 1n) {
@@ -209,7 +207,7 @@ describe('RadiusClient Integration Tests', () => {
 				}
 
 				// Send 1 wei to self and wait for receipt
-				const receipt = await client.sendSync(s, s.address, 1n);
+				const receipt = await client.sendAndWait(s, s.address, 1n);
 
 				expect(receipt).toBeDefined();
 				expect(receipt.transactionHash).toBeDefined();
@@ -231,7 +229,7 @@ describe('RadiusClient Integration Tests', () => {
 			it('should wait for an existing transaction receipt', async () => {
 				const s = getSigner();
 				// First send a transaction
-				const balance = await client.getBalance(s.address);
+				const balance = await client.getBalance({ address: s.address });
 
 				if (balance < 1n) {
 					console.log('Skipping transaction test: insufficient balance');
@@ -242,7 +240,7 @@ describe('RadiusClient Integration Tests', () => {
 				const hash = await client.send(s, s.address, 1n);
 
 				// Wait for receipt separately
-				const receipt = await client.waitForReceipt(hash);
+				const receipt = await client.waitForTransactionReceipt({ hash });
 
 				expect(receipt).toBeDefined();
 				expect(receipt.transactionHash).toBe(hash);
@@ -255,7 +253,7 @@ describe('RadiusClient Integration Tests', () => {
 		it('should handle invalid address gracefully in getBalance', async () => {
 			// Note: viem validates addresses, so this should throw
 			await expect(async () => {
-				await client.getBalance('invalid-address' as `0x${string}`);
+				await client.getBalance({ address: 'invalid-address' as `0x${string}` });
 			}).rejects.toThrow();
 		});
 

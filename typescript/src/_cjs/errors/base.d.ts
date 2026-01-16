@@ -4,6 +4,7 @@ export interface RadiusErrorOptions {
     docsPath?: string;
     cause?: Error | unknown;
     meta?: Record<string, unknown>;
+    metaMessages?: string[];
 }
 export declare class RadiusError extends Error {
     readonly shortMessage: string;
@@ -11,6 +12,7 @@ export declare class RadiusError extends Error {
     readonly docsPath?: string;
     readonly cause?: Error | unknown;
     readonly meta?: Record<string, unknown>;
+    readonly metaMessages?: string[];
     constructor(message: string, options?: RadiusErrorOptions);
     walk(fn?: (err: unknown) => boolean): Error | unknown | null;
 }

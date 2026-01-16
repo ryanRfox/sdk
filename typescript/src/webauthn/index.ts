@@ -1,13 +1,14 @@
 /**
- * Server module for Radius SDK
+ * WebAuthn module for Radius SDK
  *
- * Provides request handlers for key management.
+ * Provides request handlers for WebAuthn credential and passkey management.
  *
  * @example
  * ```typescript
- * import { Kv } from '@radiustechsystems/sdk/server';
+ * import { Handler, Kv } from '@radiustechsystems/sdk/webauthn';
  *
  * const kv = Kv.memory();
+ * const handler = Handler.keyManager({ kv });
  * ```
  */
 

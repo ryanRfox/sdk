@@ -295,7 +295,7 @@ describe('createPrivateKeySigner Integration Tests', () => {
 			});
 
 			it('should be able to get nonce from network', async () => {
-				const nonce = await client.getNonce(account.address);
+				const nonce = await client.getTransactionCount({ address: account.address });
 
 				expect(nonce).toBeDefined();
 				expect(typeof nonce).toBe('number');
@@ -306,7 +306,7 @@ describe('createPrivateKeySigner Integration Tests', () => {
 
 			it('should be able to sign and submit transaction', async () => {
 				// Check balance first
-				const balance = await client.getBalance(account.address);
+				const balance = await client.getBalance({ address: account.address });
 
 				if (balance < 1n) {
 					console.log('Skipping transaction test: insufficient balance');
@@ -322,7 +322,7 @@ describe('createPrivateKeySigner Integration Tests', () => {
 				console.log(`Submitted transaction: ${hash}`);
 
 				// Wait for confirmation
-				const receipt = await client.waitForReceipt(hash);
+				const receipt = await client.waitForTransactionReceipt({ hash });
 
 				expect(receipt.status).toBe('success');
 				console.log(`Transaction confirmed in block ${receipt.blockNumber}`);

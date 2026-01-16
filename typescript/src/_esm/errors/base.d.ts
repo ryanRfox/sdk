@@ -18,6 +18,8 @@ export interface RadiusErrorOptions {
     cause?: Error | unknown;
     /** Additional metadata about the error */
     meta?: Record<string, unknown>;
+    /** Additional hint messages to help resolve the error */
+    metaMessages?: string[];
 }
 /**
  * Base error class for all Radius SDK errors.
@@ -52,6 +54,8 @@ export declare class RadiusError extends Error {
     readonly cause?: Error | unknown;
     /** Additional metadata */
     readonly meta?: Record<string, unknown>;
+    /** Additional hint messages to help resolve the error */
+    readonly metaMessages?: string[];
     constructor(message: string, options?: RadiusErrorOptions);
     /**
      * Walk the error cause chain.
