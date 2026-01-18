@@ -1,109 +1,122 @@
-# Claude Instructions: Radius SDK Audit
+# Claude Instructions: Test Quality Fixes
 
-## Your Role: Audit Coordinator
+## Your Role
 
-You are an **audit coordinator** for the Radius TypeScript SDK. Your job is to ensure this SDK is production-ready and provides an excellent developer experience for viem/wagmi developers.
+You are fixing test quality issues identified in the Radius SDK audit. Your goal is to ensure tests actually test real behavior and cover important code paths.
 
-**Read `HANDOFF.md` first** for context on what's been done and what needs auditing.
-
----
-
-## Your Mission
-
-Perform a comprehensive audit of the SDK by coordinating subagents to:
-
-1. **Pattern Compliance Audit** — Compare against reference implementations
-2. **Code Quality Audit** — Find technical debt, shortcuts, fake tests
-3. **Completeness Audit** — Find orphan files, missing exports, dead code
-4. **DX Audit** — Ensure it's awesome for viem/wagmi developers
+**Read `HANDOFF.md` for your task list.**
+**Read `typescript/AUDIT-REPORT.md` for audit context.**
 
 ---
 
-## Reference Repositories (Local)
+## Reference Repositories
 
-These repos are available locally for comparison:
+These repos are cloned locally for test pattern reference:
 
-| Repo | Location | Use For |
-|------|----------|---------|
-| viem | `/tmp/viem` | Core patterns, types, client structure |
-| wagmi | `/tmp/wagmi` | React hooks, connectors |
-| tempo-ts | `/tmp/tempo-ts` | How to extend viem for a custom chain |
+| Repo | Location | Reference For |
+|------|----------|---------------|
+| viem | `/tmp/viem` | Test patterns, how they test transports/clients |
+| wagmi | `/tmp/wagmi` | Connector test patterns, hook testing |
 
-If these don't exist, clone them first:
+---
+
+## Test Framework
+
+The SDK uses **Vitest**. Key patterns:
+
+```typescript
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Mocking
+vi.mock('./module', () => ({
+  someFunction: vi.fn(),
+}));
+
+// Spying
+const spy = vi.spyOn(object, 'method');
+
+// Async tests
+it('should handle async', async () => {
+  await expect(asyncFn()).resolves.toBe(value);
+  await expect(asyncFn()).rejects.toThrow('error');
+});
+```
+
+---
+
+## What Makes a Good Test
+
+### Good: Tests Real Behavior
+```typescript
+it('should decode transfer events', async () => {
+  const logs = [{ topics: [...], data: '0x...' }];
+  const decoded = decodeEventLogs({ abi: erc20Abi, logs });
+  expect(decoded[0].eventName).toBe('Transfer');
+  expect(decoded[0].args.from).toBe('0x...');
+});
+```
+
+### Bad: Tests Nothing
+```typescript
+it('should call decode', async () => {
+  const mockDecode = vi.fn().mockReturnValue([]);
+  // Only verifies mock was called, not actual behavior
+  expect(mockDecode).toHaveBeenCalled();
+});
+```
+
+---
+
+## Priority Order
+
+1. **Fix tests that validate broken behavior** (wagmi connector)
+2. **Add tests for watch functions** (events module)
+3. **Add error path tests** (client, contracts, webauthn)
+4. **Add edge case tests** (TypedContract parameters)
+
+---
+
+## Files to Focus On
+
+| File | Issues |
+|------|--------|
+| `typescript/src/wagmi/connector.test.ts` | Tests validate no-op as correct |
+| `typescript/test/unit/typedContract.test.ts` | Only happy path |
+| `typescript/src/webauthn/Handler.test.ts` | Missing error cases |
+| `typescript/src/events/` | No watch function tests |
+| `typescript/src/client/client.ts` | Validation not tested |
+
+---
+
+## Commands
+
 ```bash
-git clone --depth 1 https://github.com/wevm/viem.git /tmp/viem
-git clone --depth 1 https://github.com/wevm/wagmi.git /tmp/wagmi
-git clone --depth 1 https://github.com/aspect-build/tempo-ts.git /tmp/tempo-ts
+cd typescript
+
+# Run all tests
+pnpm test
+
+# Run specific file
+pnpm test -- src/wagmi/connector.test.ts
+
+# Run with pattern
+pnpm test -- --grep "error"
+
+# Watch mode
+pnpm test -- --watch
+
+# Coverage
+pnpm test -- --coverage
 ```
 
 ---
 
-## Audit Checklist
+## Important Notes
 
-### 1. Pattern Compliance
-- [ ] Does `RadiusClient` follow viem's client patterns?
-- [ ] Do React hooks follow wagmi patterns?
-- [ ] Does `getContract()` match viem's `getContract()`?
-- [ ] Are types re-exported correctly from viem?
-- [ ] Is the wagmi connector standard?
-
-### 2. Code Quality
-- [ ] No fake tests that just pass without testing anything
-- [ ] No `// TODO` comments left unaddressed
-- [ ] No commented-out code
-- [ ] No overly complex abstractions
-- [ ] Error messages are helpful (not just "Invalid params")
-- [ ] No hardcoded values that should be configurable
-
-### 3. Completeness
-- [ ] No orphan files (files not imported anywhere)
-- [ ] No orphan exports (exports not used)
-- [ ] No missing exports (internal functions that should be public)
-- [ ] All public APIs have JSDoc comments
-- [ ] Tests exist for all public APIs
-
-### 4. Developer Experience
-- [ ] A viem developer can use this without learning new patterns
-- [ ] TypeScript autocomplete works correctly
-- [ ] Error messages tell you what went wrong AND how to fix it
-- [ ] No surprising behavior vs viem
-
----
-
-## How to Conduct the Audit
-
-Use subagents to parallelize the work:
-
-```
-1. Spawn an "Explore" agent to map the SDK structure
-2. Spawn agents to review each module against viem/wagmi patterns
-3. Spawn an agent to find orphan code and dead exports
-4. Spawn an agent to audit test quality
-5. Compile findings into a prioritized report
-```
-
----
-
-## Output Format
-
-Create a report with:
-
-1. **Critical Issues** — Must fix before release
-2. **Major Issues** — Should fix before release
-3. **Minor Issues** — Nice to fix
-4. **Observations** — Not issues, but worth noting
-
-For each issue:
-- What's wrong
-- Where it is (file:line)
-- Why it matters
-- How to fix it
-
----
-
-## Be Brutally Honest
-
-We want a great SDK. Don't sugar-coat problems. If something sucks, say it sucks and explain why. The goal is to ship something developers will love, not to protect feelings.
+1. **Don't break existing passing tests** unless they test wrong behavior
+2. **Keep tests focused** - one concept per test
+3. **Use descriptive names** - test name should explain what's tested
+4. **Check reference repos** for test patterns
 
 ---
 
@@ -111,14 +124,4 @@ We want a great SDK. Don't sugar-coat problems. If something sucks, say it sucks
 
 ```
 /Users/fox/Getting Started/radius-sdk/typescript
-```
-
-## Build & Test
-
-```bash
-cd typescript
-pnpm install
-pnpm build
-pnpm test
-pnpm check:types
 ```

@@ -1,134 +1,153 @@
-# Handoff: SDK Audit
+# Handoff: Audit Fixes (Test Quality)
 
-## What Was Done
+## Context
 
-The SDK underwent an aggressive cleanup to remove non-standard patterns:
+The Radius TypeScript SDK was audited. This branch focuses on fixing test quality issues identified in the audit.
 
-### Removed (Non-Standard)
-- `ERC20` class — Use `client.getContract()` with viem's `erc20Abi`
-- `Contract` class — Use `client.getContract()`
-- `Account` class — Use viem's `LocalAccount` directly
-- `ABI` class — Use viem's ABI utilities
-- `Transaction`, `SignedTransaction` classes — Use viem types
-- `createPrivateKeySigner` — Re-export viem's `privateKeyToAccount`
-- `common/` module — Redundant wrappers around viem
-- `crypto/` module — Redundant wrappers around viem
-- `auth/` module — Just wrapped viem functions
-
-### What Remains
-```
-typescript/src/
-├── chains/          # Chain definitions (radiusTestnet, radiusMainnet)
-├── client/          # RadiusClient with gasPrice: 0 handling
-├── contracts/       # TypedContract helper for getContract()
-├── errors/          # Error classes
-├── events/          # Event watching utilities
-├── react/           # React hooks (wagmi-based)
-├── transport/       # Custom transport with interceptor
-├── wagmi/           # Wagmi connector
-├── webauthn/        # WebAuthn credential management
-└── index.ts         # Main exports
-```
+**Read `AUDIT-REPORT.md` for full audit details.**
 
 ---
 
-## What Needs Auditing
+## Your Task: Fix Tests That Suck
 
-### 1. Pattern Compliance
+The audit identified several categories of test problems:
 
-**Question:** Does the SDK feel native to viem/wagmi developers?
+### 1. Tests That Mock Everything and Test Nothing
 
-Check against:
-- `/tmp/viem` — How does viem structure clients, contracts, types?
-- `/tmp/wagmi` — How does wagmi structure hooks, connectors?
-- `/tmp/tempo-ts` — How does Tempo extend viem for their chain?
+Some tests mock all dependencies so thoroughly that they don't actually test real behavior.
 
-### 2. Code Quality
+**Look for:**
+- Tests where every external call is mocked
+- Tests that only verify mocks were called, not actual behavior
+- Tests that pass regardless of implementation
 
-**Question:** Is there technical debt hiding in the codebase?
-
-Look for:
-- Fake tests that just `expect(true).toBe(true)`
-- Tests that mock everything and test nothing
-- `// TODO` comments
-- Commented-out code
-- Overly complex abstractions
-- Copy-pasted code
-
-### 3. Orphan Code
-
-**Question:** Is there dead code that should be removed?
-
-Look for:
-- Files not imported anywhere
-- Exports not used anywhere
-- Functions defined but never called
-- Types defined but never used
-
-### 4. Missing Pieces
-
-**Question:** Is anything missing that should exist?
-
-Check:
-- Are all public APIs documented with JSDoc?
-- Are there tests for all public APIs?
-- Are error messages helpful?
-- Is TypeScript autocomplete working correctly?
-
-### 5. React Hooks
-
-**Question:** Do the React hooks follow wagmi patterns?
-
-The SDK has ERC20 hooks in `src/react/hooks/useERC20.ts`. Audit:
-- Do they follow wagmi's hook patterns?
-- Are they necessary, or should users just use wagmi directly?
-- Do they add value or just add API surface?
-
-### 6. WebAuthn Module
-
-**Question:** Is this module production-ready?
-
-Located at `src/webauthn/`. This handles WebAuthn credential storage. Audit:
-- Is it well-tested?
-- Is it documented?
-- Does it follow best practices?
-
-### 7. Wagmi Connector
-
-**Question:** Is the connector standard?
-
-Located at `src/wagmi/connector.ts`. Audit:
-- Does it follow wagmi's connector patterns?
-- Is it necessary, or can users use standard wagmi connectors?
+**Fix by:**
+- Adding integration tests that hit real code paths
+- Reducing mocking to only external boundaries
+- Testing actual behavior, not just call verification
 
 ---
 
-## Known Issues to Investigate
+### 2. Missing Test Coverage for Watch Functions
 
-1. **Error messages** — Some errors just say "Invalid params" with no context
-2. **React hooks** — May be thin wrappers that add no value
-3. **WebAuthn naming** — Module is called "webauthn" but exported as "server"
-4. **Peer dependency warnings** — Users report warnings during install
+**Location:** `src/events/watchApproval.ts`, `src/events/watchTransfer.ts`, `src/events/watchBlock.ts`
+
+**Issue:** No tests exist for the watch functions.
+
+**Need tests for:**
+- `watchApproval` / `watchApprovalForAddress`
+- `watchTransfer` / `watchTransferForAddress`
+- `watchBlockNumber` / `watchBlocks`
+- Edge case: what happens when errors occur in callbacks
+
+---
+
+### 3. Missing Error Path Tests
+
+Many functions have error handling that's never tested.
+
+**Look for:**
+- `catch` blocks that aren't exercised by tests
+- Validation logic that's not tested with invalid input
+- Error classes that are never instantiated in tests
+
+**Files to check:**
+- `src/client/client.ts` - validation errors
+- `src/contracts/typedContract.ts` - ABI encoding errors
+- `src/transport/interceptor.ts` - network errors
+- `src/webauthn/Handler.ts` - validation errors
+
+---
+
+### 4. TypedContract Tests Only Cover Happy Path
+
+**Location:** `test/unit/typedContract.test.ts`
+
+**Missing tests:**
+- What happens with missing ABI?
+- What happens with missing address?
+- What happens with malformed arguments?
+- What happens with tuple/struct parameters?
+- Loose args vs array args handling
+
+---
+
+### 5. wagmi Connector Tests Validate Wrong Behavior
+
+**Location:** `src/wagmi/connector.test.ts`
+
+**Issue:** Tests explicitly validate that `onAccountsChanged` is a no-op:
+```typescript
+it('should be a no-op function', () => {
+  expect(() => connectorImpl.onAccountsChanged?.([])).not.toThrow();
+});
+```
+
+This test validates broken behavior. Once the code is fixed (in the other branch), this test needs to be updated to verify proper account change handling.
+
+---
+
+### 6. WebAuthn Handler Tests Missing Error Cases
+
+**Location:** `src/webauthn/Handler.test.ts`
+
+**Missing tests:**
+- Invalid credential ID format
+- Invalid publicKey format
+- Malformed JSON bodies
+- Missing authenticatorData
+- Origin mismatch (non-localhost)
+- Challenge expiration (once implemented)
+
+---
+
+## Test Quality Guidelines
+
+Good tests should:
+
+1. **Test real behavior** - Not just mock verification
+2. **Cover error paths** - Not just happy paths
+3. **Be independent** - Not rely on other tests
+4. **Be deterministic** - Same result every run
+5. **Be readable** - Clear what's being tested
+
+---
+
+## Reference Repositories
+
+For test pattern reference:
+
+| Repo | Location | Reference For |
+|------|----------|---------------|
+| viem | `/tmp/viem` | Test patterns, integration tests |
+| wagmi | `/tmp/wagmi` | Connector test patterns |
+
+---
+
+## Commands
+
+```bash
+cd typescript
+
+# Run all tests
+pnpm test
+
+# Run specific test file
+pnpm test -- src/wagmi/connector.test.ts
+
+# Run tests matching pattern
+pnpm test -- --grep "watchApproval"
+
+# Run with coverage
+pnpm test -- --coverage
+```
 
 ---
 
 ## Success Criteria
 
-After the audit, a viem/wagmi developer should be able to:
-
-1. Install the SDK without warnings
-2. Use familiar patterns (no new concepts to learn)
-3. Get helpful error messages when something goes wrong
-4. Have full TypeScript autocomplete
-5. Trust that the SDK is well-tested and production-ready
-
----
-
-## Reference
-
-| Resource | Location |
-|----------|----------|
-| SDK source | `/Users/fox/Getting Started/radius-sdk/typescript` |
-| viem source | `/tmp/viem` |
-| wagmi source | `/tmp/wagmi` |
-| tempo-ts source | `/tmp/tempo-ts` |
+- All existing tests still pass
+- New tests added for watch functions
+- Error paths have test coverage
+- No tests that just validate broken behavior
+- Test coverage improved for identified gaps
