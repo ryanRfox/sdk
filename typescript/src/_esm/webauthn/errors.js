@@ -2,21 +2,21 @@ import { RadiusError } from '../errors/base';
 /**
  * Base class for all server-related errors.
  *
- * All server errors inherit from this class, providing consistent error handling
- * and metadata across the Radius server implementation. Extends the base RadiusError.
+ * These error classes are provided as utilities for user code that builds on the SDK.
+ * The SDK's Handler itself returns HTTP responses with JSON error messages rather than
+ * throwing these errors - this is the standard pattern for server handlers.
+ *
+ * Use these classes in your own error handling code when you want typed, structured errors.
  *
  * @extends RadiusError
  *
  * @example
  * ```typescript
- * import { ServerError } from '@radiustechsystems/sdk/server';
+ * import { ServerError } from '@radiustechsystems/sdk/webauthn';
  *
- * try {
- *   // handler logic
- * } catch (error) {
- *   if (error instanceof ServerError) {
- *     console.error('Server error:', error.message);
- *   }
+ * // In your custom validation code:
+ * if (!isValid(input)) {
+ *   throw new ServerError('Validation failed');
  * }
  * ```
  */
@@ -40,7 +40,7 @@ export class ServerError extends RadiusError {
  *
  * @example
  * ```typescript
- * import { InvalidRequestError } from '@radiustechsystems/sdk/server';
+ * import { InvalidRequestError } from '@radiustechsystems/sdk/webauthn';
  *
  * if (!request.body.credential) {
  *   throw new InvalidRequestError('Missing required field: credential');
@@ -52,10 +52,7 @@ export class ServerError extends RadiusError {
  */
 export class InvalidRequestError extends ServerError {
     constructor(message, options) {
-        super(message, {
-            shortMessage: 'Invalid request',
-            ...options,
-        });
+        super(message, options);
         this.name = 'InvalidRequestError';
     }
 }
@@ -72,7 +69,7 @@ export class InvalidRequestError extends ServerError {
  *
  * @example
  * ```typescript
- * import { MethodNotSupportedError } from '@radiustechsystems/sdk/server';
+ * import { MethodNotSupportedError } from '@radiustechsystems/sdk/webauthn';
  *
  * const supportedMethods = ['eth_sendRawTransaction'];
  *
@@ -86,10 +83,7 @@ export class InvalidRequestError extends ServerError {
  */
 export class MethodNotSupportedError extends ServerError {
     constructor(method, options) {
-        super(`Method not supported: ${method}`, {
-            shortMessage: `Method not supported: ${method}`,
-            ...options,
-        });
+        super(`Method not supported: ${method}`, options);
         this.name = 'MethodNotSupportedError';
     }
 }
@@ -108,7 +102,7 @@ export class MethodNotSupportedError extends ServerError {
  *
  * @example
  * ```typescript
- * import { ChallengeExpiredError } from '@radiustechsystems/sdk/server';
+ * import { ChallengeExpiredError } from '@radiustechsystems/sdk/webauthn';
  *
  * const challenge = await kv.get(`challenge:${challengeId}`);
  * if (!challenge) {
@@ -121,10 +115,7 @@ export class MethodNotSupportedError extends ServerError {
  */
 export class ChallengeExpiredError extends ServerError {
     constructor(options) {
-        super('Challenge expired or invalid', {
-            shortMessage: 'Challenge expired',
-            ...options,
-        });
+        super('Challenge expired or invalid', options);
         this.name = 'ChallengeExpiredError';
     }
 }
@@ -141,7 +132,7 @@ export class ChallengeExpiredError extends ServerError {
  *
  * @example
  * ```typescript
- * import { CredentialNotFoundError } from '@radiustechsystems/sdk/server';
+ * import { CredentialNotFoundError } from '@radiustechsystems/sdk/webauthn';
  *
  * const publicKey = await kv.get(`credential:${credentialId}`);
  * if (!publicKey) {
@@ -154,10 +145,7 @@ export class ChallengeExpiredError extends ServerError {
  */
 export class CredentialNotFoundError extends ServerError {
     constructor(credentialId, options) {
-        super(`Credential not found: ${credentialId}`, {
-            shortMessage: 'Credential not found',
-            ...options,
-        });
+        super(`Credential not found: ${credentialId}`, options);
         this.name = 'CredentialNotFoundError';
     }
 }

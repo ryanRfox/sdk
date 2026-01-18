@@ -37,25 +37,12 @@ export interface InterceptingTransportOptions {
     interceptor?: Interceptor;
     /** Optional logging function */
     logger?: Logf;
+    /** Request timeout in milliseconds. Default: 10000 (10 seconds) */
+    timeout?: number;
+    /** Number of retry attempts. Default: 3 */
+    retryCount?: number;
+    /** Base delay between retries in milliseconds. Default: 150 */
+    retryDelay?: number;
 }
-/**
- * Creates a viem-compatible transport that supports request interception and logging.
- *
- * @param options Configuration options for the transport
- * @returns A viem Transport that can be used with createPublicClient
- *
- * @example
- * ```typescript
- * const transport = createInterceptingTransport({
- *   url: 'https://rpc.testnet.radiustech.xyz',
- *   logger: console.log,
- * });
- *
- * const client = createPublicClient({
- *   chain: radiusTestnet,
- *   transport,
- * });
- * ```
- */
 export declare function createInterceptingTransport(options: InterceptingTransportOptions): Transport;
 //# sourceMappingURL=interceptor.d.ts.map

@@ -236,11 +236,36 @@ export function watchTransferForAddress(
 	} else {
 		// Watch both: need to create two separate subscriptions
 		// This is a limitation of eth_subscribe - can't do OR filters
-		// We'll need to watch both and merge results
+		// Use deduplication to prevent duplicate callbacks for the same event
+		const seenEvents = new Set<string>();
+
+		// Create a unique key for each event (using tx hash + log index)
+		const getEventKey = (event: TransferEvent): string => {
+			const txHash = event.log.transactionHash ?? 'pending';
+			const logIndex = event.log.logIndex ?? 0;
+			return `${txHash}-${logIndex}`;
+		};
+
+		// Wrapper that deduplicates events before calling the callback
+		const deduplicatedCallback = (events: TransferEvent[]): void => {
+			const newEvents = events.filter((event) => {
+				const key = getEventKey(event);
+				if (seenEvents.has(key)) {
+					return false;
+				}
+				seenEvents.add(key);
+				return true;
+			});
+
+			if (newEvents.length > 0) {
+				params.onTransfer(newEvents);
+			}
+		};
+
 		const unwatchFrom = watchTransfer(client, {
 			address: params.tokenAddress,
 			from: params.watchAddress,
-			onTransfer: params.onTransfer,
+			onTransfer: deduplicatedCallback,
 			onError: params.onError,
 			sync: params.sync,
 			pollingInterval: params.pollingInterval,
@@ -249,7 +274,7 @@ export function watchTransferForAddress(
 		const unwatchTo = watchTransfer(client, {
 			address: params.tokenAddress,
 			to: params.watchAddress,
-			onTransfer: params.onTransfer,
+			onTransfer: deduplicatedCallback,
 			onError: params.onError,
 			sync: params.sync,
 			pollingInterval: params.pollingInterval,

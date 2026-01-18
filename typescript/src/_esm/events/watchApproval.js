@@ -185,11 +185,32 @@ export function watchApprovalForAddress(client, params) {
     else {
         // Watch both: need to create two separate subscriptions
         // This is a limitation of eth_subscribe - can't do OR filters
-        // We'll need to watch both and merge results
+        // Use deduplication to prevent duplicate callbacks for the same event
+        const seenEvents = new Set();
+        // Create a unique key for each event (using tx hash + log index)
+        const getEventKey = (event) => {
+            const txHash = event.log.transactionHash ?? 'pending';
+            const logIndex = event.log.logIndex ?? 0;
+            return `${txHash}-${logIndex}`;
+        };
+        // Wrapper that deduplicates events before calling the callback
+        const deduplicatedCallback = (events) => {
+            const newEvents = events.filter((event) => {
+                const key = getEventKey(event);
+                if (seenEvents.has(key)) {
+                    return false;
+                }
+                seenEvents.add(key);
+                return true;
+            });
+            if (newEvents.length > 0) {
+                params.onApproval(newEvents);
+            }
+        };
         const unwatchOwner = watchApproval(client, {
             address: params.tokenAddress,
             owner: params.watchAddress,
-            onApproval: params.onApproval,
+            onApproval: deduplicatedCallback,
             onError: params.onError,
             sync: params.sync,
             pollingInterval: params.pollingInterval,
@@ -197,7 +218,7 @@ export function watchApprovalForAddress(client, params) {
         const unwatchSpender = watchApproval(client, {
             address: params.tokenAddress,
             spender: params.watchAddress,
-            onApproval: params.onApproval,
+            onApproval: deduplicatedCallback,
             onError: params.onError,
             sync: params.sync,
             pollingInterval: params.pollingInterval,

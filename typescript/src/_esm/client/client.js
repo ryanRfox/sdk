@@ -62,8 +62,8 @@ function getRpcUrl(chain) {
     // Fall back to chain config
     const chainUrl = chain.rpcUrls.default.http[0];
     if (!chainUrl) {
-        throw new RadiusError('No RPC URL configured. Set RADIUS_RPC_URL environment variable or configure chain.rpcUrls', {
-            shortMessage: 'Missing RPC URL configuration',
+        throw new RadiusError('Missing RPC URL configuration', {
+            details: 'Set RADIUS_RPC_URL environment variable or configure chain.rpcUrls',
         });
     }
     return chainUrl;
@@ -260,7 +260,7 @@ export function createRadiusClient(config) {
             }
             catch (err) {
                 throw new AbiError(`Failed to encode function call: ${err.message}`, {
-                    cause: err,
+                    cause: err instanceof Error ? err : undefined,
                 });
             }
             // Make the call
@@ -286,7 +286,7 @@ export function createRadiusClient(config) {
             }
             catch (err) {
                 throw new AbiError(`Failed to decode function result: ${err.message}`, {
-                    cause: err,
+                    cause: err instanceof Error ? err : undefined,
                 });
             }
             return decoded;
@@ -312,7 +312,7 @@ export function createRadiusClient(config) {
             }
             catch (err) {
                 throw new AbiError(`Failed to encode function call: ${err.message}`, {
-                    cause: err,
+                    cause: err instanceof Error ? err : undefined,
                 });
             }
             return signAndSendTransaction(signer, {
@@ -352,7 +352,7 @@ export function createRadiusClient(config) {
                     }
                     catch (err) {
                         throw new AbiError(`Failed to encode constructor arguments: ${err.message}`, {
-                            cause: err,
+                            cause: err instanceof Error ? err : undefined,
                         });
                     }
                 }

@@ -26,7 +26,6 @@ export class ContractCallError extends RadiusError {
 		} = {},
 	) {
 		super(message, {
-			shortMessage: 'Contract call failed',
 			...options,
 			docsPath: options.docsPath ?? '/docs/sdk/errors#contract-call',
 		});
@@ -55,7 +54,6 @@ export class ContractDeploymentError extends RadiusError {
 		} = {},
 	) {
 		super(message, {
-			shortMessage: 'Contract deployment failed',
 			...options,
 			docsPath: options.docsPath ?? '/docs/sdk/errors#contract-deployment',
 		});
@@ -72,7 +70,6 @@ export class AbiError extends RadiusError {
 
 	constructor(message: string, options: RadiusErrorOptions = {}) {
 		super(message, {
-			shortMessage: 'ABI error',
 			...options,
 			docsPath: options.docsPath ?? '/docs/sdk/errors#abi',
 		});
@@ -87,7 +84,6 @@ export class MissingAbiError extends RadiusError {
 
 	constructor(message = 'Contract ABI is required', options: RadiusErrorOptions = {}) {
 		super(message, {
-			shortMessage: 'Missing ABI',
 			...options,
 			docsPath: options.docsPath ?? '/docs/sdk/errors#missing-abi',
 		});

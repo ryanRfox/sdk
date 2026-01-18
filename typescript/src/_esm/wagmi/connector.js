@@ -1,8 +1,12 @@
 /**
  * Radius wagmi connector
  *
- * Provides custom wagmi connectors for Radius chain authentication.
- * Based on Tempo SDK patterns.
+ * Provides a development-only wagmi connector for Radius chain.
+ *
+ * @experimental DEVELOPMENT USE ONLY - NOT FOR PRODUCTION
+ *
+ * For production dApps, use standard wagmi connectors (MetaMask, WalletConnect)
+ * with Radius chain configuration from `@radiustechsystems/sdk/chains`.
  */
 import { createClient, getAddress } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
@@ -10,9 +14,16 @@ import { ChainNotConfiguredError, createConnector } from 'wagmi';
 /**
  * Development-only connector for EOA with private key.
  *
- * WARNING: NOT RECOMMENDED FOR PRODUCTION USAGE.
- * This connector stores private keys in browser storage.
- * Use only for development and testing.
+ * @experimental This connector is for development and testing ONLY.
+ *
+ * **DO NOT USE IN PRODUCTION** - This connector has critical limitations:
+ *
+ * 1. **Security risk**: Stores private keys in browser storage
+ * 2. **No wallet support**: Cannot connect to MetaMask, WalletConnect, etc.
+ * 3. **Limited functionality**: Designed for development/testing scenarios only
+ *
+ * For production dApps, use standard wagmi connectors (MetaMask, WalletConnect, etc.)
+ * with Radius chain configuration.
  *
  * @example
  * ```typescript
@@ -31,6 +42,7 @@ import { ChainNotConfiguredError, createConnector } from 'wagmi';
  */
 export function privateKeyConnector(options = {}) {
     let account;
+    let currentChainId;
     return createConnector((config) => ({
         id: 'radius-private-key',
         name: 'Radius Private Key',
@@ -84,6 +96,8 @@ export function privateKeyConnector(options = {}) {
             const chainId = requestedChainId ?? config.chains[0]?.id;
             if (!chainId)
                 throw new ChainNotConfiguredError();
+            // Store the current chain ID
+            currentChainId = chainId;
             return {
                 accounts: [getAddress(connectedAddress)],
                 chainId,
@@ -99,7 +113,8 @@ export function privateKeyConnector(options = {}) {
             return [getAddress(account.address)];
         },
         async getChainId() {
-            return config.chains[0]?.id ?? 0;
+            // Return tracked chain ID, falling back to first configured chain
+            return currentChainId ?? config.chains[0]?.id ?? 0;
         },
         async isAuthorized() {
             try {
@@ -114,10 +129,21 @@ export function privateKeyConnector(options = {}) {
             const chain = config.chains.find((c) => c.id === chainId);
             if (!chain)
                 throw new ChainNotConfiguredError();
+            // Update tracked chain ID
+            currentChainId = chainId;
             config.emitter.emit('change', { chainId });
             return chain;
         },
-        onAccountsChanged() { },
+        onAccountsChanged(accounts) {
+            if (accounts.length === 0) {
+                this.onDisconnect();
+            }
+            else {
+                config.emitter.emit('change', {
+                    accounts: accounts.map((x) => getAddress(x)),
+                });
+            }
+        },
         onChainChanged(chain) {
             const chainId = Number(chain);
             config.emitter.emit('change', { chainId });

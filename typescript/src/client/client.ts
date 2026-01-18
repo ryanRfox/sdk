@@ -538,9 +538,9 @@ function getRpcUrl(chain: Chain): string {
 	const chainUrl = chain.rpcUrls.default.http[0];
 	if (!chainUrl) {
 		throw new RadiusError(
-			'No RPC URL configured. Set RADIUS_RPC_URL environment variable or configure chain.rpcUrls',
+			'Missing RPC URL configuration',
 			{
-				shortMessage: 'Missing RPC URL configuration',
+				details: 'Set RADIUS_RPC_URL environment variable or configure chain.rpcUrls',
 			},
 		);
 	}
@@ -765,7 +765,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 				});
 			} catch (err) {
 				throw new AbiError(`Failed to encode function call: ${(err as Error).message}`, {
-					cause: err,
+					cause: err instanceof Error ? err : undefined,
 				});
 			}
 
@@ -793,7 +793,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 				});
 			} catch (err) {
 				throw new AbiError(`Failed to decode function result: ${(err as Error).message}`, {
-					cause: err,
+					cause: err instanceof Error ? err : undefined,
 				});
 			}
 
@@ -826,7 +826,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 				});
 			} catch (err) {
 				throw new AbiError(`Failed to encode function call: ${(err as Error).message}`, {
-					cause: err,
+					cause: err instanceof Error ? err : undefined,
 				});
 			}
 
@@ -883,7 +883,7 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 						deployData = `${bytecode}${encodedArgs.slice(2)}` as Hex;
 					} catch (err) {
 						throw new AbiError(`Failed to encode constructor arguments: ${(err as Error).message}`, {
-							cause: err,
+							cause: err instanceof Error ? err : undefined,
 						});
 					}
 				}

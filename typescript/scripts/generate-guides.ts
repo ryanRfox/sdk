@@ -200,7 +200,7 @@ pnpm add @radiustechsystems/sdk
 The key manager handler provides WebAuthn credential storage:
 
 \`\`\`typescript
-import { Handler, Kv } from '@radiustechsystems/sdk/server';
+import { Handler, Kv } from '@radiustechsystems/sdk/webauthn';
 
 const handler = Handler.keyManager({
   kv: Kv.memory(),
@@ -222,7 +222,7 @@ const handler = Handler.keyManager({
 ### In-Memory Store
 
 \`\`\`typescript
-import { Kv } from '@radiustechsystems/sdk/server';
+import { Kv } from '@radiustechsystems/sdk/webauthn';
 
 const kv = Kv.memory();
 \`\`\`
@@ -230,7 +230,7 @@ const kv = Kv.memory();
 ### Cloudflare KV
 
 \`\`\`typescript
-import { Kv } from '@radiustechsystems/sdk/server';
+import { Kv } from '@radiustechsystems/sdk/webauthn';
 
 const kv = Kv.cloudflare({ namespace: env.KV });
 \`\`\`
@@ -240,7 +240,7 @@ const kv = Kv.cloudflare({ namespace: env.KV });
 Combine multiple handlers:
 
 \`\`\`typescript
-import { Handler, Kv } from '@radiustechsystems/sdk/server';
+import { Handler, Kv } from '@radiustechsystems/sdk/webauthn';
 
 const keyManager = Handler.keyManager({ kv: Kv.memory() });
 const health = Handler.from();
@@ -569,7 +569,7 @@ import { useRadiusBalance, useRadiusSend } from '@radiustechsystems/sdk/react';
 import { watchTransfer, getLogs } from '@radiustechsystems/sdk/events';
 
 // Server handlers
-import { Handler, Kv } from '@radiustechsystems/sdk/server';
+import { Handler, Kv } from '@radiustechsystems/sdk/webauthn';
 
 // wagmi integration
 import { privateKeyConnector } from '@radiustechsystems/sdk/wagmi';
