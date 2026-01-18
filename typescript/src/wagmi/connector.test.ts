@@ -623,13 +623,60 @@ describe('privateKeyConnector', () => {
 	});
 
 	describe('onAccountsChanged', () => {
-		it('should be a no-op function', () => {
+		it('should call onDisconnect when accounts array is empty', async () => {
+			const connectorFn = privateKeyConnector({ generateOnConnect: true });
+			const config = createMockConfig();
+
+			const connectorImpl = connectorFn(config as never);
+			await connectorImpl.connect?.();
+
+			// Verify account exists before
+			let accounts = await connectorImpl.getAccounts();
+			expect(accounts).toHaveLength(1);
+
+			// Trigger empty accounts change
+			connectorImpl.onAccountsChanged?.([]);
+
+			// Should have called onDisconnect, which emits disconnect and clears account
+			const emitterMock = config.emitter as any;
+			expect(emitterMock.emit).toHaveBeenCalledWith('disconnect');
+
+			// Account should be cleared
+			accounts = await connectorImpl.getAccounts();
+			expect(accounts).toEqual([]);
+		});
+
+		it('should emit change event with checksummed accounts when accounts provided', () => {
 			const connectorFn = privateKeyConnector();
 			const config = createMockConfig();
 
 			const connectorImpl = connectorFn(config as never);
-			// onAccountsChanged expects an array of accounts but is a no-op
-			expect(() => connectorImpl.onAccountsChanged?.([])).not.toThrow();
+			const testAddress = '0x1234567890123456789012345678901234567890';
+
+			connectorImpl.onAccountsChanged?.([testAddress]);
+
+			const emitterMock = config.emitter as any;
+			expect(emitterMock.emit).toHaveBeenCalledWith('change', {
+				accounts: [getAddress(testAddress)],
+			});
+		});
+
+		it('should handle multiple accounts', () => {
+			const connectorFn = privateKeyConnector();
+			const config = createMockConfig();
+
+			const connectorImpl = connectorFn(config as never);
+			const addresses = [
+				'0x1234567890123456789012345678901234567890',
+				'0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+			];
+
+			connectorImpl.onAccountsChanged?.(addresses);
+
+			const emitterMock = config.emitter as any;
+			expect(emitterMock.emit).toHaveBeenCalledWith('change', {
+				accounts: addresses.map((addr) => getAddress(addr)),
+			});
 		});
 	});
 

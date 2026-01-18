@@ -349,4 +349,360 @@ describe('Handler.keyManager', () => {
     expect(json.rp).toBeDefined();
     expect(json.rp.id).toBe('example.com');
   });
+
+  describe('error cases', () => {
+    it('should reject invalid credential ID format (special characters)', async () => {
+      const handler = Handler.keyManager({
+        kv: Kv.memory(),
+      });
+
+      // Try to store credential with invalid characters (special chars like @)
+      const request = new Request('http://localhost/test@cred!', {
+        method: 'POST',
+        body: JSON.stringify({
+          credential: { response: {} },
+          publicKey: '0x1234',
+        }),
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Invalid credential ID format');
+    });
+
+    it('should reject credential ID that is too long', async () => {
+      const handler = Handler.keyManager({
+        kv: Kv.memory(),
+      });
+
+      const longId = 'a'.repeat(300);
+      const request = new Request(`http://localhost/${longId}`, {
+        method: 'GET',
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Invalid credential ID format');
+    });
+
+    it('should reject malformed JSON in POST body', async () => {
+      const handler = Handler.keyManager({
+        kv: Kv.memory(),
+      });
+
+      const request = new Request('http://localhost/test-cred', {
+        method: 'POST',
+        body: 'not valid json {{{',
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Invalid JSON');
+    });
+
+    it('should reject missing publicKey', async () => {
+      const kv = Kv.memory();
+      const handler = Handler.keyManager({ kv });
+
+      const challengeResponse = await handler.fetch(
+        new Request('http://localhost/challenge', { method: 'GET' })
+      );
+      const { challenge } = await challengeResponse.json();
+
+      const credential = createTestWebAuthnCredential(challenge);
+
+      const request = new Request('http://localhost/test-cred', {
+        method: 'POST',
+        body: JSON.stringify({
+          credential,
+          // publicKey missing
+        }),
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Missing publicKey');
+    });
+
+    it('should reject missing clientDataJSON', async () => {
+      const handler = Handler.keyManager({
+        kv: Kv.memory(),
+      });
+
+      const request = new Request('http://localhost/test-cred', {
+        method: 'POST',
+        body: JSON.stringify({
+          credential: {
+            response: {
+              // clientDataJSON missing
+              authenticatorData: stringToBase64Url('test'),
+            },
+          },
+          publicKey: '0x1234',
+        }),
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Missing clientDataJSON');
+    });
+
+    it('should reject missing authenticatorData', async () => {
+      const handler = Handler.keyManager({
+        kv: Kv.memory(),
+      });
+
+      const request = new Request('http://localhost/test-cred', {
+        method: 'POST',
+        body: JSON.stringify({
+          credential: {
+            response: {
+              clientDataJSON: stringToBase64Url('{}'),
+              // authenticatorData missing
+            },
+          },
+          publicKey: '0x1234',
+        }),
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Missing authenticatorData');
+    });
+
+    it('should reject invalid clientDataJSON (not valid base64)', async () => {
+      const handler = Handler.keyManager({
+        kv: Kv.memory(),
+      });
+
+      const request = new Request('http://localhost/test-cred', {
+        method: 'POST',
+        body: JSON.stringify({
+          credential: {
+            response: {
+              clientDataJSON: '!!!not-valid-base64!!!',
+              authenticatorData: stringToBase64Url('test'),
+            },
+          },
+          publicKey: '0x1234',
+        }),
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Invalid clientDataJSON');
+    });
+
+    it('should reject clientDataJSON without challenge', async () => {
+      const handler = Handler.keyManager({
+        kv: Kv.memory(),
+      });
+
+      const clientDataJSON = JSON.stringify({
+        type: 'webauthn.create',
+        // challenge missing
+        origin: 'http://localhost',
+      });
+
+      const request = new Request('http://localhost/test-cred', {
+        method: 'POST',
+        body: JSON.stringify({
+          credential: {
+            response: {
+              clientDataJSON: stringToBase64Url(clientDataJSON),
+              authenticatorData: stringToBase64Url('a'.repeat(37)),
+            },
+          },
+          publicKey: '0x1234',
+        }),
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Missing challenge');
+    });
+
+    it('should reject origin mismatch for non-localhost RP', async () => {
+      const kv = Kv.memory();
+      const handler = Handler.keyManager({
+        kv,
+        rp: 'example.com', // Non-localhost RP
+      });
+
+      // Get a challenge
+      const challengeResponse = await handler.fetch(
+        new Request('http://localhost/challenge', { method: 'GET' })
+      );
+      const { challenge } = await challengeResponse.json();
+
+      // Create credential with wrong origin (not https://example.com)
+      const credential = createTestWebAuthnCredential(challenge, {
+        origin: 'https://malicious.com',
+      });
+
+      const request = new Request('http://localhost/test-cred', {
+        method: 'POST',
+        body: JSON.stringify({
+          credential,
+          publicKey: '0x1234',
+        }),
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Invalid origin');
+    });
+
+    it('should reject expired challenge', async () => {
+      const kv = Kv.memory();
+      const handler = Handler.keyManager({
+        kv,
+        challengeTTL: 1, // 1ms TTL - will expire almost immediately
+      });
+
+      // Get a challenge
+      const challengeResponse = await handler.fetch(
+        new Request('http://localhost/challenge', { method: 'GET' })
+      );
+      const { challenge } = await challengeResponse.json();
+
+      // Wait for challenge to expire
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const credential = createTestWebAuthnCredential(challenge);
+
+      const request = new Request('http://localhost/test-cred', {
+        method: 'POST',
+        body: JSON.stringify({
+          credential,
+          publicKey: '0x1234',
+        }),
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('expired');
+    });
+
+    it('should reject invalid authenticatorData (too short)', async () => {
+      const kv = Kv.memory();
+      const handler = Handler.keyManager({ kv });
+
+      // Get a challenge
+      const challengeResponse = await handler.fetch(
+        new Request('http://localhost/challenge', { method: 'GET' })
+      );
+      const { challenge } = await challengeResponse.json();
+
+      const challengeBytes = hexToBytes(challenge.slice(2));
+      const challengeBase64Url = bytesToBase64Url(challengeBytes);
+
+      const clientDataJSON = JSON.stringify({
+        type: 'webauthn.create',
+        challenge: challengeBase64Url,
+        origin: 'http://localhost',
+      });
+
+      // Create authenticatorData that is too short (less than 37 bytes)
+      const shortAuthData = new Uint8Array(10);
+
+      const request = new Request('http://localhost/test-cred', {
+        method: 'POST',
+        body: JSON.stringify({
+          credential: {
+            response: {
+              clientDataJSON: stringToBase64Url(clientDataJSON),
+              authenticatorData: bytesToBase64Url(shortAuthData),
+            },
+          },
+          publicKey: '0x1234',
+        }),
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Invalid authenticatorData');
+    });
+
+    it('should reject credential with missing response', async () => {
+      const handler = Handler.keyManager({
+        kv: Kv.memory(),
+      });
+
+      const request = new Request('http://localhost/test-cred', {
+        method: 'POST',
+        body: JSON.stringify({
+          credential: {
+            // response missing
+          },
+          publicKey: '0x1234',
+        }),
+      });
+
+      const response = await handler.fetch(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.error).toContain('Missing clientDataJSON');
+    });
+
+    it('should handle rp config with name and id', async () => {
+      const handler = Handler.keyManager({
+        kv: Kv.memory(),
+        rp: { id: 'example.com', name: 'Example App' },
+      });
+
+      const request = new Request('http://localhost/challenge', {
+        method: 'GET',
+      });
+
+      const response = await handler.fetch(request);
+      const json = await response.json();
+
+      expect(json.rp.id).toBe('example.com');
+      expect(json.rp.name).toBe('Example App');
+    });
+
+    it('should allow credential ID with hyphens and underscores', async () => {
+      const kv = Kv.memory();
+      const handler = Handler.keyManager({ kv });
+
+      // Get a challenge
+      const challengeResponse = await handler.fetch(
+        new Request('http://localhost/challenge', { method: 'GET' })
+      );
+      const { challenge } = await challengeResponse.json();
+
+      const credential = createTestWebAuthnCredential(challenge);
+
+      // Credential ID with hyphens and underscores
+      const credId = 'test-cred_123';
+      const storeRequest = new Request(`http://localhost/${credId}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          credential,
+          publicKey: '0x1234',
+        }),
+      });
+
+      const storeResponse = await handler.fetch(storeRequest);
+      expect(storeResponse.status).toBe(204);
+
+      // Verify we can retrieve it
+      const getResponse = await handler.fetch(
+        new Request(`http://localhost/${credId}`, { method: 'GET' })
+      );
+      expect(getResponse.status).toBe(200);
+    });
+  });
 });
