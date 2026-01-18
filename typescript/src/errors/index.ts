@@ -52,6 +52,8 @@ export {
 
 // Transaction errors
 export {
+	BatchTransactionError,
+	type BatchTransactionResult,
 	GasEstimationError,
 	NonceError,
 	TransactionFailedError,
@@ -69,6 +71,14 @@ export type SendTransactionErrorType =
 	| TransactionRevertedError
 	| TransactionTimeoutError
 	| SignerNotFoundError
+	| GasEstimationError
+	| NonceError;
+
+/**
+ * Error types that can be thrown by batch transaction operations.
+ */
+export type BatchTransactionErrorType =
+	| BatchTransactionError
 	| GasEstimationError
 	| NonceError;
 
@@ -126,6 +136,7 @@ import type {
 	MissingAbiError,
 } from './contract';
 import type {
+	BatchTransactionError,
 	GasEstimationError,
 	NonceError,
 	TransactionFailedError,

@@ -107,4 +107,37 @@ export class TransactionTimeoutError extends RadiusError {
         this.timeout = options.timeout;
     }
 }
+/**
+ * Error thrown when one or more transactions in a batch fail.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await client.sendTransactionBatch(signer, transactions);
+ * } catch (error) {
+ *   if (error instanceof BatchTransactionError) {
+ *     console.log('Batch failed:', error.message);
+ *     error.results.forEach((r, i) => {
+ *       if (r.error) {
+ *         console.log(`  Transaction ${i} failed: ${r.error}`);
+ *       } else {
+ *         console.log(`  Transaction ${i} succeeded: ${r.hash}`);
+ *       }
+ *     });
+ *   }
+ * }
+ * ```
+ */
+export class BatchTransactionError extends RadiusError {
+    name = 'BatchTransactionError';
+    /** Results for each transaction in the batch */
+    results;
+    constructor(message, results, options = {}) {
+        super(message, {
+            ...options,
+            docsPath: options.docsPath ?? '/docs/sdk/errors#batch-transaction',
+        });
+        this.results = results;
+    }
+}
 //# sourceMappingURL=transaction.js.map

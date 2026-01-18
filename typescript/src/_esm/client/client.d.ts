@@ -54,6 +54,20 @@ export interface WaitForTransactionReceiptParameters {
     hash: Hash;
 }
 /**
+ * Transaction request for batch submission.
+ * Used with sendTransactionBatch to send multiple transactions atomically.
+ */
+export interface BatchTransactionRequest {
+    /** The recipient address */
+    to: ViemAddress;
+    /** The amount to send in wei (default: 0n) */
+    value?: bigint;
+    /** The transaction data (for contract calls) */
+    data?: Hex;
+    /** Gas limit (if not provided, will be estimated) */
+    gas?: bigint;
+}
+/**
  * Parameters for readContract method (matches viem).
  */
 export interface ReadContractParameters {
@@ -271,6 +285,28 @@ export interface RadiusClient {
      * @returns The transaction receipt
      */
     sendAndWait(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
+    /**
+     * Send multiple transactions in a single JSON-RPC batch request.
+     * Transactions are automatically assigned sequential nonces and sent atomically.
+     *
+     * @remarks
+     * Radius does not queue future-nonce transactions like Ethereum.
+     * This method ensures all transactions arrive in nonce order by using JSON-RPC batching.
+     *
+     * @param signer - The account to sign transactions with
+     * @param transactions - Array of transaction requests (to, value, data, gas)
+     * @returns Array of transaction hashes in the same order as input
+     * @throws {BatchTransactionError} If any transaction in the batch fails
+     *
+     * @example
+     * ```typescript
+     * const hashes = await client.sendTransactionBatch(signer, [
+     *   { to: '0x...', value: 1000000000000000000n },
+     *   { to: '0x...', data: '0x...' },
+     * ]);
+     * ```
+     */
+    sendTransactionBatch(signer: LocalAccount, transactions: BatchTransactionRequest[]): Promise<Hash[]>;
     /**
      * Deploy a smart contract.
      * @param signer - The signer to sign the deployment transaction

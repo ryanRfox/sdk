@@ -91,4 +91,42 @@ export declare class TransactionTimeoutError extends RadiusError {
         timeout?: number;
     });
 }
+/**
+ * Result of a single transaction in a batch.
+ */
+export interface BatchTransactionResult {
+    /** The index of this transaction in the batch */
+    index: number;
+    /** The transaction hash (if successful) */
+    hash?: Hash;
+    /** The error message (if failed) */
+    error?: string;
+}
+/**
+ * Error thrown when one or more transactions in a batch fail.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await client.sendTransactionBatch(signer, transactions);
+ * } catch (error) {
+ *   if (error instanceof BatchTransactionError) {
+ *     console.log('Batch failed:', error.message);
+ *     error.results.forEach((r, i) => {
+ *       if (r.error) {
+ *         console.log(`  Transaction ${i} failed: ${r.error}`);
+ *       } else {
+ *         console.log(`  Transaction ${i} succeeded: ${r.hash}`);
+ *       }
+ *     });
+ *   }
+ * }
+ * ```
+ */
+export declare class BatchTransactionError extends RadiusError {
+    readonly name = "BatchTransactionError";
+    /** Results for each transaction in the batch */
+    readonly results: BatchTransactionResult[];
+    constructor(message: string, results: BatchTransactionResult[], options?: RadiusErrorOptions);
+}
 //# sourceMappingURL=transaction.d.ts.map

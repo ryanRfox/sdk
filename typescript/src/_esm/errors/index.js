@@ -36,5 +36,5 @@ export { InsufficientBalanceError, InvalidAddressError, InvalidPrivateKeyError, 
 // Contract errors
 export { AbiError, ContractCallError, ContractDeploymentError, MissingAbiError, } from './contract';
 // Transaction errors
-export { GasEstimationError, NonceError, TransactionFailedError, TransactionRevertedError, TransactionTimeoutError, } from './transaction';
+export { BatchTransactionError, GasEstimationError, NonceError, TransactionFailedError, TransactionRevertedError, TransactionTimeoutError, } from './transaction';
 //# sourceMappingURL=index.js.map

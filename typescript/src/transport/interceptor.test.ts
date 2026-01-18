@@ -2,7 +2,7 @@
  * Tests for the transport interceptor module.
  */
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { InterceptingRoundTripper, createInterceptingTransport } from './interceptor';
 import type { RoundTripper } from './types';
 

@@ -32,11 +32,15 @@
 export { RadiusError, type RadiusErrorOptions } from './base';
 export { InsufficientBalanceError, InvalidAddressError, InvalidPrivateKeyError, SignerNotFoundError, SigningError, } from './account';
 export { AbiError, ContractCallError, ContractDeploymentError, MissingAbiError, } from './contract';
-export { GasEstimationError, NonceError, TransactionFailedError, TransactionRevertedError, TransactionTimeoutError, } from './transaction';
+export { BatchTransactionError, type BatchTransactionResult, GasEstimationError, NonceError, TransactionFailedError, TransactionRevertedError, TransactionTimeoutError, } from './transaction';
 /**
  * Error types that can be thrown by sendTransaction operations.
  */
 export type SendTransactionErrorType = InsufficientBalanceError | TransactionFailedError | TransactionRevertedError | TransactionTimeoutError | SignerNotFoundError | GasEstimationError | NonceError;
+/**
+ * Error types that can be thrown by batch transaction operations.
+ */
+export type BatchTransactionErrorType = BatchTransactionError | GasEstimationError | NonceError;
 /**
  * Error types that can be thrown by contract call operations.
  */
@@ -55,5 +59,5 @@ export type DeployContractErrorType = ContractDeploymentError | TransactionFaile
 export type SigningErrorType = SigningError | SignerNotFoundError | InvalidPrivateKeyError;
 import type { InsufficientBalanceError, InvalidPrivateKeyError, SignerNotFoundError, SigningError } from './account';
 import type { AbiError, ContractCallError, ContractDeploymentError, MissingAbiError } from './contract';
-import type { GasEstimationError, NonceError, TransactionFailedError, TransactionRevertedError, TransactionTimeoutError } from './transaction';
+import type { BatchTransactionError, GasEstimationError, NonceError, TransactionFailedError, TransactionRevertedError, TransactionTimeoutError } from './transaction';
 //# sourceMappingURL=index.d.ts.map

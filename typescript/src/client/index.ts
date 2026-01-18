@@ -6,6 +6,7 @@
 export {
 	type Abi,
 	type Address,
+	type BatchTransactionRequest,
 	type Chain,
 	type ContractInstance,
 	createRadiusClient,

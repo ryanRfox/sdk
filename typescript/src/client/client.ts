@@ -81,6 +81,21 @@ export interface WaitForTransactionReceiptParameters {
 }
 
 /**
+ * Transaction request for batch submission.
+ * Used with sendTransactionBatch to send multiple transactions atomically.
+ */
+export interface BatchTransactionRequest {
+	/** The recipient address */
+	to: ViemAddress;
+	/** The amount to send in wei (default: 0n) */
+	value?: bigint;
+	/** The transaction data (for contract calls) */
+	data?: Hex;
+	/** Gas limit (if not provided, will be estimated) */
+	gas?: bigint;
+}
+
+/**
  * Parameters for readContract method (matches viem).
  */
 export interface ReadContractParameters {
@@ -126,6 +141,8 @@ type AbiConstructor = {
 import { createInterceptingTransport, type Interceptor, type Logf } from '../transport';
 import {
 	AbiError,
+	BatchTransactionError,
+	type BatchTransactionResult,
 	ContractCallError,
 	ContractDeploymentError,
 	MissingAbiError,
@@ -344,6 +361,31 @@ export interface RadiusClient {
 	 */
 	sendAndWait(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt>;
 
+	/**
+	 * Send multiple transactions in a single JSON-RPC batch request.
+	 * Transactions are automatically assigned sequential nonces and sent atomically.
+	 *
+	 * @remarks
+	 * Radius does not queue future-nonce transactions like Ethereum.
+	 * This method ensures all transactions arrive in nonce order by using JSON-RPC batching.
+	 *
+	 * @param signer - The account to sign transactions with
+	 * @param transactions - Array of transaction requests (to, value, data, gas)
+	 * @returns Array of transaction hashes in the same order as input
+	 * @throws {BatchTransactionError} If any transaction in the batch fails
+	 *
+	 * @example
+	 * ```typescript
+	 * const hashes = await client.sendTransactionBatch(signer, [
+	 *   { to: '0x...', value: 1000000000000000000n },
+	 *   { to: '0x...', data: '0x...' },
+	 * ]);
+	 * ```
+	 */
+	sendTransactionBatch(
+		signer: LocalAccount,
+		transactions: BatchTransactionRequest[],
+	): Promise<Hash[]>;
 
 	/**
 	 * Deploy a smart contract.
@@ -857,6 +899,132 @@ export function createRadiusClient(config: RadiusClientConfig): RadiusClient {
 		async sendAndWait(signer: LocalAccount, to: ViemAddress, value: bigint): Promise<RadiusReceipt> {
 			const hash = await this.send(signer, to, value);
 			return this.waitForTransactionReceipt({ hash });
+		},
+
+		async sendTransactionBatch(
+			signer: LocalAccount,
+			transactions: BatchTransactionRequest[],
+		): Promise<Hash[]> {
+			// Validate input
+			if (!Array.isArray(transactions)) {
+				throw new RadiusError('sendTransactionBatch expects an array of transactions', {
+					metaMessages: [
+						'Example: client.sendTransactionBatch(signer, [{ to: "0x...", value: 1n }])',
+					],
+					details: `Received: ${typeof transactions}`,
+				});
+			}
+
+			if (transactions.length === 0) {
+				throw new RadiusError('sendTransactionBatch requires at least one transaction', {
+					metaMessages: [
+						'Pass an array with at least one transaction request.',
+					],
+				});
+			}
+
+			// Get current nonce once
+			const startNonce = await publicClient.getTransactionCount({
+				address: signer.address,
+				blockTag: 'pending',
+			});
+
+			// Estimate gas for each transaction (in parallel for efficiency)
+			const gasEstimates = await Promise.all(
+				transactions.map(async (tx, i) => {
+					if (tx.gas !== undefined) {
+						return tx.gas;
+					}
+					const estimate = await publicClient.estimateGas({
+						account: signer.address,
+						to: tx.to,
+						data: tx.data,
+						value: tx.value ?? 0n,
+					});
+					// Apply 20% safety margin
+					const margin = estimate / 5n;
+					let gas = estimate + margin;
+					// Cap at MAX_GAS
+					if (gas > MAX_GAS) {
+						gas = MAX_GAS;
+					}
+					return gas;
+				}),
+			);
+
+			// Sign all transactions with sequential nonces
+			const signedTxs = await Promise.all(
+				transactions.map(async (tx, i) => {
+					const signedTx = await signer.signTransaction({
+						to: tx.to,
+						data: tx.data,
+						value: tx.value ?? 0n,
+						nonce: startNonce + i,
+						gas: gasEstimates[i],
+						gasPrice: 0n, // Radius uses zero gas price
+						chainId: config.chain.id,
+					});
+					return signedTx;
+				}),
+			);
+
+			// Build JSON-RPC batch request
+			const batchRequest = signedTxs.map((raw, i) => ({
+				jsonrpc: '2.0' as const,
+				id: i,
+				method: 'eth_sendRawTransaction',
+				params: [raw],
+			}));
+
+			// Send single HTTP POST request
+			const response = await fetch(rpcUrl, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(batchRequest),
+			});
+
+			if (!response.ok) {
+				throw new RadiusError(`Batch request failed with status ${response.status}`, {
+					details: await response.text(),
+				});
+			}
+
+			const batchResponse = (await response.json()) as Array<{
+				id: number;
+				result?: Hash;
+				error?: { code: number; message: string; data?: string };
+			}>;
+
+			// Parse responses and match by id to preserve order
+			const results: BatchTransactionResult[] = [];
+			const hashes: Hash[] = [];
+			let hasError = false;
+
+			// Sort responses by id to ensure order matches input
+			const sortedResponses = [...batchResponse].sort((a, b) => a.id - b.id);
+
+			for (let i = 0; i < transactions.length; i++) {
+				const res = sortedResponses[i];
+				if (res?.result) {
+					results.push({ index: i, hash: res.result });
+					hashes.push(res.result);
+				} else {
+					const errorMsg = res?.error?.data || res?.error?.message || 'Unknown error';
+					results.push({ index: i, error: errorMsg });
+					hasError = true;
+				}
+			}
+
+			// If any transaction failed, throw with details
+			if (hasError) {
+				const failedCount = results.filter((r) => r.error).length;
+				throw new BatchTransactionError(
+					`${failedCount} of ${transactions.length} transactions failed`,
+					results,
+				);
+			}
+
+			return hashes;
 		},
 
 		async deployContract(
