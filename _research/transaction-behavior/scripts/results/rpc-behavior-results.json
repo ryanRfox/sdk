@@ -1,0 +1,312 @@
+{
+  "timestamp": "2026-01-18T20:51:47.441Z",
+  "account": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "startNonce": 4615,
+  "finalNonce": 4641,
+  "results": [
+    {
+      "name": "Sequential Submission",
+      "method": "Await each tx before sending next",
+      "iterations": [
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x6b34ed48d10397b29b5d8b9e3d108106ad8f449e162645fbd9cdd6792371f07d"
+            },
+            {
+              "index": 1,
+              "nonce": -1,
+              "success": true,
+              "hash": "0xff755f0a094001639b6d7cabf3304cbb9ab89c605c45a49f5464c12a0cf7962e"
+            },
+            {
+              "index": 2,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x5bc875ff0fea981a40d47ceb1e6a44c439497e5c8a40ed4e3294c4f702559f46"
+            }
+          ],
+          "successCount": 3
+        },
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": -1,
+              "success": true,
+              "hash": "0xac8201e1682a9e29bda2e40723548dda7801d3eb2ac1c43d463fe9093687ce79"
+            },
+            {
+              "index": 1,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x13d99c77d7bd92f1c3830969c502bb300a825045403a170ff2f49810016c0b94"
+            },
+            {
+              "index": 2,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x06ef44032a961a53f0d52e650c65363429b15197c7969117134b5f7dbd70042d"
+            }
+          ],
+          "successCount": 3
+        },
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": -1,
+              "success": true,
+              "hash": "0xfc87dbce8ab9c2d4fffee41ff4d7c64ad224840356bbb2bb056db078e7c52793"
+            },
+            {
+              "index": 1,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x5b09ba449b159d634380da54682f95d3d8d886990e6e7c8dfe0723ad08077dbb"
+            },
+            {
+              "index": 2,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x326fe10558c384ef7cd6decd38300d6c97dab3221e2219157ab52f943fabaae5"
+            }
+          ],
+          "successCount": 3
+        }
+      ],
+      "avgSuccessRate": 1
+    },
+    {
+      "name": "Parallel Individual HTTP Requests",
+      "method": "Promise.all() with separate HTTP POST per tx",
+      "iterations": [
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4624,
+              "success": true,
+              "hash": "0x3e09065566df20c6d17db82357fae927dd86ff8f81404205774def770e6cd55b"
+            },
+            {
+              "index": 1,
+              "nonce": 4625,
+              "success": true,
+              "hash": "0x03891a0391a474f838c900d5aacf8a76c7e1d5df90ed293176f750e9ba5692a0"
+            },
+            {
+              "index": 2,
+              "nonce": 4626,
+              "success": false,
+              "error": "Exec Failed"
+            }
+          ],
+          "successCount": 2
+        },
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4626,
+              "success": true,
+              "hash": "0xd1bd29d8ecdb9ce3ce68012367c7e7e6769b7dd1f7ca47ff2b9815ea547460c3"
+            },
+            {
+              "index": 1,
+              "nonce": 4627,
+              "success": false,
+              "error": "Exec Failed"
+            },
+            {
+              "index": 2,
+              "nonce": 4628,
+              "success": false,
+              "error": "Exec Failed"
+            }
+          ],
+          "successCount": 1
+        },
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4627,
+              "success": true,
+              "hash": "0xbd300128c0ba4eaf21ae6adb56f67779af66e4a0f45fd7ea195add524526f79f"
+            },
+            {
+              "index": 1,
+              "nonce": 4628,
+              "success": true,
+              "hash": "0xaddd40a1c6987a6007c6d610402647144ada006f2048589a49bb71ecba9b5755"
+            },
+            {
+              "index": 2,
+              "nonce": 4629,
+              "success": false,
+              "error": "Exec Failed"
+            }
+          ],
+          "successCount": 2
+        }
+      ],
+      "avgSuccessRate": 0.5555555555555556
+    },
+    {
+      "name": "JSON-RPC Batch Request",
+      "method": "Single HTTP POST with array of eth_sendRawTransaction",
+      "iterations": [
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4629,
+              "success": true,
+              "hash": "0xe841ede63dd13e00e42a0fae41d396a5269894fe0297e20ad1b0a6c34906bf59"
+            },
+            {
+              "index": 1,
+              "nonce": 4630,
+              "success": true,
+              "hash": "0xaae0b3d65f187a47b445448fe64c91a9f1d5bbdb5a83768d50282915ec197507"
+            },
+            {
+              "index": 2,
+              "nonce": 4631,
+              "success": true,
+              "hash": "0xdf891bbf4e2181179961fa4fc46b47ec326cebcbbdf889ace2bf6251ef60248b"
+            }
+          ],
+          "successCount": 3
+        },
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4632,
+              "success": true,
+              "hash": "0xfaacc399f3098fa13de37c1ffdba3518b3879d1b3347a41adca7c4309469a319"
+            },
+            {
+              "index": 1,
+              "nonce": 4633,
+              "success": true,
+              "hash": "0xb8553ea51df8a2ffa3c9fee9a4dd7266610e05b43b6887b4c28df3d7c9759035"
+            },
+            {
+              "index": 2,
+              "nonce": 4634,
+              "success": true,
+              "hash": "0xac91b890a2b8059345afefb0bd2fcc6f4777725608d38ed00833724e9f8f45cd"
+            }
+          ],
+          "successCount": 3
+        },
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4635,
+              "success": true,
+              "hash": "0xb95c7803edbac78d0b08da556f1b739a27add6cc7dbc69bdc688d58066c7b777"
+            },
+            {
+              "index": 1,
+              "nonce": 4636,
+              "success": true,
+              "hash": "0xf70d8fe14a3077b43b05d8405efbe58b19e28e356e705502dbef7e9c8f29088e"
+            },
+            {
+              "index": 2,
+              "nonce": 4637,
+              "success": true,
+              "hash": "0x391ed7adf2577f398c2f6b4b2939165ca1384149ec1dfb812e6fe21a9ebf8f1b"
+            }
+          ],
+          "successCount": 3
+        }
+      ],
+      "avgSuccessRate": 1
+    },
+    {
+      "name": "JSON-RPC Batch (Reverse Order)",
+      "method": "Single HTTP POST, highest nonce first in array",
+      "iterations": [
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4638,
+              "success": true,
+              "hash": "0xe815f8a13de42bfb008e503215627ae9069d33c6ceb58207d703c3a01c889333"
+            },
+            {
+              "index": 1,
+              "nonce": 4639,
+              "success": false,
+              "error": "transaction validation error: nonce 4639 too high,"
+            },
+            {
+              "index": 2,
+              "nonce": 4640,
+              "success": false,
+              "error": "transaction validation error: nonce 4640 too high,"
+            }
+          ],
+          "successCount": 1
+        },
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4639,
+              "success": true,
+              "hash": "0x3e847cd2eb96b4cbf028ad20d55fdc37f251368413275bc6afa8d01f92f5aec2"
+            },
+            {
+              "index": 1,
+              "nonce": 4640,
+              "success": false,
+              "error": "transaction validation error: nonce 4640 too high,"
+            },
+            {
+              "index": 2,
+              "nonce": 4641,
+              "success": false,
+              "error": "transaction validation error: nonce 4641 too high,"
+            }
+          ],
+          "successCount": 1
+        },
+        {
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4640,
+              "success": true,
+              "hash": "0xe0b5820696214b69a7b8e46ca13de3e3c15caa7d94ad3655ffed1fd87253e08c"
+            },
+            {
+              "index": 1,
+              "nonce": 4641,
+              "success": false,
+              "error": "transaction validation error: nonce 4641 too high,"
+            },
+            {
+              "index": 2,
+              "nonce": 4642,
+              "success": false,
+              "error": "transaction validation error: nonce 4642 too high,"
+            }
+          ],
+          "successCount": 1
+        }
+      ],
+      "avgSuccessRate": 0.3333333333333333
+    }
+  ]
+}

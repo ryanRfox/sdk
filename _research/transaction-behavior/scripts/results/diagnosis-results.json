@@ -1,0 +1,211 @@
+{
+  "timestamp": "2026-01-18T15:41:00.047Z",
+  "account": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "startingNonce": 4248,
+  "finalNonce": 4256,
+  "results": [
+    {
+      "testName": "Parallel WITHOUT explicit nonces",
+      "hypothesis": "viem fetches nonce for each tx, causing race condition where multiple txs get same nonce",
+      "transactions": [
+        {
+          "index": 0,
+          "nonce": "auto",
+          "success": true,
+          "hash": "0x33110e5f6f1d19e318021cd48fba38e72735a21bbaffc455f0d7f3c53738c8bc",
+          "durationMs": 684
+        },
+        {
+          "index": 1,
+          "nonce": "auto",
+          "success": false,
+          "error": {
+            "name": "TransactionExecutionError",
+            "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad11821098808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660280c001a089077ca3fe34a173e8b217fa9300ee551b4a7504cb290295df69a56311282977a018cab2c74fa166114bac9a355eebacd0f3db78b8228544d7c7ae7be0eddd2103\"]}\n \nRequest Arguments:\n  from:   0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  to:     0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  value:  0.000000000000000002 ETH\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+            "details": "Exec Failed",
+            "cause": {
+              "name": "RpcRequestError",
+              "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad11821098808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660280c001a089077ca3fe34a173e8b217fa9300ee551b4a7504cb290295df69a56311282977a018cab2c74fa166114bac9a355eebacd0f3db78b8228544d7c7ae7be0eddd2103\"]}\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+              "details": "Exec Failed"
+            }
+          },
+          "durationMs": 995
+        },
+        {
+          "index": 2,
+          "nonce": "auto",
+          "success": true,
+          "hash": "0x433ba79752f54acd6e1d979e4f25b05b5abe65932707cc438a9a08871592f524",
+          "durationMs": 1096
+        }
+      ],
+      "conclusion": "PARTIAL: 2 passed, 1 failed - Mixed results"
+    },
+    {
+      "testName": "Parallel WITH explicit sequential nonces",
+      "hypothesis": "If this still fails, the issue is NOT nonce-related but RPC concurrency handling",
+      "transactions": [
+        {
+          "index": 0,
+          "nonce": 4250,
+          "success": true,
+          "hash": "0xde89dfa0af30d3247884221b47f945bbd632b56cc4edb38599a14386d5dcbfda",
+          "durationMs": 465
+        },
+        {
+          "index": 1,
+          "nonce": 4251,
+          "success": false,
+          "error": {
+            "name": "TransactionExecutionError",
+            "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad1182109b808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660280c080a036426801281a0b6631477e6c4be8ea4dd0eb270387ff29bc38ee6346b5e6def2a0245c38a7a3671e30bc686e2bcf8483125170ce3566b7b0b5ddd15d41015bed99\"]}\n \nRequest Arguments:\n  from:   0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  to:     0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  value:  0.000000000000000002 ETH\n  nonce:  4251\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+            "details": "Exec Failed",
+            "cause": {
+              "name": "RpcRequestError",
+              "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad1182109b808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660280c080a036426801281a0b6631477e6c4be8ea4dd0eb270387ff29bc38ee6346b5e6def2a0245c38a7a3671e30bc686e2bcf8483125170ce3566b7b0b5ddd15d41015bed99\"]}\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+              "details": "Exec Failed"
+            }
+          },
+          "durationMs": 425
+        },
+        {
+          "index": 2,
+          "nonce": 4252,
+          "success": false,
+          "error": {
+            "name": "TransactionExecutionError",
+            "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad1182109c808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660380c080a09480aa1de530364c7a8e4a105437ec49af02261e5e7c8a4024be9c2ebb3ece1fa0635b38ebad956eff6146eee73138d25c978bb2600b4c775377797d2b9257273f\"]}\n \nRequest Arguments:\n  from:   0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  to:     0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  value:  0.000000000000000003 ETH\n  nonce:  4252\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+            "details": "Exec Failed",
+            "cause": {
+              "name": "RpcRequestError",
+              "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad1182109c808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660380c080a09480aa1de530364c7a8e4a105437ec49af02261e5e7c8a4024be9c2ebb3ece1fa0635b38ebad956eff6146eee73138d25c978bb2600b4c775377797d2b9257273f\"]}\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+              "details": "Exec Failed"
+            }
+          },
+          "durationMs": 549
+        }
+      ],
+      "conclusion": "PARTIAL: 1 passed, 2 failed - Mixed results"
+    },
+    {
+      "testName": "Staggered parallel (10ms delays) WITH explicit nonces",
+      "hypothesis": "If small delays help, the RPC may have ordering sensitivity",
+      "transactions": [
+        {
+          "index": 0,
+          "nonce": 4251,
+          "success": true,
+          "hash": "0xbe678a37925c3a7292cebac1dd85e5d981f5aa40899143db10c8f42b46104b20",
+          "durationMs": 439
+        },
+        {
+          "index": 1,
+          "nonce": 4252,
+          "success": false,
+          "error": {
+            "name": "TransactionExecutionError",
+            "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad1182109c808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660280c001a0683b875d8369b87519999161c4686e763592ad32550491b7da1c3ab64b5ab6d2a06bad19d8bb5953c2aa766334714a9cb9f675498c1743ca75d649ed6093bbc39e\"]}\n \nRequest Arguments:\n  from:   0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  to:     0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  value:  0.000000000000000002 ETH\n  nonce:  4252\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+            "details": "Exec Failed",
+            "cause": {
+              "name": "RpcRequestError",
+              "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad1182109c808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660280c001a0683b875d8369b87519999161c4686e763592ad32550491b7da1c3ab64b5ab6d2a06bad19d8bb5953c2aa766334714a9cb9f675498c1743ca75d649ed6093bbc39e\"]}\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+              "details": "Exec Failed"
+            }
+          },
+          "durationMs": 408
+        },
+        {
+          "index": 2,
+          "nonce": 4253,
+          "success": false,
+          "error": {
+            "name": "TransactionExecutionError",
+            "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad1182109d808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660380c080a0f83feb09a1391ee5fa6cd1c30020cef660bcc12ca0668caab2781231452324b9a07baa32f4973be305cbe172dfee164bab0458339128233844c909b7b1ea75d929\"]}\n \nRequest Arguments:\n  from:   0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  to:     0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  value:  0.000000000000000003 ETH\n  nonce:  4253\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+            "details": "Exec Failed",
+            "cause": {
+              "name": "RpcRequestError",
+              "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad1182109d808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660380c080a0f83feb09a1391ee5fa6cd1c30020cef660bcc12ca0668caab2781231452324b9a07baa32f4973be305cbe172dfee164bab0458339128233844c909b7b1ea75d929\"]}\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+              "details": "Exec Failed"
+            }
+          },
+          "durationMs": 395
+        }
+      ],
+      "conclusion": "PARTIAL: 1 passed, 2 failed - Mixed results"
+    },
+    {
+      "testName": "Sequential (awaited) transactions",
+      "hypothesis": "Baseline - sequential should always work",
+      "transactions": [
+        {
+          "index": 0,
+          "nonce": "auto",
+          "success": true,
+          "hash": "0x808ee969d1420315f41b5a1c52bf2d49ded2fd75eb7cb899a57a07a28305ef67",
+          "durationMs": 431
+        },
+        {
+          "index": 1,
+          "nonce": "auto",
+          "success": true,
+          "hash": "0x7c816e65debeaaeb74525352226d6fd7715bb138f6dea8c94798db716edd97fd",
+          "durationMs": 517
+        },
+        {
+          "index": 2,
+          "nonce": "auto",
+          "success": true,
+          "hash": "0x25f564a3adad141f91ce963f52d9da07dcc0b5cd5b5d33ee6b84b3d586a257b0",
+          "durationMs": 523
+        }
+      ],
+      "conclusion": "ALL PASSED - Hypothesis may be incorrect"
+    },
+    {
+      "testName": "Parallel with nonces in REVERSE order (n+2, n+1, n)",
+      "hypothesis": "Tests if RPC requires nonces to arrive in order",
+      "transactions": [
+        {
+          "index": 0,
+          "nonce": 4255,
+          "success": true,
+          "hash": "0x2bb8fc6954ad8fb1efe469ae5af464bb8d4bb64647c44dec28a3aefb0fac57fb",
+          "durationMs": 629
+        },
+        {
+          "index": 1,
+          "nonce": 4256,
+          "success": false,
+          "error": {
+            "name": "TransactionExecutionError",
+            "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad118210a0808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660280c001a04764777f13e8cdbde9f5ce1e5d90d6d152229bdeeb7988bb0bc36d7292208393a004d84ca6c5f3091aeb96df4d47bf1689e94bfaae4458d3ee4fc0472602fedd22\"]}\n \nRequest Arguments:\n  from:   0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  to:     0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  value:  0.000000000000000002 ETH\n  nonce:  4256\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+            "details": "Exec Failed",
+            "cause": {
+              "name": "RpcRequestError",
+              "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad118210a0808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660280c001a04764777f13e8cdbde9f5ce1e5d90d6d152229bdeeb7988bb0bc36d7292208393a004d84ca6c5f3091aeb96df4d47bf1689e94bfaae4458d3ee4fc0472602fedd22\"]}\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+              "details": "Exec Failed"
+            }
+          },
+          "durationMs": 501
+        },
+        {
+          "index": 2,
+          "nonce": 4257,
+          "success": false,
+          "error": {
+            "name": "TransactionExecutionError",
+            "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad118210a1808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660380c001a05813d58de67f4d6e89f93382db9a5d6a49bffb159f0065b73b3ebce75325bd2aa059bf39c82c03ac4171d69bbafe4268a2f4520e45332d4dae0b1b40ba88ab3949\"]}\n \nRequest Arguments:\n  from:   0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  to:     0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\n  value:  0.000000000000000003 ETH\n  nonce:  4257\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+            "details": "Exec Failed",
+            "cause": {
+              "name": "RpcRequestError",
+              "message": "RPC Request failed.\n\nURL: https://rpc.testnet.radiustech.xyz\nRequest body: {\"method\":\"eth_sendRawTransaction\",\"params\":[\"0x02f8678312ad118210a1808082520894f39fd6e51aad88f6f4ce6ab8827279cfffb922660380c001a05813d58de67f4d6e89f93382db9a5d6a49bffb159f0065b73b3ebce75325bd2aa059bf39c82c03ac4171d69bbafe4268a2f4520e45332d4dae0b1b40ba88ab3949\"]}\n\nDetails: Exec Failed\nVersion: viem@2.43.4",
+              "details": "Exec Failed"
+            }
+          },
+          "durationMs": 399
+        }
+      ],
+      "conclusion": "PARTIAL: 1 passed, 2 failed - Mixed results"
+    }
+  ]
+}

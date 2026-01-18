@@ -1,0 +1,799 @@
+{
+  "timestamp": "2026-01-18T16:04:54.087Z",
+  "account": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "startingNonce": 4536,
+  "finalNonce": 4607,
+  "optimalDelayMs": 150,
+  "stats": [
+    {
+      "pattern": "SEQUENTIAL",
+      "delayMs": 0,
+      "runs": [
+        {
+          "pattern": "SEQUENTIAL",
+          "delayMs": 0,
+          "iteration": 1,
+          "results": [
+            {
+              "index": 0,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x5e84699bdf31d40ad0aefae08266400c0f31dd13e11ccbc63f6974b83a93914c",
+              "durationMs": 646
+            },
+            {
+              "index": 1,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x9d5012ee74010b8ecb77fe414c283fee8b4e3979b8af20da0c405631c965bec7",
+              "durationMs": 454
+            },
+            {
+              "index": 2,
+              "nonce": -1,
+              "success": true,
+              "hash": "0xadf1da268ce95da4720e35bfadbbf35f1b4f382826a014e98e831a90e7108c03",
+              "durationMs": 448
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 1548
+        },
+        {
+          "pattern": "SEQUENTIAL",
+          "delayMs": 0,
+          "iteration": 2,
+          "results": [
+            {
+              "index": 0,
+              "nonce": -1,
+              "success": true,
+              "hash": "0xb69c3ce99cd879e798020ceee667af5829ebe3db3e911a0f958bf210e51053f8",
+              "durationMs": 451
+            },
+            {
+              "index": 1,
+              "nonce": -1,
+              "success": true,
+              "hash": "0xc9eb03c7b2699bf5476eb827f948339777d1438f0ca9629d8c68bc62a22acf58",
+              "durationMs": 431
+            },
+            {
+              "index": 2,
+              "nonce": -1,
+              "success": true,
+              "hash": "0xe6359e96ec0bf966649f4309df014a84c64e56c3608622dd3a4cce82c3c2431d",
+              "durationMs": 504
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 1386
+        },
+        {
+          "pattern": "SEQUENTIAL",
+          "delayMs": 0,
+          "iteration": 3,
+          "results": [
+            {
+              "index": 0,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x712a45951a7ca96ed5ea6ef9fcee156ba97a1d4c31a866434086d4e65d228ec9",
+              "durationMs": 437
+            },
+            {
+              "index": 1,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x08aead90bcbdfdcf5697a6db3c6872a08c8c0096e68470d61dbb137eecf13ada",
+              "durationMs": 414
+            },
+            {
+              "index": 2,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x2293e25e5f8dc236887b0bebc0e10f46d15d5705b36692af96ac54b085224c8d",
+              "durationMs": 451
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 1302
+        },
+        {
+          "pattern": "SEQUENTIAL",
+          "delayMs": 0,
+          "iteration": 4,
+          "results": [
+            {
+              "index": 0,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x07e84d7ecdbeb8b1e36ebee59fd3a43298a0a94866c70323cef360f7f5b1e16b",
+              "durationMs": 433
+            },
+            {
+              "index": 1,
+              "nonce": -1,
+              "success": true,
+              "hash": "0xe0f3d198ff919072fae4a4d26017e1d1448881f543c31b158747a5758cfa1b17",
+              "durationMs": 420
+            },
+            {
+              "index": 2,
+              "nonce": -1,
+              "success": true,
+              "hash": "0xe247805bce5305cdf4e1a49bfeb0f1b448e85ca7bfd21a1a2d543f65f7110655",
+              "durationMs": 444
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 1297
+        },
+        {
+          "pattern": "SEQUENTIAL",
+          "delayMs": 0,
+          "iteration": 5,
+          "results": [
+            {
+              "index": 0,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x110946e991c188e5a15e24e1ca468c48f7cabf6b515115b2696f247cd9f021d3",
+              "durationMs": 458
+            },
+            {
+              "index": 1,
+              "nonce": -1,
+              "success": true,
+              "hash": "0x0fa9aa518d1af8dfa5cc353ce5968d37e73b79a1bdfadd7e69c0999bdc65e7e1",
+              "durationMs": 449
+            },
+            {
+              "index": 2,
+              "nonce": -1,
+              "success": true,
+              "hash": "0xea11ff4d1f3e6e33c21d7e977e02361164b70736fd84e96e49885e4d452707c0",
+              "durationMs": 442
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 1349
+        }
+      ],
+      "successRate": 1,
+      "allRunsFullySucceeded": true
+    },
+    {
+      "pattern": "TRUE_PARALLEL",
+      "delayMs": 0,
+      "runs": [
+        {
+          "pattern": "TRUE_PARALLEL",
+          "delayMs": 0,
+          "iteration": 1,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4551,
+              "success": true,
+              "hash": "0xc976edcd1cb1616959e1c69fa24cbbe577de9fa0fe28906bbbc5256cae9ce859",
+              "durationMs": 339
+            },
+            {
+              "index": 1,
+              "nonce": 4552,
+              "success": true,
+              "hash": "0x4ca339c2ba2166f4acafa0d1eea02e4a2316acfecea0c6d658e6488d2091c38e",
+              "durationMs": 516
+            },
+            {
+              "index": 2,
+              "nonce": 4553,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 418
+            }
+          ],
+          "successCount": 2,
+          "totalDurationMs": 516
+        },
+        {
+          "pattern": "TRUE_PARALLEL",
+          "delayMs": 0,
+          "iteration": 2,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4553,
+              "success": true,
+              "hash": "0x1405a9c62b352b279ad6f46271303d8ffa57f858271c2fca5eb9845cf975ea02",
+              "durationMs": 416
+            },
+            {
+              "index": 1,
+              "nonce": 4554,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 340
+            },
+            {
+              "index": 2,
+              "nonce": 4555,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 384
+            }
+          ],
+          "successCount": 1,
+          "totalDurationMs": 416
+        },
+        {
+          "pattern": "TRUE_PARALLEL",
+          "delayMs": 0,
+          "iteration": 3,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4554,
+              "success": true,
+              "hash": "0x2b27e0c8ca7a1e6cc052fb43920e496d150285396ad6f60e2a39d32df31b351d",
+              "durationMs": 356
+            },
+            {
+              "index": 1,
+              "nonce": 4555,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 317
+            },
+            {
+              "index": 2,
+              "nonce": 4556,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 319
+            }
+          ],
+          "successCount": 1,
+          "totalDurationMs": 356
+        },
+        {
+          "pattern": "TRUE_PARALLEL",
+          "delayMs": 0,
+          "iteration": 4,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4555,
+              "success": true,
+              "hash": "0x52773e35218c0f7140bde022d5182fbca35ac1db612d3a5e2266ca88106d36ea",
+              "durationMs": 360
+            },
+            {
+              "index": 1,
+              "nonce": 4556,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 341
+            },
+            {
+              "index": 2,
+              "nonce": 4557,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 341
+            }
+          ],
+          "successCount": 1,
+          "totalDurationMs": 360
+        },
+        {
+          "pattern": "TRUE_PARALLEL",
+          "delayMs": 0,
+          "iteration": 5,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4556,
+              "success": true,
+              "hash": "0x63c817353e143ee2077201d9031015860b8cf9d45cb59ad413087110ac61b9d2",
+              "durationMs": 439
+            },
+            {
+              "index": 1,
+              "nonce": 4557,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 327
+            },
+            {
+              "index": 2,
+              "nonce": 4558,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 363
+            }
+          ],
+          "successCount": 1,
+          "totalDurationMs": 439
+        }
+      ],
+      "successRate": 0.4,
+      "allRunsFullySucceeded": false
+    },
+    {
+      "pattern": "STAGGERED_50ms",
+      "delayMs": 50,
+      "runs": [
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 50,
+          "iteration": 1,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4557,
+              "success": true,
+              "hash": "0xbc56874876ea168f8e564159f7aa2d1c02fc50ff96bd1671144bad6b8807e568",
+              "durationMs": 328
+            },
+            {
+              "index": 1,
+              "nonce": 4558,
+              "success": true,
+              "hash": "0xc0a5881eb0cb347d23a879b9d06507b285059248d842603969aa018f32aaf248",
+              "durationMs": 359
+            },
+            {
+              "index": 2,
+              "nonce": 4559,
+              "success": true,
+              "hash": "0x81aadbdd99f97663bf53417d8019675e398b8042d0aacdbf42465256a1ab9fd0",
+              "durationMs": 336
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 440
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 50,
+          "iteration": 2,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4560,
+              "success": true,
+              "hash": "0xeafa828814ecef6ea6a496c9c90b6b85043ee6b8e195faaf271fdda1cd5f92e8",
+              "durationMs": 356
+            },
+            {
+              "index": 1,
+              "nonce": 4561,
+              "success": true,
+              "hash": "0x6099be0e9fa65615ed87d24781c860b5a7a9f9fa73eee39f2b875b005037626c",
+              "durationMs": 346
+            },
+            {
+              "index": 2,
+              "nonce": 4562,
+              "success": true,
+              "hash": "0x3f3ddcb2a49bbb63940864390f0517b3c295fd969ec97748642e90e5e4c8975a",
+              "durationMs": 338
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 440
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 50,
+          "iteration": 3,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4563,
+              "success": true,
+              "hash": "0x45175e4691b6b685aa2782afa69c6edf701b7ac8ffc452e0ce3319d71f9bcd3e",
+              "durationMs": 324
+            },
+            {
+              "index": 1,
+              "nonce": 4564,
+              "success": true,
+              "hash": "0xdaa49023a15eb9aa213d8662bd87c949378549e4f22858a9fa9f839d34ed8b21",
+              "durationMs": 326
+            },
+            {
+              "index": 2,
+              "nonce": 4565,
+              "success": true,
+              "hash": "0xf1ac7eed48668b52cc1d9bbe1175a89e72fe28e3b60a43bbf17c4c9e3f3bccd8",
+              "durationMs": 339
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 440
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 50,
+          "iteration": 4,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4566,
+              "success": true,
+              "hash": "0x159b439f1da3ebd89bc1b6fc0954eccb7ccb11b2e29fea6e835a318726655abb",
+              "durationMs": 452
+            },
+            {
+              "index": 1,
+              "nonce": 4567,
+              "success": true,
+              "hash": "0xea46ac12f06de45257dba97a5977343f8caedc72fcc49144b1db884f7e798422",
+              "durationMs": 465
+            },
+            {
+              "index": 2,
+              "nonce": 4568,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 406
+            }
+          ],
+          "successCount": 2,
+          "totalDurationMs": 517
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 50,
+          "iteration": 5,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4568,
+              "success": true,
+              "hash": "0xbec6add9c03ce51f1797d6fffe824fc164ce625f9b9447057cc81e9b6685a1ea",
+              "durationMs": 427
+            },
+            {
+              "index": 1,
+              "nonce": 4569,
+              "success": true,
+              "hash": "0x5ad0beeee501c826d38c6a2d1503f148b4e56678f5dfbdcb902151e9a48a4ced",
+              "durationMs": 477
+            },
+            {
+              "index": 2,
+              "nonce": 4570,
+              "success": true,
+              "hash": "0x0f2ed9472081eff7627b779fb1c226627f22bfa5b3d5cfe6266e256c52f84e45",
+              "durationMs": 563
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 666
+        }
+      ],
+      "successRate": 0.9333333333333333,
+      "allRunsFullySucceeded": false
+    },
+    {
+      "pattern": "STAGGERED_100ms",
+      "delayMs": 100,
+      "runs": [
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 100,
+          "iteration": 1,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4571,
+              "success": true,
+              "hash": "0xccd08d9672059ee642cf9829bc599dd307e027d0734158ce7654615059019607",
+              "durationMs": 449
+            },
+            {
+              "index": 1,
+              "nonce": 4572,
+              "success": true,
+              "hash": "0x7a50d5b675aa3d7843bbc9bd5099d7d7f375370abd3bd9275f04743875ac229b",
+              "durationMs": 422
+            },
+            {
+              "index": 2,
+              "nonce": 4573,
+              "success": true,
+              "hash": "0x28d8b6ec704e959489f49eebe30ccef0f2e1d4d45f355c30ff07394838de3e41",
+              "durationMs": 422
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 625
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 100,
+          "iteration": 2,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4574,
+              "success": true,
+              "hash": "0x0d8528784676ea3fff50a8488c940c2cefd5c2fc2824f7dfe79e1dbd029d0996",
+              "durationMs": 453
+            },
+            {
+              "index": 1,
+              "nonce": 4575,
+              "success": true,
+              "hash": "0xcafc491128844be86f540864db81a03798e66cb602dbc9a4500fe3fcaef83805",
+              "durationMs": 406
+            },
+            {
+              "index": 2,
+              "nonce": 4576,
+              "success": true,
+              "hash": "0x5a3e33240970104439d1d228ab225adc6424f1f9e25c32a154b9c63a8260c07c",
+              "durationMs": 435
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 636
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 100,
+          "iteration": 3,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4577,
+              "success": true,
+              "hash": "0x9c2104fd97359769bc244e9789e706797d6a34bc614658f0ad4a2abd102be865",
+              "durationMs": 361
+            },
+            {
+              "index": 1,
+              "nonce": 4578,
+              "success": true,
+              "hash": "0xbf818fe8b2f51a4dd03c3b44694764e7adc92d0bb77b9711384b7e39552e97e5",
+              "durationMs": 435
+            },
+            {
+              "index": 2,
+              "nonce": 4579,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 313
+            }
+          ],
+          "successCount": 2,
+          "totalDurationMs": 536
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 100,
+          "iteration": 4,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4579,
+              "success": true,
+              "hash": "0x061d52c2601d410f11c6f1e5617ab19816f0f0af04f2f360a350f522208166c1",
+              "durationMs": 618
+            },
+            {
+              "index": 1,
+              "nonce": 4580,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 323
+            },
+            {
+              "index": 2,
+              "nonce": 4581,
+              "success": false,
+              "error": "Exec Failed",
+              "durationMs": 325
+            }
+          ],
+          "successCount": 1,
+          "totalDurationMs": 618
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 100,
+          "iteration": 5,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4580,
+              "success": true,
+              "hash": "0xc37cc68db7617c5827bd39a0e376964267a0ca1e40fa325852a1c20e9d383484",
+              "durationMs": 356
+            },
+            {
+              "index": 1,
+              "nonce": 4581,
+              "success": true,
+              "hash": "0x1e40a5f1970fde16e99cbe38468aee9e7d7169af76882371f09e3c6712c8b63f",
+              "durationMs": 359
+            },
+            {
+              "index": 2,
+              "nonce": 4582,
+              "success": true,
+              "hash": "0x21de5c70766d01051864a57baf9f2e9e6627118eebc7da554ff7088151ebd93b",
+              "durationMs": 362
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 564
+        }
+      ],
+      "successRate": 0.8,
+      "allRunsFullySucceeded": false
+    },
+    {
+      "pattern": "STAGGERED_150ms",
+      "delayMs": 150,
+      "runs": [
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 150,
+          "iteration": 1,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4583,
+              "success": true,
+              "hash": "0xa6aa7613f110e3432c17fd344da72f2796a0fe6948b8ab481ffcb5228a7835a4",
+              "durationMs": 349
+            },
+            {
+              "index": 1,
+              "nonce": 4584,
+              "success": true,
+              "hash": "0xb49f33c3803f752ed01a10edd0d08b50ce2f4e1dca3a53546dc5d6e28c1bbc4a",
+              "durationMs": 381
+            },
+            {
+              "index": 2,
+              "nonce": 4585,
+              "success": true,
+              "hash": "0xabf8c6f200c9d3398c7c590796b36ecff0aefa587cf05bf142555bc5a5eff1ec",
+              "durationMs": 421
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 725
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 150,
+          "iteration": 2,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4586,
+              "success": true,
+              "hash": "0x3a09ace14fbb56bbcb8c9eea78aea7451b13fe712a0fbe731e032ff2b92dc162",
+              "durationMs": 332
+            },
+            {
+              "index": 1,
+              "nonce": 4587,
+              "success": true,
+              "hash": "0x4a07d7796e933bd46959bb18814873bcc5234934af5eddc5cf974bafb43ce5c9",
+              "durationMs": 342
+            },
+            {
+              "index": 2,
+              "nonce": 4588,
+              "success": true,
+              "hash": "0x5d88c67a7ee1de1ddda39eaf5a94588543ca932809768c3c516ec405efe1b4b6",
+              "durationMs": 365
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 669
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 150,
+          "iteration": 3,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4589,
+              "success": true,
+              "hash": "0x2fdb5c14fa6e17890eb63fcf65dc24413dc0722604b3998651570f6477191a28",
+              "durationMs": 336
+            },
+            {
+              "index": 1,
+              "nonce": 4590,
+              "success": true,
+              "hash": "0xf51c38ac6bf490b7ee6af53477c82a86c6730b6c2d346db74d655bddc8a16447",
+              "durationMs": 335
+            },
+            {
+              "index": 2,
+              "nonce": 4591,
+              "success": true,
+              "hash": "0xc11dc710cc86e6eca0af6306bd2934fadb97fcbecbd7f9f832a1f5effdcbf179",
+              "durationMs": 340
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 641
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 150,
+          "iteration": 4,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4592,
+              "success": true,
+              "hash": "0xfc96d6fcd8df7bdabc073a950506c6ed1465aec14b12ea750636e5e33d291e55",
+              "durationMs": 336
+            },
+            {
+              "index": 1,
+              "nonce": 4593,
+              "success": true,
+              "hash": "0xa33aaec6dfe0a579013925169a07f8e12a916398fdea5e20018c4e44a43368e6",
+              "durationMs": 481
+            },
+            {
+              "index": 2,
+              "nonce": 4594,
+              "success": true,
+              "hash": "0x0734118a33be5403c868614eaa89aa8b3eb9b63743828e7772c7af74a532ddf8",
+              "durationMs": 347
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 649
+        },
+        {
+          "pattern": "STAGGERED_PARALLEL",
+          "delayMs": 150,
+          "iteration": 5,
+          "results": [
+            {
+              "index": 0,
+              "nonce": 4595,
+              "success": true,
+              "hash": "0xabf3361027d578d53f3b1cdf37f15f20651511111fe6c58386a74a2105d41282",
+              "durationMs": 337
+            },
+            {
+              "index": 1,
+              "nonce": 4596,
+              "success": true,
+              "hash": "0x96b22504365b32bf67fdd37710f25b658da3108f755ea19f6442ac04e7624436",
+              "durationMs": 351
+            },
+            {
+              "index": 2,
+              "nonce": 4597,
+              "success": true,
+              "hash": "0xc2d9f2c3cf4007a1aa4417b54540812545682cb9f2de12a33af5765c7cccf490",
+              "durationMs": 347
+            }
+          ],
+          "successCount": 3,
+          "totalDurationMs": 652
+        }
+      ],
+      "successRate": 1,
+      "allRunsFullySucceeded": true
+    }
+  ]
+}
