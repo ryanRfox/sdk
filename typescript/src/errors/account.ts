@@ -23,7 +23,6 @@ export class SignerNotFoundError extends RadiusError {
 
 	constructor(message = 'Signer is required', options: RadiusErrorOptions = {}) {
 		super(message, {
-			shortMessage: 'No signer available',
 			...options,
 			docsPath: options.docsPath ?? '/docs/sdk/errors#signer-not-found',
 		});
@@ -63,7 +62,6 @@ export class InsufficientBalanceError extends RadiusError {
 		} = {},
 	) {
 		super(message, {
-			shortMessage: 'Insufficient balance',
 			...options,
 			docsPath: options.docsPath ?? '/docs/sdk/errors#insufficient-balance',
 		});
@@ -81,7 +79,6 @@ export class SigningError extends RadiusError {
 
 	constructor(message: string, options: RadiusErrorOptions = {}) {
 		super(message, {
-			shortMessage: 'Failed to sign',
 			...options,
 			docsPath: options.docsPath ?? '/docs/sdk/errors#signing',
 		});
@@ -96,7 +93,6 @@ export class InvalidPrivateKeyError extends RadiusError {
 
 	constructor(message = 'Invalid private key', options: RadiusErrorOptions = {}) {
 		super(message, {
-			shortMessage: 'Invalid private key format',
 			...options,
 			docsPath: options.docsPath ?? '/docs/sdk/errors#invalid-private-key',
 		});
@@ -119,7 +115,6 @@ export class InvalidAddressError extends RadiusError {
 		} = {},
 	) {
 		super(message, {
-			shortMessage: 'Invalid address',
 			...options,
 			docsPath: options.docsPath ?? '/docs/sdk/errors#invalid-address',
 		});

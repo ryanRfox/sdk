@@ -131,8 +131,10 @@ export function getContract<TAbi extends Abi>(
 		{
 			get(_target, functionName: string) {
 				return async (...callArgs: unknown[]) => {
-					// If args were passed as an array in the first position, spread them
-					const args = Array.isArray(callArgs[0]) ? callArgs[0] : callArgs;
+					// If args were passed as a single array argument, spread them
+					// Otherwise use loose arguments directly
+					const args =
+						callArgs.length === 1 && Array.isArray(callArgs[0]) ? callArgs[0] : callArgs;
 					return client.call(contract, functionName, ...args);
 				};
 			},

@@ -1,4 +1,4 @@
-import { custom } from 'viem';
+import { custom, http } from 'viem';
 /**
  * A RoundTripper implementation that intercepts HTTP requests and responses.
  * Provides request logging and response modification capabilities.
@@ -79,25 +79,57 @@ export class InterceptingRoundTripper {
     }
 }
 /**
- * A simple implementation of RoundTripper that uses the Fetch API.
+ * A simple implementation of RoundTripper that uses the Fetch API with timeout.
  * @private
  */
 class DefaultRoundTripper {
+    timeout;
+    constructor(timeout = 10000) {
+        this.timeout = timeout;
+    }
     async roundTrip(request) {
-        return fetch(request);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        try {
+            const response = await fetch(request, { signal: controller.signal });
+            return response;
+        }
+        finally {
+            clearTimeout(timeoutId);
+        }
     }
 }
 /**
  * Creates a viem-compatible transport that supports request interception and logging.
+ *
+ * When only logging is needed (no interceptor), this uses viem's native http() transport
+ * with `onFetchRequest`/`onFetchResponse` callbacks, which provides:
+ * - Built-in retry logic with exponential backoff
+ * - Timeout enforcement
+ * - Request batching support
+ *
+ * When response interception is needed, a custom transport is used with:
+ * - Timeout support via AbortController
+ * - Basic retry logic
  *
  * @param options Configuration options for the transport
  * @returns A viem Transport that can be used with createPublicClient
  *
  * @example
  * ```typescript
+ * // Logging only - uses viem's http() for best performance
  * const transport = createInterceptingTransport({
  *   url: 'https://rpc.testnet.radiustech.xyz',
  *   logger: console.log,
+ * });
+ *
+ * // With response interception
+ * const transport = createInterceptingTransport({
+ *   url: 'https://rpc.testnet.radiustech.xyz',
+ *   interceptor: async (reqBody, response) => {
+ *     // Modify response if needed
+ *     return response;
+ *   },
  * });
  *
  * const client = createPublicClient({
@@ -106,28 +138,71 @@ class DefaultRoundTripper {
  * });
  * ```
  */
+/** Counter for generating unique request IDs */
+let requestIdCounter = 0;
 export function createInterceptingTransport(options) {
-    const roundTripper = new InterceptingRoundTripper(options.interceptor, options.logger);
+    const { url, interceptor, logger, timeout = 10000, retryCount = 3, retryDelay = 150, } = options;
+    // If no interceptor, use viem's native http() transport with callbacks
+    // This provides retry logic, timeout, and better performance
+    if (!interceptor) {
+        return http(url, {
+            timeout,
+            retryCount,
+            retryDelay,
+            onFetchRequest: logger
+                ? (request) => {
+                    logger('Request:', {
+                        url: request.url,
+                        method: request.method,
+                    });
+                }
+                : undefined,
+            onFetchResponse: logger
+                ? (response) => {
+                    logger('Response:', {
+                        status: response.status,
+                    });
+                }
+                : undefined,
+        });
+    }
+    // With interceptor, use custom transport that supports response modification
+    const defaultRoundTripper = new DefaultRoundTripper(timeout);
+    const roundTripper = new InterceptingRoundTripper(interceptor, logger, defaultRoundTripper);
     const request = async ({ method, params }) => {
         const body = JSON.stringify({
             jsonrpc: '2.0',
-            id: Date.now(),
+            id: ++requestIdCounter,
             method,
             params,
         });
-        const httpRequest = new Request(options.url, {
+        const httpRequest = new Request(url, {
             method: 'POST',
             headers: {
                 'content-type': 'application/json',
             },
             body,
         });
-        const response = await roundTripper.roundTrip(httpRequest);
-        const result = await response.json();
-        if (result.error) {
-            throw new Error(result.error.message || 'RPC Error');
+        // Simple retry logic
+        let lastError;
+        for (let attempt = 0; attempt <= retryCount; attempt++) {
+            try {
+                const response = await roundTripper.roundTrip(httpRequest.clone());
+                const result = await response.json();
+                if (result.error) {
+                    throw new Error(result.error.message || 'RPC Error');
+                }
+                return result.result;
+            }
+            catch (err) {
+                lastError = err instanceof Error ? err : new Error(String(err));
+                if (attempt < retryCount) {
+                    // Wait before retrying with exponential backoff
+                    await new Promise((resolve) => setTimeout(resolve, retryDelay * 2 ** attempt));
+                }
+            }
         }
-        return result.result;
+        throw lastError;
     };
     return custom({ request });
 }

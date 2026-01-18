@@ -25,7 +25,7 @@ import * as RequestListener from './internal/requestListener.js';
  *
  * @example
  * ```typescript
- * import { Handler } from '@radiustechsystems/sdk/server';
+ * import { Handler } from '@radiustechsystems/sdk/webauthn';
  *
  * const handler = Handler.from({
  *   headers: { 'X-Custom-Header': 'value' }
@@ -113,8 +113,11 @@ function preflight(headers?: Headers | Record<string, string>): Middleware {
  * });
  * ```
  */
+/** Default challenge TTL: 5 minutes */
+const DEFAULT_CHALLENGE_TTL = 5 * 60 * 1000;
+
 export function keyManager(options: KeyManagerOptions): Handler {
-  const { kv, path = '', rp } = options;
+  const { kv, path = '', rp, challengeTTL = DEFAULT_CHALLENGE_TTL } = options;
 
   const rpConfig = (() => {
     if (typeof rp === 'string') return { id: rp, name: rp };
@@ -130,7 +133,9 @@ export function keyManager(options: KeyManagerOptions): Handler {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')}` as Hex;
 
-    await kv.set(`challenge:${challenge}`, '1');
+    // Store challenge with expiration timestamp
+    const expiresAt = challengeTTL > 0 ? Date.now() + challengeTTL : 0;
+    await kv.set(`challenge:${challenge}`, JSON.stringify({ expiresAt }));
 
     return Response.json({
       challenge,
@@ -217,14 +222,26 @@ export function keyManager(options: KeyManagerOptions): Handler {
       return Response.json({ error: 'Invalid clientDataJSON' }, { status: 400 });
     }
 
-    // 2. Verify challenge exists in KV
+    // 2. Verify challenge exists in KV and is not expired
     if (!clientDataJSON.challenge) {
       return Response.json({ error: 'Missing challenge in clientDataJSON' }, { status: 400 });
     }
     const challengeHex = base64UrlToHex(clientDataJSON.challenge);
-    const challengeExists = await kv.get(`challenge:${challengeHex}`);
-    if (!challengeExists) {
+    const challengeData = await kv.get<string>(`challenge:${challengeHex}`);
+    if (!challengeData) {
       return Response.json({ error: 'Invalid or expired challenge' }, { status: 400 });
+    }
+
+    // Check if challenge has expired
+    try {
+      const { expiresAt } = JSON.parse(challengeData) as { expiresAt: number };
+      if (expiresAt > 0 && Date.now() > expiresAt) {
+        // Delete expired challenge and return error
+        await kv.delete(`challenge:${challengeHex}`);
+        return Response.json({ error: 'Challenge expired' }, { status: 400 });
+      }
+    } catch {
+      // If we can't parse the challenge data, treat as legacy format (no expiration)
     }
 
     // 3. Verify type is 'webauthn.create'

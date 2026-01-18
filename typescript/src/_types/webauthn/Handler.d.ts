@@ -17,7 +17,7 @@ import type { Handler, HandlerOptions, KeyManagerOptions, ComposeOptions } from 
  *
  * @example
  * ```typescript
- * import { Handler } from '@radiustechsystems/sdk/server';
+ * import { Handler } from '@radiustechsystems/sdk/webauthn';
  *
  * const handler = Handler.from({
  *   headers: { 'X-Custom-Header': 'value' }
@@ -27,37 +27,6 @@ import type { Handler, HandlerOptions, KeyManagerOptions, ComposeOptions } from 
  * ```
  */
 export declare function from(options?: HandlerOptions): Handler;
-/**
- * Creates a key manager handler for WebAuthn credential storage and management.
- *
- * This handler manages WebAuthn credentials through a key-value store, providing:
- * - Challenge generation for WebAuthn authentication flows
- * - Storage and retrieval of public keys for registered credentials
- * - Support for relying party configuration
- *
- * Endpoints:
- * - `GET {path}/challenge` - Generate a new WebAuthn challenge
- * - `GET {path}/:id` - Retrieve public key for a credential
- * - `POST {path}/:id` - Store a new credential's public key
- *
- * @param options - Configuration options for the key manager handler
- * @param options.kv - A KV store instance (e.g., from Kv.memory() or Kv.cloudflare())
- * @param options.path - The path prefix for the key manager endpoints (default: '')
- * @param options.rp - Relying party config: either a string ID or {id, name} object
- * @param options.headers - Optional headers to add to all responses
- * @returns A Handler instance for the key manager service
- *
- * @example
- * ```typescript
- * import { Handler, Kv } from '@radiustechsystems/sdk/server';
- *
- * const handler = Handler.keyManager({
- *   kv: Kv.memory(),
- *   path: '/api/credentials',
- *   rp: { id: 'example.com', name: 'Example App' },
- * });
- * ```
- */
 export declare function keyManager(options: KeyManagerOptions): Handler;
 /**
  * Composes multiple handlers into a single unified handler.

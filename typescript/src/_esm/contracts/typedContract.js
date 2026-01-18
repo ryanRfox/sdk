@@ -39,8 +39,9 @@ export function getContract(client, params) {
     const read = new Proxy({}, {
         get(_target, functionName) {
             return async (...callArgs) => {
-                // If args were passed as an array in the first position, spread them
-                const args = Array.isArray(callArgs[0]) ? callArgs[0] : callArgs;
+                // If args were passed as a single array argument, spread them
+                // Otherwise use loose arguments directly
+                const args = callArgs.length === 1 && Array.isArray(callArgs[0]) ? callArgs[0] : callArgs;
                 return client.call(contract, functionName, ...args);
             };
         },

@@ -101,6 +101,21 @@ export type KeyManagerOptions = HandlerOptions & {
         id: string;
         name?: string | undefined;
     } | undefined;
+    /**
+     * Time-to-live for WebAuthn challenges in milliseconds.
+     *
+     * Challenges expire after this duration and can no longer be used.
+     * Defaults to 300000 (5 minutes). Set to 0 to disable expiration (not recommended).
+     *
+     * @default 300000 (5 minutes)
+     *
+     * @example
+     * ```typescript
+     * // 10 minute TTL
+     * challengeTTL: 600000
+     * ```
+     */
+    challengeTTL?: number | undefined;
 };
 /**
  * Configuration options for composing multiple handlers.
