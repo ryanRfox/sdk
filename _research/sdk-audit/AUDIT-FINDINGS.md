@@ -66,29 +66,28 @@ Radius WebAuthn has additional validation that Tempo doesn't:
 
 ---
 
-### 4. Dual Contract APIs (Priority: Low)
+### 4. Dual Contract APIs (Priority: High)
 
 **Location:** `client/client.ts`
+**Decision:** ✅ **RESOLVED - REMOVE old APIs**
 
 The client exposes both patterns:
 
 ```typescript
-// Old pattern (positional args)
+// Old pattern (positional args) - TO BE REMOVED
 await client.call(contract, 'balanceOf', address);
 await client.execute(contract, signer, 'transfer', to, amount);
 
-// viem pattern (object args)
+// viem pattern (object args) - KEEP
 await client.readContract({ address, abi, functionName, args });
 await client.writeContract({ address, abi, functionName, args, account });
 ```
 
 **Problem:** Two ways to do the same thing is confusing.
 
-**Fix:** Deprecate `call()`/`execute()` in favor of `readContract()`/`writeContract()`:
-```typescript
-/** @deprecated Use readContract() instead */
-call<T>(contract, method, ...args): Promise<T>
-```
+**Fix:** V2 is unreleased alpha with no users - REMOVE `call()`/`execute()`/`executeAndWait()` entirely. Keep only viem-compatible `readContract()`/`writeContract()`.
+
+**Implementation:** See `fix/v2-audit` branch - Task #4.
 
 ---
 

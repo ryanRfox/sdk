@@ -2,14 +2,17 @@
 
 **Date:** 2026-01-18
 **Question:** Should WAGMI be included in the Radius SDK?
+**Decision:** ✅ **RESOLVED - Remove WAGMI from SDK**
 
 ---
 
 ## TL;DR
 
-**Recommendation: Follow Tempo's pattern - remove WAGMI from SDK.**
+**Decision: Follow Tempo's pattern - remove WAGMI from SDK.**
 
-Tempo.ts only provides server-side handlers. WAGMI has a separate `./tempo` export for Tempo-specific features. Radius should do the same.
+Tempo.ts only provides server-side handlers. WAGMI has a separate `./tempo` export for Tempo-specific features. Radius will do the same.
+
+**Implementation:** See `fix/v2-audit` branch - Task #5.
 
 ---
 
