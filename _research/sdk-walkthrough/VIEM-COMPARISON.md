@@ -1,24 +1,47 @@
 # Viem vs Radius SDK - Pattern Comparison
 
-**Date:** 2026-01-19
-**SDK Version:** v2.0.0-alpha.6
+**Date:** 2026-01-21
+**SDK Version:** v2.0.0-alpha.7
 
-This document provides side-by-side comparisons for developers migrating from pure Viem to the Radius SDK.
+This document provides side-by-side comparisons for developers using viem with the Radius SDK.
+
+---
+
+## Key Finding: Raw Viem Works
+
+**Important:** Raw viem works for most operations on Radius Network without any special configuration. The SDK provides a decorator for batch transactions and utilities for log queries, but is **not required** for basic functionality.
+
+See [VIEM-RADIUS-TEST-RESULTS.md](./VIEM-RADIUS-TEST-RESULTS.md) for proof with transaction hashes.
 
 ---
 
 ## When to Use What
 
-| Task | Use Viem Directly | Use Radius SDK |
-|------|-------------------|----------------|
-| Read balance | Either works | Either works |
-| Read contract state | Either works | Either works |
-| Send single transaction | Possible but manual | **Recommended** |
-| Send multiple transactions | **Will fail** | **Required** |
-| Query historical logs | May fail on large ranges | **Required** |
-| Watch events | Either works | SDK has conveniences |
-| Deploy contracts | Possible but manual | **Recommended** |
-| React/WAGMI integration | Use directly with Radius chains | Use directly with Radius chains |
+| Task | Raw Viem | Radius SDK | Notes |
+|------|----------|------------|-------|
+| Read balance | Works | Works | Identical |
+| Read contract state | Works | Works | Identical |
+| Send single transaction | **Works** | Works | Both use standard viem |
+| Send multiple transactions | **Fails** (parallel) | **Required** | Use `sendTransactionBatch` |
+| Query historical logs | May fail (large ranges) | Recommended | SDK handles chunking |
+| Watch events | Works | Works | SDK has typed wrappers |
+| Deploy contracts | Works | Works | Standard viem |
+| All transaction types | **Works** | Works | Legacy, EIP-2930, EIP-1559 all work |
+
+---
+
+## SDK Architecture (V2)
+
+The SDK follows viem's decorator pattern. There is **no RadiusClient class** - you use standard viem clients extended with Radius-specific actions.
+
+```
+@radiustechsystems/sdk/
+├── chains/            # Chain definitions (radiusTestnet)
+├── decorators/        # Client extension decorators (radiusWalletActions)
+├── actions/           # Standalone action functions
+├── events/            # Event watching and log utilities
+└── transport/         # WebSocket transport utilities
+```
 
 ---
 
@@ -26,123 +49,168 @@ This document provides side-by-side comparisons for developers migrating from pu
 
 ### Creating a Client
 
-**Viem (works, but no Radius conveniences):**
+**Raw Viem (works fine for read operations and single transactions):**
 ```typescript
-import { createPublicClient, http } from 'viem';
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { radiusTestnet } from '@radiustechsystems/sdk/chains';
 
 const publicClient = createPublicClient({
   chain: radiusTestnet,
   transport: http(),
 });
-```
 
-**Radius SDK (recommended):**
-```typescript
-import { createRadiusClient } from '@radiustechsystems/sdk';
-import { radiusTestnet } from '@radiustechsystems/sdk/chains';
-
-const client = createRadiusClient({
-  chain: radiusTestnet,
-  // transport is optional - uses chain's default RPC
-});
-
-// Access underlying viem client if needed
-const publicClient = client.publicClient;
-```
-
----
-
-### Reading Balance
-
-**Viem:**
-```typescript
-const balance = await publicClient.getBalance({
-  address: '0x...',
-});
-```
-
-**Radius SDK:**
-```typescript
-const balance = await client.getBalance({
-  address: '0x...',
-});
-```
-
-**Verdict:** Identical API. Either works.
-
----
-
-### Sending a Transaction
-
-**Viem (requires manual gas price handling):**
-```typescript
-import { createWalletClient, http } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
-
-const account = privateKeyToAccount('0x...');
 const walletClient = createWalletClient({
-  account,
+  account: privateKeyToAccount('0x...'),
+  chain: radiusTestnet,
+  transport: http(),
+});
+```
+
+**With Radius SDK (for batch transactions):**
+```typescript
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { radiusTestnet, radiusWalletActions } from '@radiustechsystems/sdk';
+
+const publicClient = createPublicClient({
   chain: radiusTestnet,
   transport: http(),
 });
 
-// Must manually set gasPrice: 0n for Radius
+// Add .extend(radiusWalletActions()) for sendTransactionBatch
+const walletClient = createWalletClient({
+  account: privateKeyToAccount('0x...'),
+  chain: radiusTestnet,
+  transport: http(),
+}).extend(radiusWalletActions());
+```
+
+---
+
+### Sending a Single Transaction
+
+**Both approaches are identical:**
+```typescript
+// This works with raw viem OR SDK-extended client
 const hash = await walletClient.sendTransaction({
   to: '0x...',
   value: 1000000000000000000n,
-  gasPrice: 0n,  // EASY TO FORGET!
 });
 
-// Must manually wait for receipt
 const receipt = await publicClient.waitForTransactionReceipt({ hash });
 ```
 
-**Radius SDK:**
+**Verdict:** Both work identically. No SDK advantage for single transactions.
+
+---
+
+### Transaction Types (All Work)
+
+**All of these work on Radius:**
+
 ```typescript
-import { createRadiusClient, privateKeyToAccount } from '@radiustechsystems/sdk';
+// Legacy (Type 0)
+await walletClient.sendTransaction({
+  to, value,
+  type: 'legacy',
+  gasPrice: 0n,
+});
 
-const client = createRadiusClient({ chain: radiusTestnet });
-const account = privateKeyToAccount('0x...');
+// EIP-2930 (Type 1)
+await walletClient.sendTransaction({
+  to, value,
+  type: 'eip2930',
+  accessList: [],
+  gasPrice: 0n,
+});
 
-// Gas price handled automatically, includes receipt
-const receipt = await client.sendAndWait(account, '0x...', 1000000000000000000n);
+// EIP-1559 (Type 2)
+await walletClient.sendTransaction({
+  to, value,
+  type: 'eip1559',
+  maxFeePerGas: 0n,
+  maxPriorityFeePerGas: 0n,
+});
+
+// Default (viem chooses EIP-1559, works fine)
+await walletClient.sendTransaction({ to, value });
 ```
 
-**Verdict:** SDK is more ergonomic and handles Radius quirks automatically.
+**Verdict:** Radius supports all transaction types. No restrictions.
 
 ---
 
 ### Sending Multiple Transactions
 
-**Viem (WILL FAIL on Radius):**
+**Raw Viem - Sequential (works but slow):**
 ```typescript
-// This approach works on Ethereum but FAILS on Radius
-const hash1 = await walletClient.sendTransaction({ to: addr1, value: 1n, gasPrice: 0n });
-const hash2 = await walletClient.sendTransaction({ to: addr2, value: 2n, gasPrice: 0n });
-const hash3 = await walletClient.sendTransaction({ to: addr3, value: 3n, gasPrice: 0n });
-
-// On Radius: hash2 and hash3 may fail because nonces arrive out of order
-// Radius doesn't queue future-nonce transactions like Ethereum
+const hash1 = await walletClient.sendTransaction({ to: addr1, value: 1n });
+const hash2 = await walletClient.sendTransaction({ to: addr2, value: 2n });
+const hash3 = await walletClient.sendTransaction({ to: addr3, value: 3n });
+// Works but ~350ms per transaction
 ```
 
-**Radius SDK (correct approach):**
+**Raw Viem - Parallel (FAILS):**
 ```typescript
-const hashes = await client.sendTransactionBatch(account, [
-  { to: addr1, value: 1n },
-  { to: addr2, value: 2n },
-  { to: addr3, value: 3n },
+// This FAILS on Radius due to nonce collision
+const hashes = await Promise.all([
+  walletClient.sendTransaction({ to: addr1, value: 1n }),
+  walletClient.sendTransaction({ to: addr2, value: 2n }),
+  walletClient.sendTransaction({ to: addr3, value: 3n }),
 ]);
-// All transactions sent in single JSON-RPC batch with sequential nonces
+// Error: nonce collision - Radius doesn't queue future nonces
 ```
 
-**Verdict:** **Must use SDK for multiple transactions.** This is the most important difference.
+**Radius SDK (correct approach for parallel):**
+```typescript
+// Client must be extended with radiusWalletActions()
+const hashes = await walletClient.sendTransactionBatch({
+  transactions: [
+    { to: addr1, value: 1n },
+    { to: addr2, value: 2n },
+    { to: addr3, value: 3n },
+  ],
+});
+// All transactions sent in single JSON-RPC batch with sequential nonces
+
+// Wait for all receipts (standard viem pattern)
+const receipts = await Promise.all(
+  hashes.map(hash => publicClient.waitForTransactionReceipt({ hash }))
+);
+```
+
+**Verdict:** **SDK required for parallel transactions.** This is the primary SDK feature.
+
+---
+
+### Waiting for Batch Receipts
+
+The SDK follows viem convention - compose primitives with `Promise.all()`:
+
+```typescript
+// Send batch
+const hashes = await walletClient.sendTransactionBatch({
+  transactions: [
+    { to: addr1, value: 1n },
+    { to: addr2, value: 2n },
+  ],
+});
+
+// Wait for all receipts using standard viem
+const receipts = await Promise.all(
+  hashes.map(hash => publicClient.waitForTransactionReceipt({ hash }))
+);
+
+// Check all succeeded
+const allSucceeded = receipts.every(r => r.status === 'success');
+```
 
 ---
 
 ### Reading Contract State
 
-**Viem:**
+**Identical API:**
 ```typescript
 const balance = await publicClient.readContract({
   address: tokenAddress,
@@ -152,76 +220,18 @@ const balance = await publicClient.readContract({
 });
 ```
 
-**Radius SDK:**
-```typescript
-const balance = await client.readContract({
-  address: tokenAddress,
-  abi: erc20Abi,
-  functionName: 'balanceOf',
-  args: [ownerAddress],
-});
-```
-
 **Verdict:** Identical API. Either works.
-
----
-
-### Typed Contract Interactions
-
-**Viem:**
-```typescript
-import { getContract } from 'viem';
-
-const token = getContract({
-  address: tokenAddress,
-  abi: erc20Abi,
-  client: { public: publicClient, wallet: walletClient },
-});
-
-// Read
-const balance = await token.read.balanceOf([ownerAddress]);
-
-// Write - returns hash, must wait separately
-const hash = await token.write.transfer([recipientAddress, amount]);
-const receipt = await publicClient.waitForTransactionReceipt({ hash });
-```
-
-**Radius SDK:**
-```typescript
-const token = client.getContract({
-  address: tokenAddress,
-  abi: erc20Abi,
-});
-
-// Read
-const balance = await token.read.balanceOf([ownerAddress]);
-
-// Write - returns receipt by default
-const receipt = await token.write.transfer({
-  args: [recipientAddress, amount],
-  signer: account,
-});
-
-// Or just get hash
-const hash = await token.write.transfer({
-  args: [recipientAddress, amount],
-  signer: account,
-  options: { wait: false },
-});
-```
-
-**Verdict:** SDK is more ergonomic with auto-wait and clearer signer passing.
 
 ---
 
 ### Historical Log Queries
 
-**Viem (may fail on large ranges):**
+**Raw Viem (may fail on large ranges):**
 ```typescript
 const logs = await publicClient.getLogs({
   address: contractAddress,
   fromBlock: 1000000n,
-  toBlock: 1100000n,  // 100k blocks - TOO LARGE for Radius
+  toBlock: 1100000n,  // 100k blocks - may exceed Radius limit
 });
 // Error: "block range is too wide"
 ```
@@ -235,116 +245,49 @@ const logs = await getLogs(publicClient, {
   fromBlock: 1000000n,
   toBlock: 1100000n,
   chunkSize: 1000,  // Queries in 1000-block chunks
-  onProgress: ({ currentBlock, logsFetched }) => {
+  onProgress: ({ currentBlock, totalBlocks, logsFetched }) => {
     console.log(`Progress: ${logsFetched} logs found`);
   },
 });
 ```
 
-**Verdict:** **Must use SDK events module for large block ranges.**
-
----
-
-### Watching Events
-
-**Viem:**
+**Adaptive Log Queries (auto-adjusting chunk size):**
 ```typescript
-const unwatch = publicClient.watchContractEvent({
-  address: tokenAddress,
-  abi: erc20Abi,
-  eventName: 'Transfer',
-  onLogs: (logs) => {
-    // Must decode logs manually
-    const decoded = decodeEventLog({ abi: erc20Abi, ... });
-    console.log(decoded.args.from, decoded.args.to, decoded.args.value);
-  },
+import { getLogsAdaptive } from '@radiustechsystems/sdk/events';
+
+// Automatically reduces chunk size on "block range too wide" errors
+const logs = await getLogsAdaptive(publicClient, {
+  address: contractAddress,
+  fromBlock: 1000000n,
+  toBlock: 1100000n,
 });
 ```
 
-**Radius SDK:**
-```typescript
-import { watchTransfer } from '@radiustechsystems/sdk/events';
-
-const unwatch = watchTransfer(publicClient, {
-  address: tokenAddress,
-  onTransfer: (events) => {
-    // Already decoded
-    events.forEach(e => console.log(e.from, e.to, e.value));
-  },
-});
-```
-
-**Verdict:** SDK provides typed convenience wrappers. Viem works but is more verbose.
+**Verdict:** SDK recommended for large block ranges.
 
 ---
 
 ### Deploying Contracts
 
-**Viem:**
+**Standard viem (works):**
 ```typescript
 const hash = await walletClient.deployContract({
   abi: contractAbi,
   bytecode: '0x...',
   args: [constructorArg1, constructorArg2],
-  gasPrice: 0n,  // Don't forget!
 });
 
 const receipt = await publicClient.waitForTransactionReceipt({ hash });
 const contractAddress = receipt.contractAddress;
 ```
 
-**Radius SDK:**
-```typescript
-const { address, receipt } = await client.deployContract(
-  account,
-  '0x...',  // bytecode
-  contractAbi,
-  constructorArg1,
-  constructorArg2,
-);
-```
-
-**Verdict:** SDK is more ergonomic, handles gas price, returns both address and receipt.
+**Verdict:** Standard viem works. No SDK needed.
 
 ---
 
-### Error Handling
+### WAGMI Integration
 
-**Viem:**
-```typescript
-import { BaseError } from 'viem';
-
-try {
-  await publicClient.sendRawTransaction({ ... });
-} catch (error) {
-  if (error instanceof BaseError) {
-    console.log(error.shortMessage);
-  }
-}
-```
-
-**Radius SDK:**
-```typescript
-import { RadiusError, InsufficientBalanceError } from '@radiustechsystems/sdk';
-
-try {
-  await client.sendAndWait(account, to, value);
-} catch (error) {
-  if (error instanceof InsufficientBalanceError) {
-    console.log(`Need ${error.required}, have ${error.balance}`);
-  } else if (error instanceof RadiusError) {
-    console.log(error.shortMessage);
-  }
-}
-```
-
-**Verdict:** SDK provides more specific error types. Both extend viem's `BaseError`.
-
----
-
-## WAGMI Integration
-
-**Same for both - use Radius chains directly with WAGMI:**
+**Use Radius chains directly with WAGMI:**
 
 ```typescript
 import { createConfig, http } from 'wagmi';
@@ -357,22 +300,53 @@ const config = createConfig({
   },
 });
 
-// Then use standard WAGMI hooks
+// Standard WAGMI hooks work
 const { data: balance } = useBalance({ address: '0x...' });
+const { sendTransaction } = useSendTransaction();
 ```
 
-**Note:** For transactions in WAGMI, you still need to handle the gas price and nonce ordering. The SDK's `RadiusClient` is not integrated with WAGMI hooks - they're parallel approaches.
+**Note:** For batch transactions in React apps, import and use `sendTransactionBatch` from the SDK directly.
 
 ---
 
-## Summary
+## Summary Table
 
-| Feature | Viem Direct | Radius SDK |
-|---------|-------------|------------|
-| Simple reads | Works | Works |
-| Single transaction | Manual gas price | Automatic |
-| Multiple transactions | **Fails** | Works |
-| Large log queries | **Fails** | Works |
-| Contract interactions | More verbose | More ergonomic |
-| Error handling | Generic | Specific types |
-| WAGMI integration | Works | Same (uses chains only) |
+| Feature | Raw Viem | Radius SDK | Winner |
+|---------|----------|------------|--------|
+| Single transaction | Works | Works | Tie |
+| All tx types | Works | Works | Tie |
+| Parallel transactions | Fails | Works | **SDK** |
+| Large log queries | May fail | Works | **SDK** |
+| Contract reads | Works | Works | Tie |
+| Contract writes | Works | Works | Tie |
+| Contract deploys | Works | Works | Tie |
+| Bundle size | Smaller | Larger | Viem |
+
+---
+
+## Recommendation
+
+**For most projects:**
+1. Use raw viem for simple operations (reads, single transactions)
+2. Add `.extend(radiusWalletActions())` for batch transactions
+3. Import `getLogs`/`getLogsAdaptive` from SDK for large historical queries
+4. Use Radius chain config from SDK
+
+**Minimal setup:**
+```typescript
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { radiusTestnet, radiusWalletActions } from '@radiustechsystems/sdk';
+import { getLogs } from '@radiustechsystems/sdk/events';
+
+const publicClient = createPublicClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+const walletClient = createWalletClient({
+  account: privateKeyToAccount(process.env.PRIVATE_KEY),
+  chain: radiusTestnet,
+  transport: http(),
+}).extend(radiusWalletActions());
+```

@@ -26,14 +26,9 @@ This document provides a comprehensive walkthrough of each SDK module, explainin
                     ┌─────────────────┼─────────────────┐
                     │                 │                 │
               ┌─────▼────┐     ┌──────▼─────┐    ┌──────▼─────┐
-              │contracts │     │ transport  │    │  webauthn  │
+              │contracts │     │ transport  │    │   events   │
               └──────────┘     └────────────┘    └────────────┘
-              (Extensions)     (Infrastructure)  (Server-side)
-                                      │
-                              ┌───────▼───────┐
-                              │    events     │
-                              └───────────────┘
-                              (Subscriptions)
+              (Extensions)     (Infrastructure)  (Subscriptions)
 ```
 
 ---
@@ -111,20 +106,24 @@ The primary interface for interacting with Radius. This is where the SDK adds si
 
 ### Why It Exists (vs Raw Viem)
 
-#### 1. Zero Gas Price Handling
+**Note:** Raw viem works for most operations on Radius. See [VIEM-RADIUS-TEST-RESULTS.md](./VIEM-RADIUS-TEST-RESULTS.md) for proof.
 
-Radius uses `gasPrice: 0n`. This is hardcoded in the SDK:
+#### 1. Zero Gas Price (Convenience, Not Required)
+
+Radius uses `gasPrice: 0n`, but viem auto-detects this from the network:
 
 ```typescript
-// client.ts:623
+// client.ts:623 - SDK hardcodes it
 const signedTx = await signer.signTransaction({
-  // ...
   gasPrice: 0n, // Radius uses zero gas price
   chainId: config.chain.id,
 });
+
+// Raw viem also works - viem auto-detects zero gas
+const hash = await walletClient.sendTransaction({ to, value });
 ```
 
-Without the SDK, you'd need to remember this for every transaction.
+This is convenience, not necessity.
 
 #### 2. Convenience Methods
 
@@ -551,94 +550,6 @@ return () => {
 
 ---
 
-## Module 7: `webauthn/` — Server-Side Passkey Management
-
-### Purpose
-
-Backend handlers for WebAuthn credential management. **This module is not Viem-related** - it's for building servers that support passkey authentication.
-
-### Files
-
-| File | Purpose |
-|------|---------|
-| `Handler.ts` | HTTP request handlers |
-| `Kv.ts` | Key-value store abstraction |
-| `errors.ts` | WebAuthn-specific errors |
-| `types.ts` | Type definitions |
-| `internal/requestListener.ts` | Node.js adapter |
-
-### Components
-
-**Handler** - HTTP request handlers built on `@remix-run/fetch-router`
-
-```typescript
-// Handler.ts:112-254
-export function keyManager(options: KeyManagerOptions): Handler {
-  // GET /challenge - Generate WebAuthn challenge
-  router.get(`${path}/challenge`, async () => {
-    const challenge = `0x${...}` as Hex;
-    await kv.set(`challenge:${challenge}`, '1');
-    return Response.json({ challenge, rp: rpConfig });
-  });
-
-  // GET /:id - Get public key for credential
-  router.get(`${path}/:id`, async ({ params }) => {
-    const publicKey = await kv.get<Hex>(`credential:${id}`);
-    return Response.json({ publicKey });
-  });
-
-  // POST /:id - Store public key for credential
-  router.post(`${path}/:id`, async ({ params, request }) => {
-    // Validates challenge, type, origin, user presence
-    await kv.set(`credential:${id}`, publicKey);
-    return new Response(null, { status: 204 });
-  });
-}
-```
-
-**Kv** - Key-value store abstraction
-
-```typescript
-// Kv.ts:94-107
-export function memory(): Kv {
-  const store = new Map<string, unknown>();
-  return {
-    async delete(key) { store.delete(key); },
-    async get(key) { return store.get(key); },
-    async set(key, value) { store.set(key, value); },
-  };
-}
-
-// Kv.ts:137-143
-export function cloudflare(kv: cloudflare.Parameters): Kv {
-  return {
-    delete: kv.delete.bind(kv),
-    get: kv.get.bind(kv),
-    set: kv.put.bind(kv),  // Cloudflare uses 'put'
-  };
-}
-```
-
-### Usage
-
-```typescript
-import { Handler, Kv } from '@radiustechsystems/sdk/webauthn';
-
-const handler = Handler.keyManager({
-  kv: Kv.memory(),  // or Kv.cloudflare(env.KV)
-  path: '/api/credentials',
-  rp: { id: 'example.com', name: 'My App' },
-});
-
-// Express.js
-app.use(handler.listener);
-
-// Cloudflare Workers
-export default { fetch: handler.fetch };
-```
-
----
-
 ## Module Relationships
 
 ```
@@ -661,11 +572,21 @@ export default { fetch: handler.fetch };
                    ┌─────────────┐
                    │   events    │  Events uses transport, throws errors
                    └─────────────┘
-
-┌─────────────┐
-│  webauthn   │ ─── Standalone module, no SDK dependencies
-└─────────────┘
 ```
+
+---
+
+## Removed Modules
+
+The following modules were removed as out of scope for a blockchain SDK:
+
+| Module | Reason |
+|--------|--------|
+| `webauthn/` | Server-side auth not related to viem/blockchain |
+| `react/` | Use WAGMI directly with Radius chain config |
+| `wagmi/` | Redundant - WAGMI works with chain config only |
+
+See [WEBAUTHN-REMOVAL.md](./WEBAUTHN-REMOVAL.md) and [WAGMI-REACT-RECOMMENDATION.md](./WAGMI-REACT-RECOMMENDATION.md) for details.
 
 ---
 
@@ -683,6 +604,7 @@ export default { fetch: handler.fetch };
 2. **`MAX_GAS` constant** - Origin undocumented (1319413953330n is suspiciously specific)
 3. **Block range restrictions** - No guide explaining when to use `getLogs` vs raw viem
 
-### Documentation Path Mismatch (Fixed in alpha.6)
+### Corrected Misconceptions
 
-The previous audit noted docs said `/server` but path was `/webauthn`. This appears resolved in the current version.
+1. **Transaction types** - All types (Legacy, EIP-2930, EIP-1559) work on Radius. No "legacy only" restriction.
+2. **RadiusClient necessity** - Raw viem works for most operations. SDK mainly needed for batch transactions.

@@ -1,22 +1,32 @@
 # SDK V2 Developer Walkthrough
 
-**Date:** 2026-01-19
+**Date:** 2026-01-19 (Updated)
 **Scope:** TypeScript SDK v2.0.0-alpha.6 (main branch)
-**Audience:** Developers familiar with Viem/WAGMI learning Radius SDK
+**Audience:** Developers familiar with Viem learning Radius SDK
 
 ---
 
 ## Key Finding
 
-The Radius V2 SDK is a thin wrapper around Viem that handles Radius-specific behaviors. A Viem developer can be productive immediately, with these key differences:
+**The Radius SDK is largely optional for basic operations.** Standard viem works without any special configuration on Radius Network.
 
-| Area | Viem Default | Radius SDK Behavior |
-|------|--------------|---------------------|
-| Gas price | Fetched from network | Hardcoded `0n` (free gas) |
-| Transaction batching | Mempool queues future nonces | Must use `sendTransactionBatch()` |
-| Block range queries | Unlimited | Restricted - use `getLogs()` from events module |
-| Native currency | ETH (or chain-specific) | USD (18 decimals) |
-| Chain registry | `viem/chains` | `@radiustechsystems/sdk/chains` |
+The SDK provides value for:
+1. **Batch transactions** (`sendTransactionBatch`) - Essential for no-mempool environment
+2. **Chain configuration** - Radius chains not yet in viem registry
+3. **Block range handling** - `getLogs` for historical queries with chunking
+4. **Convenience methods** - `sendAndWait`, `deployContract`, etc.
+
+---
+
+## What Works with Raw Viem
+
+| Operation | Raw Viem | Radius SDK |
+|-----------|----------|------------|
+| Read operations | Works | Works |
+| Single transactions | Works | Works |
+| All tx types (Legacy, EIP-2930, EIP-1559) | Works | Works |
+| Parallel transactions | **Fails** (nonce collision) | Use `sendTransactionBatch` |
+| Historical logs (large range) | May fail | Use `getLogs` with chunking |
 
 ---
 
@@ -24,9 +34,12 @@ The Radius V2 SDK is a thin wrapper around Viem that handles Radius-specific beh
 
 | File | Description |
 |------|-------------|
-| [MODULE-ARCHITECTURE.md](./MODULE-ARCHITECTURE.md) | Complete module-by-module breakdown with code references |
+| [MODULE-ARCHITECTURE.md](./MODULE-ARCHITECTURE.md) | Module-by-module breakdown with code references |
 | [VIEM-COMPARISON.md](./VIEM-COMPARISON.md) | Side-by-side Viem vs Radius patterns |
-| [OPEN-QUESTIONS.md](./OPEN-QUESTIONS.md) | Unresolved questions from walkthrough |
+| [VIEM-RADIUS-TEST-RESULTS.md](./VIEM-RADIUS-TEST-RESULTS.md) | Comprehensive test results with transaction hashes |
+| [PUBLICCLIENT-FINDINGS.md](./PUBLICCLIENT-FINDINGS.md) | What works with raw viem |
+| [EIP1559-RESEARCH.md](./EIP1559-RESEARCH.md) | Transaction type support testing |
+| [OPEN-QUESTIONS.md](./OPEN-QUESTIONS.md) | Remaining questions |
 
 ---
 
@@ -35,23 +48,24 @@ The Radius V2 SDK is a thin wrapper around Viem that handles Radius-specific beh
 ```
 src/
 ├── chains/       ← Chain definitions (use instead of viem/chains)
-├── client/       ← RadiusClient with convenience methods
+├── client/       ← RadiusClient - only essential for batch transactions
 ├── contracts/    ← Typed contract helper with read/write namespaces
 ├── errors/       ← Rich error hierarchy extending viem's BaseError
 ├── events/       ← Event subscriptions with Radius block range handling
-├── transport/    ← HTTP interceptors for logging/debugging
-└── webauthn/     ← Server-side passkey management (not Viem-related)
+└── transport/    ← HTTP interceptors for logging/debugging
 ```
+
+**Removed modules:** `webauthn/`, `react/`, `wagmi/` (out of scope for blockchain SDK)
 
 ---
 
 ## Quick Reference for Viem Developers
 
-### What Works Unchanged
+### Option 1: Raw Viem (Works for Most Cases)
 
 ```typescript
-// Chain definitions work with standard viem clients
-import { createPublicClient, http } from 'viem';
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { radiusTestnet } from '@radiustechsystems/sdk/chains';
 
 const publicClient = createPublicClient({
@@ -59,42 +73,62 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
-// Standard viem operations work
-const balance = await publicClient.getBalance({ address: '0x...' });
+const walletClient = createWalletClient({
+  account: privateKeyToAccount('0x...'),
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+// This just works - no special config needed
+const hash = await walletClient.sendTransaction({
+  to: recipient,
+  value: amount,
+});
+
+const receipt = await publicClient.waitForTransactionReceipt({ hash });
 ```
 
-### What Requires SDK
+### Option 2: RadiusClient (For Batch Transactions)
 
 ```typescript
-// For transactions, use RadiusClient (handles zero gas price)
-import { createRadiusClient, privateKeyToAccount } from '@radiustechsystems/sdk';
+import { createRadiusClient } from '@radiustechsystems/sdk';
+import { privateKeyToAccount } from 'viem/accounts';
+import { radiusTestnet } from '@radiustechsystems/sdk/chains';
 
 const client = createRadiusClient({ chain: radiusTestnet });
 const account = privateKeyToAccount('0x...');
 
-// Convenience method with auto-wait
-const receipt = await client.sendAndWait(account, recipient, amount);
-
 // CRITICAL: For multiple transactions, use batch (nonce ordering)
+// This cannot be done reliably with raw viem
 const hashes = await client.sendTransactionBatch(account, [
   { to: addr1, value: 1n },
   { to: addr2, value: 2n },
 ]);
 ```
 
-### What Requires Events Module
+### Events Module (For Large Log Queries)
 
 ```typescript
-// Historical log queries with block range chunking
 import { getLogs } from '@radiustechsystems/sdk/events';
 
 const logs = await getLogs(publicClient, {
   address: contractAddress,
   fromBlock: 1000000n,
   toBlock: 1010000n,
-  chunkSize: 1000,  // Radius restricts block ranges
+  chunkSize: 1000,  // Handles Radius block range restrictions
 });
 ```
+
+---
+
+## Key Differences from Ethereum
+
+| Behavior | Ethereum | Radius |
+|----------|----------|--------|
+| Transaction types | All supported | All supported (Legacy, EIP-2930, EIP-1559) |
+| Gas price | Market-based | Zero (gasless) |
+| Mempool | Queues future nonces | No mempool - rejects future nonces |
+| Native currency | ETH | USD (18 decimals) |
 
 ---
 
@@ -108,8 +142,8 @@ const logs = await getLogs(publicClient, {
 
 ## Open Questions
 
-See [OPEN-QUESTIONS.md](./OPEN-QUESTIONS.md) for unresolved items requiring clarification:
+See [OPEN-QUESTIONS.md](./OPEN-QUESTIONS.md) for remaining items:
 
-1. What is "Tempo"? (Referenced as comparison point but repo not found)
-2. Why doesn't Radius queue future-nonce transactions?
-3. Is the WebAuthn module for a specific Radius product?
+1. Why doesn't Radius queue future-nonce transactions?
+2. Where does the `MAX_GAS` constant (1319413953330n) come from?
+3. USD native currency - what's the value model?

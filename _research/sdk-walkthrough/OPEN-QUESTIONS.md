@@ -1,199 +1,128 @@
 # Open Questions from SDK Walkthrough
 
-**Date:** 2026-01-19
-**Status:** Awaiting clarification
-
-These questions arose during the SDK V2 walkthrough and require input to fully document the SDK.
+**Date:** 2026-01-19 (Updated)
+**Status:** Mostly resolved
 
 ---
 
-## Question 1: What is "Tempo"?
+## Resolved Questions
 
-### Context
+### Question 1: What is "Tempo"? ✓ RESOLVED
 
-The SDK audit references "Tempo.ts" as a comparison point:
-
-> "The Radius V2 SDK is a TypeScript library... modeled after [Tempo.ts](https://github.com/tempo-ts)"
-
-The migration guide shows V1 was published under `@aspect-build/radius-sdk`.
-
-### Investigation
-
-- The URL `https://github.com/tempo-ts` does not exist
-- The URL `https://github.com/aspect-build/radius-sdk` returns 404
-- No public npm package found under these names
-
-### Questions
-
-1. Was "Tempo" an internal codename for the V1 SDK?
-2. Is there a different repository URL for the Tempo reference?
-3. Should we remove Tempo references from documentation since the repo is inaccessible?
-
-### Impact
-
-Without access to Tempo, we cannot:
-- Verify that WebAuthn patterns match
-- Compare API design decisions
-- Document migration paths for Tempo users
+**Answer:** Tempo is a competitor's blockchain. The reference found in `webauthn/internal/requestListener.ts` was a provenance comment from adapted code. This has been removed along with the webauthn module.
 
 ---
 
-## Question 2: Why Doesn't Radius Queue Future-Nonce Transactions?
+### Question 2: Why Doesn't Radius Queue Future-Nonce Transactions? ✓ RESOLVED
 
-### Context
+**Answer from team:**
+> "High speed network that expects the client to manage their nonces and connections in a synchronous way."
 
-From `client.ts:317-319`:
-> "Radius does not queue future-nonce transactions like Ethereum."
+**Implication:** This is a deliberate design decision for performance, not a limitation. The SDK's `sendTransactionBatch()` method is the correct solution for clients needing to send multiple transactions.
 
-This is a significant behavioral difference that affects how developers must structure multi-transaction workflows.
-
-### Questions
-
-1. Is this a fundamental Radius protocol design decision, or a current limitation?
-2. What is the technical reason? (No mempool? Different consensus mechanism?)
-3. Will this behavior change in the future?
-4. Should this be documented more prominently (it's currently only in code comments)?
-
-### Impact
-
-This behavior is the primary reason the SDK exists. Without `sendTransactionBatch()`, multi-transaction workflows would be unreliable.
+**Documentation recommendation:** Add this explanation to the SDK docs/README to help developers understand why batch transactions are essential on Radius.
 
 ---
 
-## Question 3: WebAuthn Module Purpose
+### Question 3: WebAuthn Module Purpose ✓ RESOLVED
 
-### Context
+**Answer:** The webauthn module has been **removed from the SDK**. It was server-side authentication infrastructure unrelated to blockchain/viem operations.
 
-The `webauthn/` module provides server-side passkey credential management:
-- Challenge generation
-- Public key storage
-- Relying party configuration
-
-This is not related to Viem or blockchain interactions.
-
-### Questions
-
-1. Is this module intended for a specific Radius product (e.g., embedded wallet)?
-2. Why is it bundled with the SDK rather than a separate package?
-3. Are there frontend/client components that pair with this server module?
-4. What's the typical use case? Account abstraction wallets? SSO?
-
-### Impact
-
-Without context, it's difficult to:
-- Write appropriate documentation
-- Understand how it fits into the Radius ecosystem
-- Know if it's production-ready or experimental
+See [WEBAUTHN-REMOVAL.md](./WEBAUTHN-REMOVAL.md) for the full decision documentation.
 
 ---
 
-## Question 4: MAX_GAS Constant Origin
+### Question 5: Native Currency "USD" ✓ RESOLVED (TBD)
 
-### Context
+**Answer from team:**
+> "This is still TBD, just ignore the base token name for now."
 
-From `client.ts:156`:
+**Action:** No documentation changes needed. The token name may change before mainnet launch.
+
+---
+
+### Question 6: React Hooks / WAGMI ✓ RESOLVED
+
+**Answer:** React and WAGMI modules have been **removed from the SDK**. The industry standard (followed by Base, Optimism, Polygon) is:
+- Core SDK = Framework-agnostic (TypeScript + viem)
+- React = Use WAGMI directly with Radius chain config
+
+See [WAGMI-REACT-RECOMMENDATION.md](./WAGMI-REACT-RECOMMENDATION.md) for the full analysis.
+
+---
+
+## Remaining Open Questions
+
+### Question 4: MAX_GAS Constant Origin ⚠️ NEEDS CLARIFICATION
+
+**Context:**
+From `typescript/src/client/client.ts:157`:
 ```typescript
 export const MAX_GAS = 1319413953330n;
 ```
 
-This number (1.3 trillion gas) is oddly specific:
+**Location found:** The value is hardcoded in `client.ts:157` with the comment:
+```typescript
+/**
+ * Maximum gas limit for transactions.
+ * Used to cap gas estimates to prevent unexpectedly high costs.
+ */
+```
+
+**What the SDK does with it:**
+- Used to cap gas estimates (`client.ts:611-612`, `721`, `782-783`)
+- Applied as a safety limit to prevent unexpectedly large gas values
+
+**Analysis:** This number (1.3 trillion gas) is oddly specific:
 - Ethereum block gas limit: ~30M
 - This is 44,000x larger
-- Not a round number
+- Not a round number (1319413953330n = specific hex value?)
 
-### Questions
+**What other SDKs do:**
 
-1. Where does this specific value come from?
-2. Is it a Radius protocol constant?
-3. Why not use a round number or fetch from the network?
-4. Is there a risk this becomes outdated?
+| SDK | Approach | Details |
+|-----|----------|---------|
+| **Viem** | No hardcoded max | Relies on chain's block gas limit |
+| **Ethers.js** | No hardcoded max | Uses network-reported limits |
+| **zkSync SDK** | Fetches from chain | Uses `eth_gasPrice` / chain config |
+| **Web3.js** | No hardcoded max | Uses `eth_estimateGas` response directly |
 
-### Impact
-
-If this value is wrong or changes, gas estimation could fail silently.
-
----
-
-## Question 5: Native Currency "USD"
-
-### Context
-
-From `chains/radiusTestnet.ts`:
+**Common pattern:** Most SDKs fetch the block gas limit from the chain rather than hardcoding a value:
 ```typescript
-nativeCurrency: {
-  decimals: 18,
-  name: 'USD',
-  symbol: 'USD',
-}
+const block = await client.getBlock();
+const maxGas = block.gasLimit;
 ```
 
-This is unusual:
-- Most chains use their own token (ETH, MATIC, etc.)
-- "USD" suggests US dollars
-- 18 decimals is not standard for USD stablecoins (usually 6)
+**Questions for Radius team:**
+1. Where does 1319413953330n come from?
+2. Is this a Radius protocol constant that can be fetched?
+3. Should this be dynamically fetched from `eth_getBlockByNumber().gasLimit`?
+4. What happens if this value becomes incorrect?
 
-### Questions
-
-1. Is this actually a USD-pegged stablecoin?
-2. Why 18 decimals instead of 6?
-3. What is the value model? 1 USD token = 1 USD?
-4. How does gas pricing work with free gas but USD denomination?
-
-### Impact
-
-Users may be confused about:
-- The actual value of tokens
-- How to display balances appropriately
-- Whether this is a "real" dollar
-
----
-
-## Question 6: React Hooks Relationship to RadiusClient
-
-### Context
-
-The SDK has two parallel APIs:
-1. `RadiusClient` - standalone client with convenience methods
-2. React hooks in `/react` - WAGMI wrappers
-
-The React hooks use WAGMI, not `RadiusClient`:
+**Recommendation:** Consider replacing the hardcoded value with a dynamic fetch:
 ```typescript
-// hooks/useRadiusSend.ts
-export function useRadiusSend(): UseRadiusSendReturn {
-  const { sendTransaction } = useSendTransaction();  // WAGMI hook
-  // ...
-}
+// Option A: Fetch from chain at client creation
+const block = await publicClient.getBlock();
+const maxGas = block.gasLimit;
+
+// Option B: Use a more conservative fixed value
+const MAX_GAS = 30_000_000n; // Match Ethereum mainnet
+
+// Option C: Fetch from Radius-specific RPC method (if available)
+const maxGas = await client.request({ method: 'radius_getMaxGas' });
 ```
 
-### Questions
-
-1. Why don't the React hooks use `RadiusClient`?
-2. Do WAGMI transactions automatically handle `gasPrice: 0n`?
-3. What about multi-transaction scenarios in React apps?
-4. Is there a recommended pattern for using `sendTransactionBatch` in React?
-
-### Impact
-
-React developers may be confused about which API to use and whether they get Radius-specific behaviors through WAGMI.
+**Status:** Needs clarification from Radius team
 
 ---
 
 ## Resolution Status
 
-| Question | Status | Assigned To |
-|----------|--------|-------------|
-| Q1: Tempo identity | Pending | - |
-| Q2: Nonce behavior | Pending | - |
-| Q3: WebAuthn purpose | Pending | - |
-| Q4: MAX_GAS origin | Pending | - |
-| Q5: USD currency | Pending | - |
-| Q6: React/WAGMI | Pending | - |
-
----
-
-## How to Resolve
-
-For each question, please provide:
-1. A direct answer
-2. Whether this should be documented publicly
-3. Suggested documentation location (README, guides, API docs, etc.)
+| Question | Status | Resolution |
+|----------|--------|------------|
+| Q1: Tempo identity | ✓ Resolved | Competitor blockchain - references removed |
+| Q2: Nonce behavior | ✓ Resolved | Design decision for high-speed network |
+| Q3: WebAuthn purpose | ✓ Resolved | Module removed from SDK |
+| Q4: MAX_GAS origin | ⚠️ Open | Needs clarification - recommend dynamic fetch |
+| Q5: USD currency | ✓ Resolved | TBD - ignore for now |
+| Q6: React/WAGMI | ✓ Resolved | Modules removed from SDK |
