@@ -9,9 +9,11 @@ jobs:
   publish:
     name: Build and Publish
     runs-on: ubuntu-latest
+    # Environment for OIDC trusted publishing - must match npm trusted publisher config
+    environment: npm-publish
     permissions:
       contents: read
-      id-token: write # Required for provenance
+      id-token: write # Required for npm OIDC trusted publishing
 
     steps:
       - uses: actions/checkout@v4
@@ -27,42 +29,44 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
-      
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: '9'
           run_install: false
-      
+
       - name: Install dependencies
         working-directory: typescript
         run: pnpm install
         env:
           CI: true
-      
+
       - name: Run linters
         working-directory: typescript
         run: pnpm lint
-      
+
       - name: Run tests
         working-directory: typescript
         run: pnpm test
-      
+
       - name: Update version in package.json
         working-directory: typescript
         run: |
           # Use jq to update the version in package.json
           jq '.version = "${{ steps.extract_version.outputs.version }}"' package.json > package.json.tmp
           mv package.json.tmp package.json
-      
+
       - name: Build package
         working-directory: typescript
-        run: pnpm build:prod
-      
+        run: pnpm build
+
+      # OIDC Trusted Publishing - no token needed!
+      # Requires npm trusted publisher configured at:
+      # https://www.npmjs.com/package/@radiustechsystems/sdk/access
+      # With: org=radiustechsystems, repo=sdk, workflow=typescript-publish.yml, environment=npm-publish
       - name: Publish to NPM
         working-directory: typescript
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

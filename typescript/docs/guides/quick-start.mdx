@@ -1,0 +1,110 @@
+---
+title: Quick Start
+description: Get started with the Radius TypeScript SDK
+---
+
+# Quick Start
+
+This guide helps you get started with the Radius TypeScript SDK V2.
+
+## Installation
+
+Install the SDK and viem using your preferred package manager:
+
+```bash
+pnpm add @radiustechsystems/sdk viem
+```
+
+```bash
+npm install @radiustechsystems/sdk viem
+```
+
+## Basic Usage
+
+The Radius SDK extends [viem](https://viem.sh) with Radius-specific functionality.
+You use standard viem clients with the `radiusWalletActions` decorator.
+
+### Create Clients
+
+```typescript
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { radiusTestnet, radiusWalletActions } from '@radiustechsystems/sdk';
+
+// Public client for read operations
+const publicClient = createPublicClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+// Wallet client for write operations (with Radius extensions)
+const walletClient = createWalletClient({
+  account: privateKeyToAccount('0x...'),
+  chain: radiusTestnet,
+  transport: http(),
+}).extend(radiusWalletActions());
+```
+
+### Send a Transaction
+
+```typescript
+// Send a transaction
+const hash = await walletClient.sendTransaction({
+  to: '0x...recipientAddress',
+  value: 1000000000000000000n, // 1 token in wei
+});
+
+// Wait for confirmation
+const receipt = await publicClient.waitForTransactionReceipt({ hash });
+console.log('Transaction confirmed:', receipt.transactionHash);
+```
+
+### Batch Transactions (Radius-Specific)
+
+Radius supports sending multiple transactions in a single batch:
+
+```typescript
+const hashes = await walletClient.sendTransactionBatch({
+  transactions: [
+    { to: '0x...', value: 1000000000000000000n },
+    { to: '0x...', value: 2000000000000000000n },
+  ],
+});
+console.log('Batch hashes:', hashes);
+```
+
+### Read Contract Data
+
+Use viem's standard `getContract` for typed contract interactions:
+
+```typescript
+import { getContract, erc20Abi } from 'viem';
+
+const token = getContract({
+  address: '0x...tokenAddress',
+  abi: erc20Abi,
+  client: publicClient,
+});
+
+const balance = await token.read.balanceOf(['0x...ownerAddress']);
+console.log('Balance:', balance);
+```
+
+### Write Contract Data
+
+```typescript
+const token = getContract({
+  address: '0x...tokenAddress',
+  abi: erc20Abi,
+  client: walletClient,
+});
+
+const hash = await token.write.transfer(['0x...recipient', 1000n]);
+const receipt = await publicClient.waitForTransactionReceipt({ hash });
+```
+
+## Next Steps
+
+- [API Reference](/docs/api) - Complete API documentation
+- [Events Guide](/docs/guides/events) - Watching blockchain events
+

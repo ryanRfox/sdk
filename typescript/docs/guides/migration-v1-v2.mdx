@@ -1,0 +1,163 @@
+---
+title: V1 to V2 Migration
+description: Migrating from Radius SDK V1 to V2
+---
+
+# Migrating from V1 to V2
+
+This guide helps you migrate from Radius SDK V1 to V2.
+
+## Overview
+
+V2 is a complete rewrite built on [viem](https://viem.sh). Instead of a custom client,
+you now use standard viem clients extended with Radius-specific functionality.
+
+## Breaking Changes
+
+### Package Name
+
+The package has been renamed:
+
+```bash
+# V1
+pnpm remove @aspect-build/radius-sdk
+
+# V2
+pnpm add @radiustechsystems/sdk viem
+```
+
+### Client Creation
+
+**V1:**
+```typescript
+import { createRadiusClient } from '@aspect-build/radius-sdk';
+
+const client = createRadiusClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+```
+
+**V2:**
+```typescript
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { radiusTestnet, radiusWalletActions } from '@radiustechsystems/sdk';
+
+// Separate clients for reads and writes
+const publicClient = createPublicClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+const walletClient = createWalletClient({
+  account: privateKeyToAccount('0x...'),
+  chain: radiusTestnet,
+  transport: http(),
+}).extend(radiusWalletActions());
+```
+
+### Account Creation
+
+**V1:**
+```typescript
+import { privateKeyToAccount } from '@aspect-build/radius-sdk';
+
+const signer = privateKeyToAccount(privateKey, chainId);
+```
+
+**V2:**
+```typescript
+import { privateKeyToAccount } from 'viem/accounts';
+
+// Chain ID is no longer required - determined by the client
+const account = privateKeyToAccount(privateKey);
+```
+
+### Sending Transactions
+
+**V1:**
+```typescript
+const receipt = await client.sendAndWait(signer, to, value);
+```
+
+**V2:**
+```typescript
+const hash = await walletClient.sendTransaction({ to, value });
+const receipt = await publicClient.waitForTransactionReceipt({ hash });
+```
+
+### Contract Interactions
+
+**V1:**
+```typescript
+import { getContract } from '@aspect-build/radius-sdk';
+
+const token = getContract(client, { address, abi });
+const balance = await token.read.balanceOf(['0x...']);
+```
+
+**V2:**
+```typescript
+import { getContract } from 'viem';
+
+// Use viem's getContract directly
+const token = getContract({
+  address,
+  abi,
+  client: publicClient, // or walletClient for writes
+});
+
+const balance = await token.read.balanceOf(['0x...']);
+```
+
+### Type Changes
+
+**V1:**
+```typescript
+import type { RadiusSigner } from '@aspect-build/radius-sdk';
+```
+
+**V2:**
+```typescript
+import type { LocalAccount } from 'viem';
+```
+
+### Removed Features
+
+- `RadiusSigner` interface - use viem's `LocalAccount`
+- `ClefSigner` - removed, implement custom solution if needed
+- `createClefSigner` - removed
+- Custom `getContract` - use viem's native `getContract`
+
+## Step-by-Step Migration
+
+1. **Update packages:**
+   ```bash
+   pnpm remove @aspect-build/radius-sdk
+   pnpm add @radiustechsystems/sdk viem
+   ```
+
+2. **Update client creation:**
+   - Replace `createRadiusClient` with `createPublicClient` + `createWalletClient`
+   - Add `.extend(radiusWalletActions())` to wallet client
+
+3. **Update account creation:**
+   - Import `privateKeyToAccount` from `viem/accounts`
+   - Remove chain ID parameter
+
+4. **Update transactions:**
+   - Use `walletClient.sendTransaction()` for sending
+   - Use `publicClient.waitForTransactionReceipt()` for confirmation
+
+5. **Update contracts:**
+   - Use `getContract` from `viem` instead of SDK
+   - Pass `client` in options object
+
+6. **Update types:**
+   - Replace `RadiusSigner` with `LocalAccount` from viem
+
+## Need Help?
+
+If you encounter issues during migration, please [open an issue](https://github.com/radiustechsystems/sdk/issues).
+

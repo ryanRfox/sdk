@@ -1,78 +1,119 @@
 # Radius SDKs
 
-Official software development kits for building applications on [Radius](https://radiustech.xyz/), a high-performance
-smart contract platform that enables near-instant settlement and can process millions of transactions per second.
+[![TypeScript](https://img.shields.io/badge/TypeScript-2.0.0--alpha.1-blue)](typescript/)
+[![Go](https://img.shields.io/badge/Go-v1-green)](go/)
+[![Python](https://img.shields.io/badge/Python-coming%20soon-lightgrey)](python/)
+[![Rust](https://img.shields.io/badge/Rust-coming%20soon-lightgrey)](rust/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Overview
+Official SDKs for [Radius](https://radiustech.xyz/) — a high-performance smart contract platform with near-instant settlement and millions of transactions per second.
 
-Next-generation payments require processing power that is orders of magnitude more efficient than what is currently
-available. Built by the team that brought USDC to market, Radius is the result of many years rethinking smart contract
-scalability from first principles.
+> **V2 Alpha Notice:** The TypeScript SDK on this branch is **V2-alpha** and is not yet published to npm. See [Local Installation](#local-installation-v2-alpha) below. Go, Python, and Rust SDKs remain at V1.
 
-Unlike blockchains that sequentially process a limited batch of transactions at a time, our distributed execution layer
-handles multiple transactions simultaneously. Our platform has demonstrated that it can process over 2.8 million
-transactions per second with near zero latency and cost, far exceeding any other system that exists today.
+## Quick Start (TypeScript V2)
 
-Radius is fully EVM-compatible and provides SDKs in [multiple programming languages](#available-sdks) with a clean,
-consistent interface, enabling developers to easily add instant payments to their apps with just a few lines of code.
+### Local Installation (V2-alpha)
 
-No block times. No bidding wars. Just instant settlement.
+V2 is not yet on npm. To use this branch locally:
+
+```bash
+# Clone and build the SDK
+git clone https://github.com/radiustechsystems/sdk.git
+cd sdk/typescript
+pnpm install
+pnpm build
+
+# Link globally
+pnpm link --global
+```
+
+Then in your project:
+
+```bash
+# Link the SDK
+pnpm link --global @radiustechsystems/sdk
+
+# Or with npm
+npm link @radiustechsystems/sdk
+```
+
+### Usage
+
+```typescript
+import { createRadiusClient, createPrivateKeySigner } from '@radiustechsystems/sdk';
+import { radiusTestnet } from '@radiustechsystems/sdk/chains';
+
+const client = createRadiusClient({ chain: radiusTestnet });
+const account = createPrivateKeySigner('0x...');
+
+const receipt = await client.sendAndWait(account, '0x...', 1000000000000000000n);
+```
+
+### Unlink when done
+
+```bash
+pnpm unlink --global @radiustechsystems/sdk
+```
+
+## Go SDK (V1)
+
+```bash
+go get github.com/radiustechsystems/sdk/go
+```
+
+```go
+import "github.com/radiustechsystems/sdk/go/src/radius"
+
+client, _ := radius.NewClient(radius.Config{EndpointURL: "..."})
+balance, _ := client.GetBalance(ctx, address)
+```
+
+## Documentation
+
+**[docs.radiustech.xyz](https://docs.radiustech.xyz/)** — Full documentation, guides, and API reference.
+
+- [Getting Started](https://docs.radiustech.xyz/getting-started)
+- [Testnet Access](https://docs.radiustech.xyz/radius-testnet-access)
+- [TypeScript SDK](https://docs.radiustech.xyz/sdk/typescript)
+- [Go SDK](https://docs.radiustech.xyz/sdk/go)
 
 ## Available SDKs
 
-- [Go SDK](go/README.md)
-- [Python SDK](python/README.md) (coming soon)
-- [Rust SDK](rust/README.md) (coming soon)
-- [TypeScript SDK](typescript/README.md)
+| SDK | Version | Status | Install |
+|-----|---------|--------|---------|
+| [TypeScript](typescript/) | 2.0.0-alpha.1 | **V2 Alpha** (local only) | See [Local Installation](#local-installation-v2-alpha) |
+| [Go](go/) | 1.x | Stable (V1) | `go get github.com/radiustechsystems/sdk/go` |
+| [Python](python/) | — | Coming soon | — |
+| [Rust](rust/) | — | Coming soon | — |
 
-## Use Cases
+## What's New in TypeScript V2
 
-Radius is capable of handling millions of micro-payments per second at a cost that makes doing so economically viable.
-This is particularly well-suited for AI agent use cases, and equally so for any application that requires massive scale,
-instant settlement, and cryptographic guarantees.
+- **viem integration** — Full compatibility with viem types and patterns
+- **React hooks** — `useRadiusBalance`, `useRadiusSend`, ERC-20 hooks
+- **Server handlers** — `Handler.keyManager()`, `Handler.compose()`
+- **wagmi connector** — `privateKeyConnector()` for wagmi v3
+- **Events module** — `watchTransfer`, `watchApproval`, `getLogs`
+- **Subpath exports** — `/chains`, `/react`, `/events`, `/server`, `/wagmi`
 
-### AI Payments
-- AI agents buying products and services in real-time
-- Pay-per-API-call data access at fractions of a cent
-- Pay-per-compute, storage, bandwidth request
-- High-frequency trading settlement
+See [typescript/CHANGELOG.md](typescript/CHANGELOG.md) for breaking changes.
 
-### Traditional Payments
-- High-frequency trading and settlement
-- Pay-per-use services and subscriptions
-- Real-time revenue sharing and splits
+## Why Radius?
 
-### Beyond Payments
-- Decentralized social networks and content systems
-- Gaming and virtual world state management
-- IoT sensor networks and data marketplaces
-- Identity and attestation systems
-
-## Available Today
-
-The Radius invite-only testnet launched in January 2025 with major stablecoin issuers and AI labs already onboard.
-Radius supports both simple payments and other EVM-compatible smart contracts, so developers can experience the
-efficiency of its parallel execution design.
-
-The next trillion transactions won't come from humans typing on keyboards. They'll come from AI agents making
-split-second decisions. We're building the infrastructure necessary to make that future possible.
-
-Ready to build the future? Start [here](https://docs.radiustech.xyz/radius-testnet-access).
-
-## Contributing
-
-We welcome contributions to all Radius SDKs! Please see:
-
-- [General Contributing Guide](CONTRIBUTING.md) - Repository-wide guidelines and principles
-- [Go SDK Contributing Guide](go/CONTRIBUTING.md) - Go-specific guidelines
-- [TypeScript SDK Contributing Guide](typescript/CONTRIBUTING.md) - TypeScript-specific guidelines
+- **2.8M+ TPS** — Parallel execution, not sequential batching
+- **Near-zero latency** — No block times, instant settlement
+- **EVM compatible** — Works with existing Ethereum tooling
+- **Built for AI** — Designed for agent-to-agent micropayments
 
 ## Support
 
-- [Website](https://radiustech.xyz/)
-- [Testnet Access](https://docs.radiustech.xyz/radius-testnet-access)
+- [Documentation](https://docs.radiustech.xyz/)
 - [GitHub Issues](https://github.com/radiustechsystems/sdk/issues)
+- [Website](https://radiustech.xyz/)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-All Radius SDKs are released under the [MIT License](LICENSE).
+[MIT](LICENSE)

@@ -1,168 +1,161 @@
 # Radius TypeScript SDK
 
-The official TypeScript client library for interacting with the [Radius platform](https://radiustech.xyz/), providing
-a simple and idiomatic way to interact with Radius services.
+[![Version](https://img.shields.io/badge/version-2.0.0--alpha.7-blue)](package.json)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
+
+The official TypeScript SDK for [Radius](https://radiustech.xyz/). Built on [viem](https://viem.sh/) for seamless EVM compatibility.
+
+> **V2 Alpha Notice:** This SDK is in pre-release and not yet published to npm. You must build and link locally to use it.
+
+> **ESM Only:** This SDK is published as ES Modules only. CommonJS (`require()`) is not supported. Your project must use `"type": "module"` in package.json or use `.mjs` extensions.
+
+## Local Installation
+
+V2 is not yet on npm. Build and link locally:
+
+```bash
+# In this directory (typescript/)
+pnpm install
+pnpm build
+pnpm link --global
+```
+
+Then in your project:
+
+```bash
+pnpm link --global @radiustechsystems/sdk
+# Or: npm link @radiustechsystems/sdk
+```
+
+When done testing:
+
+```bash
+pnpm unlink --global @radiustechsystems/sdk
+```
+
+## Quick Start
+
+```typescript
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { radiusTestnet, radiusWalletActions } from '@radiustechsystems/sdk';
+
+// Public client for reading blockchain state
+const publicClient = createPublicClient({
+  chain: radiusTestnet,
+  transport: http(),
+});
+
+// Wallet client for sending transactions
+const walletClient = createWalletClient({
+  account: privateKeyToAccount('0x...'),
+  chain: radiusTestnet,
+  transport: http(),
+}).extend(radiusWalletActions());
+
+// Check balance (standard viem API)
+const balance = await publicClient.getBalance({
+  address: walletClient.account.address,
+});
+
+// Send transaction (standard viem API)
+const hash = await walletClient.sendTransaction({
+  to: '0x...recipient',
+  value: 1000000000000000000n,
+});
+
+// Wait for receipt
+const receipt = await publicClient.waitForTransactionReceipt({ hash });
+```
+
+## Batch Transactions
+
+Radius doesn't queue future-nonce transactions like Ethereum. Use `sendTransactionBatch` to send multiple transactions atomically:
+
+```typescript
+const hashes = await walletClient.sendTransactionBatch({
+  transactions: [
+    { to: '0x...', value: 1000000000000000000n },
+    { to: '0x...', data: '0x...' },
+  ],
+});
+```
+
+## SDK Architecture
+
+The SDK follows viem's decorator pattern:
+
+```
+@radiustechsystems/sdk/
+├── chains/            # Chain definitions (radius, radiusTestnet)
+├── decorators/        # Client extension decorators (radiusWalletActions)
+├── actions/           # Standalone action functions
+├── contracts/         # Typed contract utilities
+├── errors/            # Typed error classes
+├── events/            # Event watching utilities
+└── transport/         # Transport utilities
+```
+
+## Extending Viem Clients
+
+```typescript
+import { createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { radiusTestnet, radiusWalletActions } from '@radiustechsystems/sdk';
+
+const client = createWalletClient({
+  account: privateKeyToAccount('0x...'),
+  chain: radiusTestnet,
+  transport: http(),
+}).extend(radiusWalletActions());
+
+// Now has sendTransactionBatch available
+const hashes = await client.sendTransactionBatch({
+  transactions: [{ to: '0x...', value: 1n }],
+});
+```
 
 ## Features
 
-- Account management and transaction signing
-- Smart contract deployment and interaction
-- Optional request logging and interceptors
-- EVM compatibility with high performance & low latency
+- **Chain Configs** — Pre-configured chains for Radius mainnet and testnet
+- **Batch Transactions** — Send multiple transactions atomically
+- **Events** — Watch blocks, transfers, approvals, and logs
+- **Multicall3** — Batch contract reads (configured on testnet)
+
+## Subpath Exports
+
+```typescript
+import { radiusTestnet, radiusWalletActions, MAX_GAS } from '@radiustechsystems/sdk';
+import { radius, radiusTestnet } from '@radiustechsystems/sdk/chains';
+import { decodeEventLogs, filterEventLogs } from '@radiustechsystems/sdk/events';
+```
+
+## Documentation
+
+**[docs.radiustech.xyz](https://docs.radiustech.xyz/)** — Full documentation, guides, and API reference.
+
+- [Getting Started](https://docs.radiustech.xyz/getting-started)
+- [TypeScript SDK Guide](https://docs.radiustech.xyz/sdk/typescript)
+- [API Reference](https://docs.radiustech.xyz/sdk/typescript/api)
 
 ## Requirements
 
-- Node.js >= 20.12
-- Radius JSON-RPC endpoint: https://docs.radiustech.xyz/radius-testnet-access
-- Ethereum private key: https://ethereum.org/en/developers/docs/accounts/#account-creation
+- Node.js >= 22
+- ESM project (`"type": "module"` in package.json)
+- pnpm (for local development)
+- [Testnet Access](https://docs.radiustech.xyz/radius-testnet-access)
 
-## Installation
+## Environment Variables
 
-```bash
-# Using npm
-npm install @radiustechsystems/sdk
-
-# Using pnpm
-pnpm add @radiustechsystems/sdk
-
-# Using yarn
-yarn add @radiustechsystems/sdk
-```
-
-## Quickstart Examples
-
-### Connect to Radius
-
-Be sure to use your own `RADIUS_ENDPOINT` and `PRIVATE_KEY` values, as mentioned in the [Requirements](#requirements).
-
-```typescript
-import { Account, Client, NewClient, NewAccount, withPrivateKey } from '@radiustechsystems/sdk';
-
-const RADIUS_ENDPOINT = "https://rpc.testnet.tryradi.us/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-const PRIVATE_KEY = "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036415f";
-
-const client: Client = await NewClient(RADIUS_ENDPOINT);
-const account: Account = await NewAccount(withPrivateKey(PRIVATE_KEY, client));
-```
-
-Alternatively, using plain JavaScript and CommonJS `require` syntax:
-
-```javascript
-const { Account, Client, NewClient, NewAccount, withPrivateKey } = require('@radiustechsystems/sdk');
-```
-
-### Transfer Value Between Accounts
-
-Here, we send 100 tokens to another account. Be sure to replace the recipient's address with one of your own.
-
-```typescript
-import { Address, AddressFromHex, Receipt } from '@radiustechsystems/sdk';
-
-const recipient: Address = AddressFromHex('0x5e97870f263700f46aa00d967821199b9bc5a120'); // Recipient's address
-const amount: bigint = BigInt(100);
-const receipt: Receipt = await account.send(client, recipient, amount);
-
-console.log('Transaction hash:', receipt.txHash.hex());
-```
-
-### Deploy a Smart Contract
-
-Here, we deploy the [SimpleStorage.sol](https://github.com/radiustechsystems/sdk/tree/main/contracts/solidity)
-example contract included in this SDK, with the application binary interface (ABI) and bytecode that were generated
-using the Solidity compiler [solcjs](https://docs.soliditylang.org/en/latest/installing-solidity.html#npm-node-js).
-
-```typescript
-import { ABI, ABIFromJSON, BytecodeFromHex } from '@radiustechsystems/sdk';
-
-// Parse ABI and bytecode of the SimpleStorage contract
-const abi: ABI = ABIFromJSON(`[{"inputs":[],"name":"get","outputs":[{"type":"uint256"}],"type":"function"},{"inputs":[{"type":"uint256"}],"name":"set","type":"function"}]`);
-const bytecode: Uint8Array = BytecodeFromHex('6080604052348015600e575f5ffd5b5060a580601a5f395ff3fe6080604052348015600e575f5ffd5b50600436106030575f3560e01c806360fe47b11460345780636d4ce63c146045575b5f5ffd5b6043603f3660046059565b5f55565b005b5f5460405190815260200160405180910390f35b5f602082840312156068575f5ffd5b503591905056fea26469706673582212207655d86666fa8aa75666db8416e0f5db680914358a57e84aa369d9250218247f64736f6c634300081c0033');
-
-// Deploy the contract
-const contract = await client.deployContract(account.signer, bytecode, abi);
-```
-
-### Interact with a Smart Contract
-
-Assuming the contract was previously deployed (which is typically the case), we can interact with it using the contract
-address and ABI. Be sure to replace the contract address with that of your own deployed contract.
-
-```typescript
-import { ABI, Address, AddressFromHex, ABIFromJSON, Contract, NewContract, Receipt } from '@radiustechsystems/sdk';
-
-// Reference a previously deployed contract
-const address: Address = AddressFromHex('0x5e97870f263700f46aa00d967821199b9bc5a120'); // Contract address
-const abi: ABI = ABIFromJSON(`[{"inputs":[],"name":"get","outputs":[{"type":"uint256"}],"type":"function"},{"inputs":[{"type":"uint256"}],"name":"set","type":"function"}]`);
-const contract: Contract = NewContract(address, abi);
-
-// Write to the contract
-const value: bigint = BigInt(42);
-const receipt: Receipt = await contract.execute(client, account.signer, 'set', value);
-
-// Read from the contract
-const result: unknown[] = await contract.call(client, 'get');
-console.log('Stored value:', result[0]);
-```
-
-## Advanced Features
-
-### Custom Transaction Signing
-
-```typescript
-import { Address, BigNumberish, BytesLike, Hash, SignedTransaction, Signer, Transaction } from '@radiustechsystems/sdk';
-
-class MyCustomSigner implements Signer {
-    address(): Address { /* ... */ }
-    chainID(): BigNumberish { /* ... */ }
-    hash(transaction: Transaction): Hash { /* ... */ }
-    signMessage(message: BytesLike): Promise<Uint8Array> { /* ... */ }
-    signTransaction(transaction: Transaction): Promise<SignedTransaction> { /* ... */ }
-    constructor(...args) { /* ... */ }
-}
-const signer = new MyCustomSigner(...args);
-const account = NewAccount(withSigner(signer));
-```
-
-### Logging and Request Interceptors
-
-```typescript
-import { NewClient, withLogger, withInterceptor } from '@radiustechsystems/sdk';
-
-const client = await NewClient('https://your-radius-endpoint',
-    withLogger((message, data) => {
-        console.log(message, data);
-    }),
-    withInterceptor(async (reqBody, response) => {
-        // Examine request body, modify response, etc.
-        return response;
-    })
-);
-```
-
-### Custom HTTP Client
-
-```typescript
-import { NewClient, withHttpClient } from '@radiustechsystems/sdk';
-
-const client = await NewClient('https://your-radius-endpoint',
-    withHttpClient(async (url: string | URL | Request, init?: RequestInit | undefined): Promise<Response> => {
-        // Make a custom HTTP request, or use a library like axios
-    })
-);
-```
-
-## Resources
-
-- [Website](https://radiustech.xyz/)
-- [Testnet Access](https://docs.radiustech.xyz/radius-testnet-access) 
-- [GitHub Issues](https://github.com/radiustechsystems/sdks/issues)
-- [Changelog](CHANGELOG.md)
+| Variable | Description |
+|----------|-------------|
+| `RADIUS_RPC_URL` | RPC endpoint URL |
+| `RADIUS_PRIVATE_KEY` | Account private key (for scripts) |
 
 ## Contributing
 
-Please see the [TypeScript SDK Contributing Guide](CONTRIBUTING.md) for detailed information about contributing to this
-SDK. For repository-wide guidelines, see the [General Contributing Guide](../CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-All Radius SDKs are released under the [MIT License](../LICENSE).
+[MIT](../LICENSE)

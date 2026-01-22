@@ -4,7 +4,7 @@
  * @param message The log message to display
  * @param data Optional structured data to include in the log
  */
-export type Logf = (message: string, data?: Record<string, unknown>) => void;
+export type Logger = (message: string, data?: Record<string, unknown>) => void;
 
 /**
  * An interceptor function for modifying JSON-RPC HTTP requests and responses
@@ -17,14 +17,14 @@ export type Interceptor = (reqBody: string, response: Response) => Promise<Respo
 
 /**
  * An interface for making HTTP requests and receiving responses
- * Based on the concept of http.RoundTripper from Go's standard library
+ * Handles the actual HTTP round-trip for JSON-RPC requests
  */
-export interface RoundTripper {
-  /**
-   * Sends an HTTP request and returns the response
-   * @param request The HTTP request to send
-   * @returns A Promise that resolves to the HTTP response
-   * @throws Error if the request fails
-   */
-  roundTrip(request: Request): Promise<Response>;
+export interface RequestHandler {
+	/**
+	 * Sends an HTTP request and returns the response
+	 * @param request The HTTP request to send
+	 * @returns A Promise that resolves to the HTTP response
+	 * @throws Error if the request fails
+	 */
+	handle(request: Request): Promise<Response>;
 }
