@@ -78,6 +78,12 @@ jobs:
         working-directory: typescript
         run: pnpm build
 
+      # OIDC Trusted Publishing requires npm 11.5.1+
+      # Node 22 ships with npm 10, so we need to upgrade
+      # See: https://github.com/npm/cli/issues/8730
+      - name: Upgrade npm for OIDC support
+        run: npm install -g npm@latest
+
       # OIDC Trusted Publishing - no token needed!
       # Requires npm trusted publisher configured at:
       # https://www.npmjs.com/package/@ryanrfox/sdk/access
