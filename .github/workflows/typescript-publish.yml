@@ -1,6 +1,12 @@
 name: TypeScript SDK Publish
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 2.0.0-alpha.10)'
+        required: true
+        default: '2.0.0-alpha.10'
   push:
     tags:
       - 'ts-v*.*.*'
@@ -18,12 +24,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version from tag
+      - name: Extract version
         id: extract_version
         run: |
-          # Extract version from ts-v*.*.* format
-          TAG=${{ github.ref_name }}
-          VERSION=${TAG#ts-v}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            TAG=${{ github.ref_name }}
+            VERSION=${TAG#ts-v}
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Setup Node.js
@@ -59,14 +68,20 @@ jobs:
           jq '.version = "${{ steps.extract_version.outputs.version }}"' package.json > package.json.tmp
           mv package.json.tmp package.json
 
+      - name: Update package name for fork
+        working-directory: typescript
+        run: |
+          jq '.name = "@ryanrfox/sdk"' package.json > package.json.tmp
+          mv package.json.tmp package.json
+
       - name: Build package
         working-directory: typescript
         run: pnpm build
 
       # OIDC Trusted Publishing - no token needed!
       # Requires npm trusted publisher configured at:
-      # https://www.npmjs.com/package/@radiustechsystems/sdk/access
-      # With: org=radiustechsystems, repo=sdk, workflow=typescript-publish.yml, environment=npm-publish
+      # https://www.npmjs.com/package/@ryanrfox/sdk/access
+      # With: owner=ryanRfox, repo=sdk, workflow=typescript-publish.yml, environment=npm-publish
       - name: Publish to NPM
         working-directory: typescript
         run: npm publish --provenance --access public
