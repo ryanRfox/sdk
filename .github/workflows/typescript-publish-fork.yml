@@ -1,20 +1,20 @@
-name: TypeScript SDK Publish
+name: TypeScript SDK Publish (Fork)
+
+# Fork-specific workflow for publishing @ryanrfox/sdk
+# This file should NOT be pushed to upstream
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g., 2.0.0)'
+        description: 'Version to publish (e.g., 2.0.3)'
         required: true
-  push:
-    tags:
-      - 'ts-v*.*.*'
+        default: '2.0.3'
 
 jobs:
   publish:
     name: Build and Publish
     runs-on: ubuntu-latest
-    # Environment for OIDC trusted publishing - must match npm trusted publisher config
     environment: npm-publish
     permissions:
       contents: read
@@ -22,17 +22,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Extract version
-        id: extract_version
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            TAG=${{ github.ref_name }}
-            VERSION=${TAG#ts-v}
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -60,10 +49,14 @@ jobs:
         working-directory: typescript
         run: pnpm test
 
-      - name: Update version in package.json
+      - name: Update package.json for fork publish
         working-directory: typescript
         run: |
-          jq '.version = "${{ steps.extract_version.outputs.version }}"' package.json > package.json.tmp
+          jq '.name = "@ryanrfox/sdk" |
+              .version = "${{ github.event.inputs.version }}" |
+              .repository.url = "git+https://github.com/ryanRfox/sdk.git" |
+              .homepage = "https://github.com/ryanRfox/sdk/tree/main/typescript#readme" |
+              .bugs.url = "https://github.com/ryanRfox/sdk/issues"' package.json > package.json.tmp
           mv package.json.tmp package.json
 
       - name: Build package
@@ -71,14 +64,13 @@ jobs:
         run: pnpm build
 
       # OIDC Trusted Publishing - no token needed!
-      # Node 24 ships with npm 11+ which supports OIDC natively
       # Requires npm trusted publisher configured at:
-      # https://www.npmjs.com/package/@radiustechsystems/sdk/access
-      # With: owner=radiustechsystems, repo=sdk, workflow=typescript-publish.yml, environment=npm-publish
+      # https://www.npmjs.com/package/@ryanrfox/sdk/access
+      # With: owner=ryanRfox, repo=sdk, workflow=typescript-publish-fork.yml, environment=npm-publish
       - name: Publish to NPM
         working-directory: typescript
         run: |
-          VERSION="${{ steps.extract_version.outputs.version }}"
+          VERSION="${{ github.event.inputs.version }}"
           if [[ "$VERSION" == *"-"* ]]; then
             npm publish --provenance --access public --tag alpha
           else
