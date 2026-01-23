@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g., 2.0.0-alpha.10)'
+        description: 'Version to publish (e.g., 2.0.3)'
         required: true
-        default: '2.0.0-alpha.10'
+        default: '2.0.3'
   push:
     tags:
       - 'ts-v*.*.*'
@@ -38,7 +38,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Setup pnpm
@@ -78,16 +78,17 @@ jobs:
         working-directory: typescript
         run: pnpm build
 
-      # OIDC Trusted Publishing requires npm 11.5.1+
-      # Node 22 ships with npm 10, so we need to upgrade
-      # See: https://github.com/npm/cli/issues/8730
-      - name: Upgrade npm for OIDC support
-        run: npm install -g npm@latest
-
       # OIDC Trusted Publishing - no token needed!
+      # Node 24 ships with npm 11+ which supports OIDC natively
       # Requires npm trusted publisher configured at:
       # https://www.npmjs.com/package/@ryanrfox/sdk/access
       # With: owner=ryanRfox, repo=sdk, workflow=typescript-publish.yml, environment=npm-publish
       - name: Publish to NPM
         working-directory: typescript
-        run: npm publish --provenance --access public
+        run: |
+          VERSION="${{ steps.extract_version.outputs.version }}"
+          if [[ "$VERSION" == *"-"* ]]; then
+            npm publish --provenance --access public --tag alpha
+          else
+            npm publish --provenance --access public
+          fi
