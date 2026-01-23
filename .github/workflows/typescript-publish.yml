@@ -68,10 +68,10 @@ jobs:
           jq '.version = "${{ steps.extract_version.outputs.version }}"' package.json > package.json.tmp
           mv package.json.tmp package.json
 
-      - name: Update package name for fork
+      - name: Update package.json for fork
         working-directory: typescript
         run: |
-          jq '.name = "@ryanrfox/sdk"' package.json > package.json.tmp
+          jq '.name = "@ryanrfox/sdk" | .repository.url = "git+https://github.com/ryanRfox/sdk.git" | .homepage = "https://github.com/ryanRfox/sdk/tree/main/typescript#readme" | .bugs.url = "https://github.com/ryanRfox/sdk/issues"' package.json > package.json.tmp
           mv package.json.tmp package.json
 
       - name: Build package
